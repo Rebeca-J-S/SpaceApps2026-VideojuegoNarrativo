@@ -1,0 +1,44 @@
+{
+	"_nota": "Misión 1 – GUARDIANES DE LA TRANQUILIDAD (Apolo 11). Guion aprobado por el equipo: textos literales. Las entradas con 'propuesta' son añadidos sugeridos.",
+	"f0_intro": [
+		{"speaker": "EAGLE", "portrait": "eagle", "text": "Hola, piloto. Soy la etapa inferior del Eagle. Mido 4.2 metros de ancho y cargo 8,248 kilos de combustible en mis tanques. Mi único trabajo es llevar a Neil y a Buzz sanos y salvos hasta el polvo lunar. Cuando ellos terminen su misión, usarán mi techo como plataforma de despegue y me dejarán aquí para siempre. Pero antes de quedar en silencio, tengo que entregar una carga muy especial. Usa los propulsores laterales para estabilizarme. ¡Vamos a hacer historia!"}
+	],
+	"f0_ok": [
+		{"speaker": "EAGLE", "portrait": "eagle", "propuesta": true, "text": "Estable. Así se hace. Ahora sí: preparados para encender el motor de descenso."}
+	],
+	"f1_ignicion": [
+		{"speaker": "EAGLE", "portrait": "eagle", "text": "¡Motor encendido! Tenemos 756.3 segundos de fuego para frenar nuestra caída. Vigila mi combustible, piloto; cada gota cuenta."}
+	],
+	"f1_alarma": [
+		{"speaker": "HOUSTON", "portrait": "houston", "text": "¡Atención! La computadora de guiado está saturada de datos, pero los radares funcionan. No pierdas la concentración, mantén la inclinación."},
+		{"speaker": "EAGLE", "portrait": "eagle", "text": "Mis circuitos aguantan, pero necesito tus manos en los controles para no desviarnos de las coordenadas 0.67° Norte, 23.47° Este."}
+	],
+	"f2_50m": [
+		{"speaker": "EAGLE", "portrait": "eagle", "text": "¡Cuidado abajo! Hay rocas gigantes justo en nuestro camino. Usa los propulsores laterales para desplazarte a un terreno plano. Si aterrizo muy inclinado, los astronautas no podrán despegar de vuelta a casa ni sacar mis instrumentos científicos."}
+	],
+	"f2_10m": [
+		{"speaker": "EAGLE", "portrait": "eagle", "text": "El chorro de mi motor está levantando una tormenta de polvo gris... ¡Ya no veo el suelo! Confía en los indicadores de velocidad vertical. Suave... muy suave... ¡Queda menos del 5% de combustible!"}
+	],
+	"f2_touchdown": [
+		{"speaker": "EAGLE", "portrait": "eagle", "text": "¡Luz de contacto! Mis cuatro patas tocaron la Luna. Motor apagado. Lo logramos, piloto. Bienvenidos a la Base Tranquilidad."}
+	],
+	"f2_fallo": [
+		{"speaker": "HOUSTON", "portrait": "houston", "propuesta": true, "text": "Eagle, ese contacto no fue seguro. Volvemos a intentarlo desde 100 metros. Despacio, sobre terreno plano."}
+	],
+	"f3_easep": [
+		{"speaker": "EASEP", "portrait": "easep", "text": "Gracias por aterrizarnos de una pieza. Soy el EASEP, peso solo 48 kilos y dormía dentro de la bodega del Eagle. Los astronautas me sacaron, me llevaron 17 metros al sur y desplegaron mis dos paneles solares hacia el este y el oeste. A 5 metros de mí colocaron a mi pequeño compañero: el espejo láser LRRR. A las 04:40 UT, una señal de radio desde la Tierra a 2119 MHz me despertó. Mis ojos científicos acababan de abrirse."}
+	],
+	"f4_despedida": [
+		{"speaker": "EAGLE", "portrait": "eagle", "text": "Llegó la hora. La cabina superior acaba de encender su motor de 15,000 N usando mi techo como trampolín. Neil y Buzz vuelven a casa con 21.55 kilos de rocas lunares. Mi trabajo de transporte ha terminado. Ahora me quedaré aquí en silencio, guardando la placa que dice: 'Vinimos en paz en nombre de toda la humanidad'."},
+		{"speaker": "EASEP", "portrait": "easep", "text": "No estarás solo, Eagle. Yo me quedo contigo. Es hora de hacer ciencia."}
+	],
+	"f5_sismometro": [
+		{"speaker": "EASEP", "portrait": "easep", "text": "Escucha esto... ¡Son lunamotos! Durante semanas soporté temperaturas 30 grados por encima de mi límite y sobreviví a la congelante noche lunar del 3 de agosto. Desperté un segundo día lunar y seguí enviando datos a la Tierra a 2276.5 MHz hasta que el calor extremo del 27 de agosto de 1969 apagó mi voz para siempre."}
+	],
+	"f5_placa": [
+		{"speaker": "EAGLE", "portrait": "eagle", "propuesta": true, "text": "Esta es mi placa. La llevo atornillada a la pata de la escalera. Tiene los dos hemisferios de la Tierra y las firmas de Neil, Buzz, Michael y del presidente Nixon. Dice: 'Aquí hombres del planeta Tierra pusieron pie por primera vez sobre la Luna, julio de 1969 d.C. Vinimos en paz en nombre de toda la humanidad'."}
+	],
+	"f5_lrrr": [
+		{"speaker": "ESPEJO LÁSER LRRR", "portrait": "lrrr", "text": "El Eagle descansa en silencio y el EASEP duerme bajo el polvo... pero yo no necesito baterías. Hoy mismo, en pleno año 2026, los científicos de la Tierra siguen disparándome rayos láser desde observatorios. Gracias a que tú nos aterrizaste con precisión en 1969, hoy sabemos que la Luna se aleja de la Tierra 3.8 centímetros cada año. Fuimos abandonados en la Luna... pero jamás olvidados."}
+	]
+}

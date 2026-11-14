@@ -1,30 +1,32 @@
 class_name PixelPlanet
 extends ColorRect
 ## Planeta pixel art (Luna o Marte) que rota lentamente, generado sin assets:
-## ruido FastNoiseLite -> paleta posterizada -> shader de esfera.
-## Encima dibuja marcadores de los sitios donde la NASA dejó hardware (MissionData).
+## ruido FastNoiseLite -> paleta posterizada -> shader de esfera (pixel_planet.gdshader).
+## Encima dibuja PUNTOS VERDES pulsantes en los sitios de data/sites.json (lat/lon reales),
+## que giran con el planeta y se ocultan cuando quedan en el lado oculto.
 
 enum Kind { MOON, MARS }
 
 const SHADER := preload("res://assets/shaders/pixel_planet.gdshader")
-
-const C_FOCUS := Color("#ffb347")   # misión jugable (Apolo 11)
-const C_SILENT := Color("#e8f0ff")  # hardware abandonado
-const C_ACTIVE := Color("#39ff7a")  # sigue operando
+const C_SITE := Color("#39ff7a")
+const C_HOVER := Color("#ffb347")
 
 @export var kind: Kind = Kind.MOON
-## Resolución del disco: con size 144 y pixels 72, cada píxel del planeta mide 2 px.
+## Resolución del disco: con size 120 y pixels 60, cada píxel del planeta mide 2 px.
 @export var pixels: float = 72.0
 ## Vueltas por segundo.
 @export var spin_speed: float = 0.008
 @export var start_spin: float = 0.0
 
-## Índice del sitio resaltado (lo fija el menú según el ratón). -1 = ninguno.
+## Sitios a marcar. Si se deja vacío, se cargan de data/sites.json según el tipo de planeta.
+var sites: Array = []
+## Índice del sitio resaltado (lo fija la escena según el ratón). -1 = ninguno.
 var hovered := -1
+## Si es true el planeta deja de girar (durante el zoom).
+var frozen := false
 
 var _spin := 0.0
 var _t := 0.0
-var _sites: Array = []
 var _site_pos: Array[Vector2] = []
 var _site_visible: Array[bool] = []
 var _markers: Node2D
@@ -35,8 +37,12 @@ func _ready() -> void:
 	color = Color.WHITE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_spin = start_spin
-	_sites = MissionData.MARS_SITES if kind == Kind.MARS else MissionData.MOON_SITES
-	for i in _sites.size():
+	if sites.is_empty():
+		var wanted := "mars" if kind == Kind.MARS else "moon"
+		for dest in GameManager.get_destinations():
+			if dest["kind"] == wanted:
+				sites = dest["sites"]
+	for i in sites.size():
 		_site_pos.append(Vector2.ZERO)
 		_site_visible.append(false)
 
@@ -60,7 +66,8 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	_spin = fposmod(_spin + delta * spin_speed, 1.0)
+	if not frozen:
+		_spin = fposmod(_spin + delta * spin_speed, 1.0)
 	_mat.set_shader_parameter("spin", _spin)
 	_update_sites()
 	_markers.queue_redraw()
@@ -102,8 +109,8 @@ func _update_sites() -> void:
 	var r := size.x * 0.5
 	var c := size * 0.5
 	var px := size.x / pixels
-	for i in _sites.size():
-		var s: Dictionary = _sites[i]
+	for i in sites.size():
+		var s: Dictionary = sites[i]
 		var a := TAU * (float(s["lon"]) / 360.0 - _spin)
 		var lat := deg_to_rad(float(s["lat"]))
 		var n := Vector3(sin(a) * cos(lat), -sin(lat), cos(a) * cos(lat))
@@ -112,29 +119,24 @@ func _update_sites() -> void:
 
 
 func _draw_markers() -> void:
-	var blink := fmod(_t, 1.2) < 0.8
-	for i in _sites.size():
+	for i in sites.size():
 		if not _site_visible[i]:
 			continue
-		var s: Dictionary = _sites[i]
 		var p := _site_pos[i]
-		var col := C_SILENT
-		if s["status"] == "focus":
-			col = C_FOCUS
-		elif s["status"] == "active":
-			col = C_ACTIVE
-		if s["status"] == "focus" or i == hovered:
-			# Anillo cuadrado alrededor del sitio destacado.
-			_markers.draw_rect(Rect2(p - Vector2(4, 4), Vector2(8, 8)), col, false, 1.0)
-		if blink or s["status"] != "active":
-			_markers.draw_rect(Rect2(p - Vector2(1, 1), Vector2(2, 2)), col)
+		var col := C_HOVER if i == hovered else C_SITE
+		# Punto verde pulsante con onda expansiva.
+		var pulse := fmod(_t * 0.9 + i * 0.37, 1.0)
+		_markers.draw_arc(p, 3.0 + pulse * 8.0, 0.0, TAU, 16, Color(col, 1.0 - pulse), 1.0)
+		_markers.draw_rect(Rect2(p - Vector2(2, 2), Vector2(4, 4)), col)
+		if i == hovered:
+			_markers.draw_rect(Rect2(p - Vector2(6, 6), Vector2(12, 12)), col, false, 1.0)
 
 
 ## Índice del sitio visible más cercano a un punto local (o -1).
-func get_site_at(local_point: Vector2, max_dist: float = 7.0) -> int:
+func get_site_at(local_point: Vector2, max_dist: float = 8.0) -> int:
 	var best := -1
 	var best_d := max_dist
-	for i in _sites.size():
+	for i in sites.size():
 		if not _site_visible[i]:
 			continue
 		var d := local_point.distance_to(_site_pos[i])
@@ -145,4 +147,22 @@ func get_site_at(local_point: Vector2, max_dist: float = 7.0) -> int:
 
 
 func get_site_info(index: int) -> Dictionary:
-	return _sites[index]
+	return sites[index]
+
+
+func get_site_local_pos(index: int) -> Vector2:
+	return _site_pos[index]
+
+
+func is_site_visible(index: int) -> bool:
+	return _site_visible[index]
+
+
+## Gira el planeta hasta que el sitio quede de frente (para el zoom).
+func face_site(index: int, seconds: float = 0.6) -> void:
+	frozen = true
+	var target := float(sites[index]["lon"]) / 360.0
+	var delta := wrapf(target - _spin, -0.5, 0.5)
+	var tw := create_tween()
+	tw.tween_property(self, "_spin", _spin + delta, seconds).set_trans(Tween.TRANS_CUBIC)
+	await tw.finished

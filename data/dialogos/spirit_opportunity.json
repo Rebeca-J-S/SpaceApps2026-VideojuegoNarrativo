@@ -1,0 +1,184 @@
+{
+	"_nota": "Capítulo SPIRIT Y OPPORTUNITY. La conversación es ficción; los hechos vienen de fuentes de la NASA. No escribir que Spirit 'murió': usar 'dejó de comunicarse'. Las entradas 'verificar' son valores por confirmar.",
+	"disclaimer": "Los rovers nunca hablaron entre sí.\nEstas conversaciones son imaginadas, pero los hechos son reales.",
+	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
+	"speakers": {
+		"CIENTIFICO": {"name": "CONTROL DE MISIÓN", "radio": false, "color": "#ffb347", "portrait": "cientifico"},
+		"SPIRIT": {"name": "SPIRIT", "radio": true, "color": "#80f2ff", "portrait": "spirit"},
+		"OPPORTUNITY": {"name": "OPPORTUNITY", "radio": true, "color": "#ffd24a", "portrait": "opportunity"}
+	},
+	"hud": {
+		"year": "AÑO",
+		"objective": "OBJETIVO",
+		"distance": "DISTANCIA RECORRIDA",
+		"signal": "SEÑAL",
+		"in_transit": "SEÑAL EN TRÁNSITO",
+		"debug": "DEBUG · F1-F7: SALTAR ESCENA",
+		"pause_title": "PAUSA",
+		"pause_continue": "CONTINUAR",
+		"pause_exit": "VOLVER AL SELECTOR"
+	},
+	"scenes": [
+		{
+			"id": "llegada_spirit",
+			"title": "ESCENA 1 · LLEGADA DE SPIRIT",
+			"year": "2004",
+			"objective": "BUSCAR SEÑALES DE AGUA ANTIGUA",
+			"rover": "SPIRIT",
+			"distance_km": 0.0,
+			"signal": 92,
+			"intro": [
+				{"speaker": "CIENTIFICO", "text": "Control de Misión a Spirit. Bienvenido a Marte. Tu misión es buscar señales de agua en el pasado de este planeta."},
+				{"speaker": "CIENTIFICO", "text": "Has aterrizado en el cráter Gusev, un posible antiguo lago. Tu misión está planeada para unos tres meses."},
+				{"speaker": "CIENTIFICO", "text": "Tu gemelo, Opportunity, aterrizará en unas semanas, al otro lado del planeta."}
+			],
+			"minimission": {
+				"title": "MINIMISIÓN: SALIDA DEL MÓDULO",
+				"steps": ["LEVANTAR EL MÁSTIL DE LA CÁMARA", "ORIENTAR LA ANTENA HACIA LA TIERRA", "ELEGIR RUTA DE SALIDA Y BAJAR"],
+				"routes": ["RUTA A", "RUTA B", "RUTA C"],
+				"earth_label": "TIERRA"
+			},
+			"outro": [
+				{"speaker": "SPIRIT", "mode": "TX", "text": "Aquí Spirit. Sistemas en línea. Empiezo a explorar."}
+			]
+		},
+		{
+			"id": "blueberries",
+			"title": "ESCENA 2A · LAS BLUEBERRIES",
+			"year": "2004",
+			"objective": "ENCONTRAR PRUEBAS DE AGUA",
+			"rover": "OPPORTUNITY",
+			"distance_km": 0.0,
+			"signal": 90,
+			"intro": [
+				{"speaker": "OPPORTUNITY", "mode": "TX", "text": "Aquí Opportunity. Hay pequeñas esferas en el suelo. ¿Qué son?"}
+			],
+			"minimission": {
+				"title": "MINIMISIÓN: CAZADOR DE BLUEBERRIES",
+				"instruction": "Haz clic en las esferas pequeñas, no en las rocas normales",
+				"counter": "ESFERAS",
+				"goal": 8,
+				"wrong": "Esa es una roca normal"
+			},
+			"outro": [
+				{"speaker": "CIENTIFICO", "text": "Les llamamos 'blueberries'. Son esferas de hematita y suelen formarse con agua. Aquí hubo agua, aunque era ácida."}
+			]
+		},
+		{
+			"id": "silice",
+			"title": "ESCENA 2B · LA SÍLICE",
+			"year": "2007",
+			"objective": "ANALIZAR EL SUELO",
+			"rover": "SPIRIT",
+			"distance_km": 6.9,
+			"verificar": "distancia aproximada de Spirit en mayo de 2007",
+			"signal": 85,
+			"intro": [],
+			"minimission": {
+				"title": "MINIMISIÓN: RUEDA EXCAVADORA",
+				"instruction": "Arrastra la rueda (clic sostenido o flechas) para remover el suelo",
+				"counter": "SUELO REMOVIDO",
+				"goal_ratio": 0.7
+			},
+			"outro": [
+				{"speaker": "SPIRIT", "mode": "TX", "text": "Mi rueda removió el suelo y apareció algo muy claro."},
+				{"speaker": "CIENTIFICO", "text": "Es sílice casi pura, un 90 %. En la Tierra se forma en aguas termales, donde viven microbios."}
+			]
+		},
+		{
+			"id": "invierno_spirit",
+			"title": "ESCENA 3A · INVIERNO DE SPIRIT",
+			"enabled": true,
+			"year": "2009-2010",
+			"objective": "SOBREVIVIR AL INVIERNO",
+			"rover": "SPIRIT",
+			"distance_km": 7.73,
+			"signal": 70,
+			"intro": [
+				{"speaker": "CIENTIFICO", "text": "Spirit, llega el invierno y hay poca luz. Reparte la energía de tu batería entre los calefactores y los instrumentos."}
+			],
+			"minimission": {
+				"title": "MINIMISIÓN: INVIERNO DE ENERGÍA",
+				"instruction": "Reparte la energía con A/D o los botones y confirma cada día marciano",
+				"heaters": "CALEFACTORES",
+				"instruments": "INSTRUMENTOS",
+				"confirm": "CONFIRMAR DÍA",
+				"day": "DÍA MARCIANO",
+				"days": 4,
+				"final_text": "SPIRIT DEJÓ DE COMUNICARSE\nÚltima señal: 22 de marzo de 2010"
+			},
+			"outro": []
+		},
+		{
+			"id": "endeavour",
+			"title": "ESCENA 3B · OPPORTUNITY SIGUE",
+			"year": "2010",
+			"objective": "LLEGAR AL CRÁTER ENDEAVOUR",
+			"rover": "OPPORTUNITY",
+			"distance_km": 20.0,
+			"verificar": "distancia aproximada de Opportunity en 2010 (valor de juego)",
+			"signal": 88,
+			"intro": [
+				{"speaker": "CIENTIFICO", "text": "Opportunity, tengo noticias difíciles. En 2009, Spirit quedó atrapado en la arena, en un sitio llamado Troy."},
+				{"speaker": "CIENTIFICO", "text": "Siguió trabajando como estación fija, pero no pudo inclinar sus paneles hacia el sol en el invierno."},
+				{"speaker": "CIENTIFICO", "text": "Su última señal llegó el 22 de marzo de 2010. Intentamos contactarlo hasta 2011."},
+				{"speaker": "OPPORTUNITY", "mode": "RX", "text": "Mensaje recibido. Seguiré explorando por los dos."},
+				{"speaker": "CIENTIFICO", "text": "Tu próximo destino es el cráter Endeavour."}
+			],
+			"minimission": {
+				"title": "MINIMISIÓN: RUMBO A ENDEAVOUR",
+				"instruction": "Conduce con A/D o flechas y esquiva los cráteres",
+				"marathon_km": 42.195,
+				"verificar_maraton": "el guion original decía 42,198 km; la distancia oficial de una maratón es 42,195 km",
+				"marathon_year": "2015",
+				"end_km": 42.5,
+				"crater_hit": "¡Cráter! Rodeándolo...",
+				"match_title": "DESCUBRIMIENTOS EN ENDEAVOUR: EMPAREJA CADA HALLAZGO",
+				"match_left": ["Venas de yeso (como Homestake)", "Arcillas (Pillinger Point)"],
+				"match_right": ["Agua que circuló por grietas subterráneas", "Agua de pH neutro: el sitio más amigable para vida microbiana antigua de los que estudió"],
+				"match_ok": "¡Correcto!",
+				"match_bad": "No coincide, prueba otra vez"
+			},
+			"marathon": [
+				{"speaker": "CIENTIFICO", "text": "Superaste los 42,195 km. ¡Una maratón completa en Marte!"}
+			],
+			"outro": []
+		},
+		{
+			"id": "tormenta",
+			"title": "ESCENA 4 · LA TORMENTA",
+			"year": "2018",
+			"objective": "COMPLETAR EL PANORAMA",
+			"rover": "OPPORTUNITY",
+			"distance_km": 45.16,
+			"signal": 80,
+			"intro": [
+				{"speaker": "CIENTIFICO", "text": "Opportunity, se acerca una tormenta de polvo que cubrirá todo el planeta. Tus paneles necesitan luz."}
+			],
+			"minimission": {
+				"title": "MINIMISIÓN: CARRERA CONTRA LA TORMENTA",
+				"instruction": "Haz clic en la toma iluminada (o pulsa ESPACIO) antes de que el polvo llene la barra",
+				"shots": 8,
+				"dust_seconds": 16.0,
+				"dust_label": "POLVO",
+				"shots_label": "TOMAS",
+				"fail": "La tormenta llegó antes. Volvamos a intentarlo.",
+				"note": "Simplificación: el panorama real se tomó entre el 13 de mayo y el 10 de junio de 2018."
+			},
+			"outro": [
+				{"speaker": "OPPORTUNITY", "mode": "TX", "text": "Panorama completo. Transmitiendo..."}
+			]
+		}
+	],
+	"closing": {
+		"title": "Opportunity: última comunicación el 10 de junio de 2018.",
+		"stats": [
+			["OPPORTUNITY", "45,16 km · unos 14 años (misión planeada: 3 meses)"],
+			["SPIRIT", "7,73 km · más de 6 años · más de 124.000 imágenes"]
+		],
+		"epilogue_enabled": true,
+		"epilogue": "En 2026, Perseverance superó el récord de distancia de Opportunity.",
+		"verificar_epilogo": "confirmar la fecha en que Perseverance superó los 45,16 km de Opportunity",
+		"button": "ENTER / CLIC: VOLVER AL SELECTOR"
+	}
+}

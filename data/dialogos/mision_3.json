@@ -1,0 +1,63 @@
+{
+	"_nota": "Misión 3 – LA ÚLTIMA SEÑAL (Pioneer 10 y 11). Propuesta de guion: ajustable. 'verificar' = confirmar con science.nasa.gov/mission/pioneer-10.",
+	"f0_intro": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "verificar": "fecha de lanzamiento (2 mar 1972 hora local / 3 mar UT) y récord de velocidad", "text": "Hola, piloto. Soy Pioneer 10. Despegué en marzo de 1972 a bordo de un cohete Atlas-Centaur, más rápido que cualquier nave antes que yo. No tengo paneles solares: el Sol estará demasiado lejos a donde voy, así que mi energía viene de pequeños generadores nucleares (RTG). Mi antena es mi único hilo con la Tierra. Mantenla apuntando a casa."}
+	],
+	"f0_ok": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Señal fuerte. Te oigo, Tierra. Rumbo al cinturón de asteroides."}
+	],
+	"f1_inicio": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Nadie había cruzado este cinturón. Algunos pensaban que me haría pedazos. Si salimos de aquí, demostraremos que el camino a los planetas gigantes está abierto."}
+	],
+	"f1_ok": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "¡Lo cruzamos! Resultó menos peligroso de lo que temían. El camino a Júpiter está abierto."}
+	],
+	"f1_fallo": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Demasiados impactos... Volvamos a intentarlo. Sube y baja con calma."}
+	],
+	"f2_inicio": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "verificar": "fecha del sobrevuelo: 3-4 de diciembre de 1973", "text": "Diciembre de 1973. Júpiter está ahí delante. Cuando entre en la ventana verde, suelta el control: su gravedad me lanzará como una honda."}
+	],
+	"f2_radiacion": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "La radiación de Júpiter está friendo mis circuitos... ¡Aguanta! Soy la primera nave en ver a este gigante de cerca."}
+	],
+	"f2_fallo": [
+		{"speaker": "HOUSTON", "portrait": "houston", "text": "Ángulo incorrecto. Repetimos la aproximación al sobrevuelo."}
+	],
+	"f3_cinturones": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Júpiter está rodeado de cinturones de radiación miles de veces más intensos que los de la Tierra. Mis instrumentos los midieron por primera vez."}
+	],
+	"f3_magnetico": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Su campo magnético es gigantesco: si pudieras verlo desde la Tierra, sería más grande que la Luna llena en el cielo."}
+	],
+	"f3_mancha": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Y esa es la Gran Mancha Roja: una tormenta más grande que la Tierra entera. Envié las primeras fotos cercanas de ella."}
+	],
+	"f3_pioneer11": [
+		{"speaker": "PIONEER 11", "portrait": "pioneer11", "text": "Ahora me toca a mí, Pioneer 11. Usé la gravedad de Júpiter como impulso y en septiembre de 1979 llegué a Saturno. Escanea sus anillos."}
+	],
+	"f3_anillo": [
+		{"speaker": "PIONEER 11", "portrait": "pioneer11", "verificar": "descubrimiento del anillo F atribuido a Pioneer 11", "text": "¡Mira ese anillo fino y exterior! Lo descubrí yo: hoy se llama anillo F. Fui la primera nave en visitar Saturno."}
+	],
+	"f4_p11": [
+		{"speaker": "PIONEER 11", "portrait": "pioneer11", "verificar": "último contacto: 30 sep 1995", "text": "Mis generadores se están apagando. En 1995 la Tierra dejó de escucharme. Me despido primero, hermana. Sigue tú."}
+	],
+	"f4_p10": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "verificar": "última señal: enero de 2003, unos 12 mil millones de km", "text": "Enero de 2003. Estoy a unos 12 mil millones de kilómetros. Mi voz ya casi no llega... pero sigo avanzando."}
+	],
+	"f5_hidrogeno": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Estos dos círculos son un átomo de hidrógeno, el elemento más común del universo. Es la regla con la que se miden los tamaños y tiempos de la placa."}
+	],
+	"f5_pulsares": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Estas líneas son un mapa de púlsares: estrellas que parpadean como faros. Con ellas, quien me encuentre puede ubicar nuestro Sol."}
+	],
+	"f5_sistema": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Abajo está el sistema solar. Una flecha sale del tercer planeta, la Tierra, y pasa junto a Júpiter: es mi viaje."}
+	],
+	"f5_humanos": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Y estas son dos personas, dibujadas delante de mi silueta para mostrar su tamaño. Así somos los que me enviaron."}
+	],
+	"f5_cierre": [
+		{"speaker": "PIONEER 10", "portrait": "pioneer10", "verificar": "Pioneer 10 pasará cerca de Aldebarán en unos 2 millones de años", "text": "Ya nadie escucha mi voz. Pero llevo un saludo de toda la humanidad grabado en el pecho. Pioneer 10 viaja hacia la estrella Aldebarán... llegará dentro de unos dos millones de años. Nos fuimos de casa... pero llevamos la casa con nosotras."}
+	]
+}

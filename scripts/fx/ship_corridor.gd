@@ -59,10 +59,18 @@ const ITEMS := [
 	{"sprite": "BOOT", "pos": Vector2(62, 90), "scale": 1.5, "rot": -0.45,
 		"title": "CUBREBOTAS LUNARES",
 		"info": "Armstrong y Aldrin los dejaron en la Luna en 1969 para ahorrar peso en el despegue."},
+	{"sprite": "HELMET", "pos": Vector2(204, 92), "scale": 1.5, "rot": 0.2,
+		"title": "CASCO CON VISOR DORADO",
+		"info": "El visor dorado protegía los ojos del Sol sin filtro de la Luna. Los cascos volvieron a casa; muchas otras cosas no."},
 ]
+
+## Punto de pantalla hacia el que se hace zoom: la Luna que se ve por la ventana.
+const ZOOM_FOCUS := Vector2(349, 104)
 
 ## Índice del objeto resaltado (lo fija la escena según el ratón). -1 = ninguno.
 var highlighted := -1
+## Zoom de "cámara" (1 = normal). La intro lo anima al salir para volar hacia la ventana.
+var zoom := 1.0
 
 var _t := 0.0
 var _fx: Node2D
@@ -94,7 +102,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	# Balanceo suave de la nave (en píxeles enteros para mantener el pixel art nítido).
-	position = Vector2(roundf(sin(_t * 0.5) * 2.0), roundf(sin(_t * 0.8 + 1.0) * 1.0))
+	var sway := Vector2(roundf(sin(_t * 0.5) * 2.0), roundf(sin(_t * 0.8 + 1.0) * 1.0))
+	# Zoom alrededor de ZOOM_FOCUS: ese punto se queda fijo en pantalla mientras todo crece.
+	scale = Vector2(zoom, zoom)
+	position = ZOOM_FOCUS * (1.0 - zoom) + sway
 	for i in ITEMS.size():
 		var base: Vector2 = ITEMS[i]["pos"]
 		var ph := _item_phase[i]
@@ -180,6 +191,15 @@ func _draw() -> void:
 	draw_rect(b, C_RIB, false, 2.0)
 	draw_rect(Rect2(b.position.x + b.size.x * 0.5 - 0.5, b.position.y, 1, b.size.y), C_RIB)
 	draw_rect(Rect2(b.position.x - 2, b.end.y, b.size.x + 4, 3), C_PANEL_DARK)  # Consola bajo la ventana.
+	draw_rect(Rect2(b.end.x + 3, b.position.y + 12, 3, 3), Color("#4da6ff"))  # Luz azul junto a la ventana.
+
+	# Dos paneles rojos empotrados en el suelo, uno a cada lado (su brillo pulsa en la capa FX).
+	var near := _rect_at(0.12)
+	var far := _rect_at(0.3)
+	_quad(Vector2(_xa(near, 0.1), near.end.y), Vector2(_xa(near, 0.22), near.end.y),
+		Vector2(_xa(far, 0.22), far.end.y), Vector2(_xa(far, 0.1), far.end.y), Color("#7a1a14"))
+	_quad(Vector2(_xa(near, 0.78), near.end.y), Vector2(_xa(near, 0.9), near.end.y),
+		Vector2(_xa(far, 0.9), far.end.y), Vector2(_xa(far, 0.78), far.end.y), Color("#7a1a14"))
 
 
 func _draw_ceiling_lights(r0: Rect2, r1: Rect2) -> void:
@@ -229,6 +249,14 @@ func _draw_wall_panels(r0: Rect2, r1: Rect2, segment: int) -> void:
 		# Carteles en el primer segmento: la Luna (izq.) y Marte (der.).
 		if segment == 0:
 			_draw_poster(i_tl, i_tr, i_br, i_bl, side == 0)
+		elif segment == 2 or segment == 4:
+			# Manchas marrones de óxido / daño en algunos paneles.
+			var rust := Color("#6e4128")
+			var cx := lerpf(i_tl.x, i_br.x, 0.5)
+			var cy := lerpf(i_tl.y, i_br.y, 0.35)
+			var s := maxf(1.0, absf(i_br.x - i_tl.x) * 0.25)
+			draw_rect(Rect2(cx - s, cy, s * 2.0, s), rust)
+			draw_rect(Rect2(cx - s * 0.5, cy + s, s, s * 1.5), rust.darkened(0.2))
 		elif segment == 1:
 			# Caja de emergencia roja abajo del panel.
 			var ex := lerpf(i_bl.x, i_br.x, 0.4)
@@ -287,6 +315,17 @@ func _draw_window_view() -> void:
 
 
 func _draw_alarm_lights() -> void:
+	# Brillo pulsante de los paneles rojos del suelo (ciclo de ~2 s, como la alarma).
+	var glow := 0.25 + 0.25 * sin(_t * PI)
+	var near := _rect_at(0.12)
+	var far := _rect_at(0.3)
+	for side in [[0.1, 0.22], [0.78, 0.9]]:
+		var a: float = side[0]
+		var b: float = side[1]
+		_fx.draw_colored_polygon(PackedVector2Array([
+			Vector2(_xa(near, a), near.end.y), Vector2(_xa(near, b), near.end.y),
+			Vector2(_xa(far, b), far.end.y), Vector2(_xa(far, a), far.end.y),
+		]), Color(C_RED, glow))
 	# Tres luces rojas sobre la ventana que se encienden en secuencia.
 	var step := int(_t * 3.0) % 4
 	for i in 3:
@@ -336,7 +375,7 @@ func _draw_scan_brackets(center: Vector2, size: Vector2) -> void:
 
 func _draw_red_alert() -> void:
 	# Viñeta roja pulsante en los laterales, en bandas escalonadas (gradiente pixelado).
-	var pulse := 0.5 + 0.5 * sin(_t * 1.8)
+	var pulse := 0.5 + 0.5 * sin(_t * PI)  # ciclo de ~2 s
 	var strength := 0.10 + 0.10 * pulse
 	for k in 6:
 		var bw := 6.0 * (k + 1)

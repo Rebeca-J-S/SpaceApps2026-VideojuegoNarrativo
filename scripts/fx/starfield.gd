@@ -9,6 +9,8 @@ extends Node2D
 @export var twinkle_speed: float = 1.6
 ## Desplazamiento lento (px/s) para dar sensación de parallax.
 @export var drift: Vector2 = Vector2.ZERO
+## Estrellas fugaces ocasionales cruzando en diagonal.
+@export var shooting_stars: bool = false
 
 const PALETTE := [
 	Color("#ffffff"), Color("#cfd8ff"), Color("#ffe9b0"), Color("#9fb4ff"),
@@ -26,6 +28,9 @@ class Star:
 
 var _stars: Array[Star] = []
 var _t := 0.0
+var _shoot_pos := Vector2(-100, -100)
+var _shoot_life := 0.0
+var _shoot_wait := 2.0
 
 
 func _ready() -> void:
@@ -44,6 +49,15 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if shooting_stars:
+		_shoot_wait -= delta
+		if _shoot_wait <= 0.0 and _shoot_life <= 0.0:
+			_shoot_life = 0.7
+			_shoot_pos = Vector2(randf_range(80, area.x), randf_range(0, area.y * 0.4))
+			_shoot_wait = randf_range(2.5, 6.0)
+		if _shoot_life > 0.0:
+			_shoot_life -= delta
+			_shoot_pos += Vector2(-260, 130) * delta
 	queue_redraw()
 
 
@@ -67,3 +81,8 @@ func _draw() -> void:
 			draw_rect(Rect2(p + Vector2(1, 0), Vector2.ONE), arm)
 			draw_rect(Rect2(p + Vector2(0, -1), Vector2.ONE), arm)
 			draw_rect(Rect2(p + Vector2(0, 1), Vector2.ONE), arm)
+	if shooting_stars and _shoot_life > 0.0:
+		# Estrella fugaz: cabeza brillante y estela de píxeles en diagonal.
+		for k in 10:
+			var p := (_shoot_pos - Vector2(-2, 1) * k * 2.0).floor()
+			draw_rect(Rect2(p, Vector2.ONE), Color(1, 1, 1, (1.0 - k / 10.0) * minf(_shoot_life * 2.0, 1.0)))
