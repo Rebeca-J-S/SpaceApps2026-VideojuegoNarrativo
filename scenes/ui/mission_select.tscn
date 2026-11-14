@@ -1,0 +1,139 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/mission_select.gd" id="1_select"]
+[ext_resource type="Script" path="res://scripts/fx/starfield.gd" id="2_stars"]
+[ext_resource type="Script" path="res://scripts/fx/pixel_planet.gd" id="3_planet"]
+[ext_resource type="Shader" path="res://assets/shaders/crt_overlay.gdshader" id="4_crt"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
+shader = ExtResource("4_crt")
+shader_parameter/scanline_strength = 0.14
+shader_parameter/vignette_strength = 0.4
+
+[node name="MissionSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_select")
+
+[node name="SpaceBackground" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0157, 0.0196, 0.051, 1)
+
+[node name="Starfield" type="Node2D" parent="."]
+script = ExtResource("2_stars")
+star_count = 170
+seed_value = 2026
+twinkle_speed = 1.2
+
+[node name="Header" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 32.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.702, 0.278, 1)
+theme_override_colors/font_shadow_color = Color(0.45, 0.18, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18
+text = "SELECCIONA TU DESTINO"
+horizontal_alignment = 1
+
+[node name="SubHeader" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 32.0
+offset_bottom = 48.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.122, 0.541, 0.271, 1)
+theme_override_font_sizes/font_size = 10
+text = "¿Dónde quieres empezar a escuchar a las máquinas que la NASA dejó atrás?"
+horizontal_alignment = 1
+
+[node name="Moon" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 84.0
+offset_top = 64.0
+offset_right = 244.0
+offset_bottom = 224.0
+mouse_filter = 2
+script = ExtResource("3_planet")
+pixels = 80.0
+spin_speed = 0.006
+
+[node name="Mars" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 396.0
+offset_top = 64.0
+offset_right = 556.0
+offset_bottom = 224.0
+mouse_filter = 2
+script = ExtResource("3_planet")
+kind = 1
+pixels = 80.0
+spin_speed = 0.008
+start_spin = 0.3
+
+[node name="Selector" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="MoonCard" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 232.0
+offset_right = 308.0
+offset_bottom = 336.0
+mouse_filter = 2
+
+[node name="MarsCard" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 332.0
+offset_top = 232.0
+offset_right = 620.0
+offset_bottom = 336.0
+mouse_filter = 2
+
+[node name="Hint" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -20.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.5, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 10
+text = "FLECHAS: ELEGIR   ·   ENTER / CLIC: CONFIRMAR   ·   ESC: VOLVER"
+horizontal_alignment = 1
+
+[node name="CRTOverlay" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_crt")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

@@ -61,8 +61,13 @@ const ITEMS := [
 		"info": "Armstrong y Aldrin los dejaron en la Luna en 1969 para ahorrar peso en el despegue."},
 ]
 
+## Punto de pantalla hacia el que se hace zoom: la Luna que se ve por la ventana.
+const ZOOM_FOCUS := Vector2(349, 104)
+
 ## Índice del objeto resaltado (lo fija la escena según el ratón). -1 = ninguno.
 var highlighted := -1
+## Zoom de "cámara" (1 = normal). La intro lo anima al salir para volar hacia la ventana.
+var zoom := 1.0
 
 var _t := 0.0
 var _fx: Node2D
@@ -94,7 +99,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	# Balanceo suave de la nave (en píxeles enteros para mantener el pixel art nítido).
-	position = Vector2(roundf(sin(_t * 0.5) * 2.0), roundf(sin(_t * 0.8 + 1.0) * 1.0))
+	var sway := Vector2(roundf(sin(_t * 0.5) * 2.0), roundf(sin(_t * 0.8 + 1.0) * 1.0))
+	# Zoom alrededor de ZOOM_FOCUS: ese punto se queda fijo en pantalla mientras todo crece.
+	scale = Vector2(zoom, zoom)
+	position = ZOOM_FOCUS * (1.0 - zoom) + sway
 	for i in ITEMS.size():
 		var base: Vector2 = ITEMS[i]["pos"]
 		var ph := _item_phase[i]

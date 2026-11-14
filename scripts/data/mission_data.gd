@@ -19,6 +19,24 @@ const EASEP_MASS_KG := 48.0
 const EASEP_UPLINK_MHZ := 2119.0    # recibía órdenes
 const EASEP_DOWNLINK_MHZ := 2276.5  # transmitía telemetría
 
+# --- Destinos de la pantalla "SELECCIONA TU DESTINO" ---
+const DESTINATIONS := [
+	{
+		"name": "LA LUNA",
+		"mission": "MISIÓN APOLO 11 · 1969",
+		"desc": "Pilota el descenso del Eagle: 756.3 s de ignición y 8,248 kg de combustible para posarte en el Mar de la Tranquilidad y despertar al EASEP.",
+		"hardware": "Eagle LM-5 · EASEP · Retrorreflector LRRR",
+		"scene": "res://scenes/levels/fase0_orbita.tscn",
+	},
+	{
+		"name": "MARTE",
+		"mission": "EXPEDICIÓN MARTE · 1976-2024",
+		"desc": "Recorre los lugares donde descansan los exploradores robóticos y escucha sus historias. (Misión en desarrollo)",
+		"hardware": "Viking 1 · Sojourner · Opportunity · InSight · Ingenuity",
+		"scene": "res://scenes/levels/marte_fase0.tscn",
+	},
+]
+
 # --- Sitios marcados sobre los planetas del menú (lat N+, lon E+) ---
 # status: "focus" = misión jugable, "silent" = abandonado, "active" = sigue operando.
 const MOON_SITES := [

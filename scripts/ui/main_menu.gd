@@ -4,7 +4,7 @@ extends Control
 ## (pasa el ratón por un marcador para ver qué hay allí).
 ## UI: consola de control (verde fósforo / ámbar). Paneles modales con efecto "encendido CRT".
 
-const MISSION_SCENE := "res://scenes/levels/fase0_orbita.tscn"
+const MISSION_SCENE := "res://scenes/ui/mission_select.tscn"
 const VOICE_INTERVAL := 8.0   # segundos entre frases de las máquinas
 const VOICE_TYPE_SPEED := 40.0
 
@@ -114,11 +114,15 @@ func _play_menu_intro() -> void:
 	await get_tree().process_frame  # Esperamos a que los anchors calculen la posición.
 	var target_x := menu_panel.position.x
 	menu_panel.position.x = target_x - 40.0
+	# La Luna llega "grande" (continuación del zoom de la intro) y se aleja a su sitio.
+	moon.pivot_offset = moon.size / 2.0
+	moon.scale = Vector2(2.2, 2.2)
 	var tw := create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(menu_panel, "position:x", target_x, 0.6)
-	tw.tween_property(menu_panel, "modulate:a", 1.0, 0.6)
-	tw.tween_property(moon, "modulate:a", 1.0, 1.0).set_delay(0.2)
-	tw.tween_property(mars, "modulate:a", 1.0, 1.0).set_delay(0.5)
+	tw.tween_property(moon, "modulate:a", 1.0, 0.4)
+	tw.tween_property(moon, "scale", Vector2.ONE, 1.1).set_trans(Tween.TRANS_EXPO)
+	tw.tween_property(menu_panel, "position:x", target_x, 0.6).set_delay(0.4)
+	tw.tween_property(menu_panel, "modulate:a", 1.0, 0.6).set_delay(0.4)
+	tw.tween_property(mars, "modulate:a", 1.0, 1.0).set_delay(0.6)
 	await tw.finished
 
 

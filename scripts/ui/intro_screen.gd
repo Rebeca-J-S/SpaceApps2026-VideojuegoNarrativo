@@ -159,13 +159,23 @@ func _leave() -> void:
 	_state = State.LEAVING
 	if _blink and _blink.is_valid():
 		_blink.kill()
-	# Parpadeo rápido de confirmación y fundido al menú.
+	tooltip.hide()
+	corridor.highlighted = -1
+	# 1) Parpadeo rápido de confirmación.
 	prompt.text = "> TRANSMISIÓN RECIBIDA <"
-	var confirm := create_tween().set_loops(4)
+	var confirm := create_tween().set_loops(3)
 	confirm.tween_property(prompt, "modulate:a", 1.0, 0.0)
 	confirm.tween_interval(0.06)
 	confirm.tween_property(prompt, "modulate:a", 0.2, 0.0)
 	confirm.tween_interval(0.06)
 	await confirm.finished
-	prompt.modulate.a = 1.0
-	SceneTransition.change_scene(NEXT_SCENE)
+
+	# 2) La interfaz se apaga y la "cámara" vuela por el pasillo hacia la Luna de la ventana.
+	var fly := create_tween().set_parallel()
+	for ui in [title, subtitle, narrative_panel, prompt]:
+		fly.tween_property(ui, "modulate:a", 0.0, 0.3)
+	fly.tween_property(corridor, "zoom", 12.0, 1.5).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	await fly.finished
+
+	# 3) Fundido corto al menú (donde la Luna y Marte esperan).
+	SceneTransition.change_scene(NEXT_SCENE, 0.35)

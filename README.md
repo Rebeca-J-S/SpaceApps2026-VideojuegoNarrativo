@@ -12,10 +12,13 @@ Misión jugable actual: el alunizaje del Apolo 11 (Eagle LM-5, EASEP y LRRR).
 ## Flujo
 - **Intro** (`scenes/ui/intro_screen.tscn`): pasillo de la nave en pixel art, alarma roja y objetos
   flotando en gravedad cero (cosas reales que los astronautas dejaron en la Luna; pasa el ratón
-  por encima para ver su ficha). Registro de a bordo con efecto máquina de escribir → INICIAR.
+  por encima para ver su ficha). Registro de a bordo con efecto máquina de escribir → INICIAR,
+  que hace zoom por el pasillo hacia la Luna de la ventana y llega al menú.
 - **Menú** (`scenes/ui/main_menu.tscn`): la Luna y Marte rotando, con los sitios de hardware
   marcados (Apolo 11-17, Viking, Sojourner, Spirit, Opportunity, InSight, Ingenuity, Curiosity…).
   Archivo científico por secciones LUNA / MARTE / MISIÓN.
+- **Selección de destino** (`scenes/ui/mission_select.tscn`): INICIAR MISIÓN lleva aquí. Elige la
+  Luna (Apolo 11 → `fase0_orbita`) o Marte (`marte_fase0`, en desarrollo); al confirmar, zoom al planeta.
 
 ## Estructura
 ```
