@@ -33,6 +33,7 @@ var data: Dictionary = {}
 var world: Node2D
 var ui_layer: Control
 var dialog: TransmissionDialog
+var mission_hud: MissionHUD
 
 var _year: Label
 var _objective: Label
@@ -91,14 +92,19 @@ func _run_chapter() -> void:
 	var start := GameManager.consume_start_phase()  # 0 = normal; 1-6 = escena; 7 = cierre
 	var scenes: Array = data["scenes"]
 	if start == 0:
+		# Ficha de la misión a pantalla completa y luego minimizada.
+		await mission_hud.show_briefing()
 		await _disclaimer()
+	else:
+		mission_hud.minimize_now()
 	var first := maxi(start - 1, 0)
 	if start < 7:
 		for i in range(first, scenes.size()):
 			var sc: Dictionary = scenes[i]
 			if not bool(sc.get("enabled", true)):
 				continue
-			await _run_scene(sc)
+			await _run_scene(sc, i)
+	mission_hud.mark_all_done()
 	await _closing()
 	chapter_finished.emit()
 	if auto_return:
@@ -106,7 +112,7 @@ func _run_chapter() -> void:
 		GameManager.go_to_planet_select()
 
 
-func _run_scene(sc: Dictionary) -> void:
+func _run_scene(sc: Dictionary, index: int) -> void:
 	_clear()
 	_year.text = "%s %s" % [data["hud"]["year"], sc["year"]]
 	_objective.text = "%s: %s" % [data["hud"]["objective"], sc["objective"]]
@@ -114,6 +120,8 @@ func _run_scene(sc: Dictionary) -> void:
 	_signal_target = float(sc.get("signal", 90))
 	_signal = _signal_target
 	await _banner(String(sc["title"]))
+	# Teclas de la escena y pauta del científico (MissionHUD).
+	mission_hud.set_phase(index, String(sc["title"]), String(sc["objective"]))
 	match String(sc["id"]):
 		"llegada_spirit": await _scene_arrival(sc)
 		"blueberries": await _scene_blueberries(sc)
@@ -165,8 +173,8 @@ func _build() -> void:
 	_objective = _label(Vector2(200, 5), Vector2(432, 16), 10, RetroTheme.PHOSPHOR)
 	_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	# Título e instrucción de la minimisión (dentro del área de juego).
-	_mm_title = _label(Vector2(8, GAME_TOP + 4), Vector2(400, 14), 11, RetroTheme.AMBER)
-	_mm_info = _label(Vector2(8, GAME_TOP + 18), Vector2(500, 14), 10, RetroTheme.WHITE)
+	_mm_title = _label(Vector2(8, GAME_TOP + 22), Vector2(400, 14), 11, RetroTheme.AMBER)
+	_mm_info = _label(Vector2(8, GAME_TOP + 36), Vector2(560, 14), 10, RetroTheme.WHITE)
 	_mm_title.add_theme_color_override("font_outline_color", Color(0.05, 0.02, 0.02))
 	_mm_title.add_theme_constant_override("outline_size", 4)
 	_mm_info.add_theme_color_override("font_outline_color", Color(0.05, 0.02, 0.02))
@@ -215,6 +223,20 @@ func _build() -> void:
 		var dbg := _label(Vector2(0, GAME_BOTTOM - 14), Vector2(W - 8, 12), 9, Color(1, 0.4, 0.4, 0.8))
 		dbg.text = data["hud"]["debug"]
 		dbg.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+
+	# HUD común: ficha de misión, botones C/O/I, teclas y recordatorios del científico.
+	mission_hud = MissionHUD.new()
+	add_child(mission_hud)
+	mission_hud.badge_pos = Vector2(8, GAME_TOP + 3)
+	mission_hud.buttons_pos = Vector2(W - 6, GAME_TOP + 3)
+	mission_hud.reminder_pos = Vector2(8, GAME_TOP + 54)
+	mission_hud.keys_pos = Vector2(8, GAME_BOTTOM - 17)
+	mission_hud.busy_check = func() -> bool: return dialog.is_active() or _toast.visible
+	var titles: Array = []
+	for sc in data["scenes"]:
+		titles.append(String(sc["title"]))
+	mission_hud.setup(data.get("mission_hud", {}), titles)
+	mission_hud.apply_layout()
 
 	_build_pause()
 	var crt := ColorRect.new()
@@ -840,6 +862,7 @@ func _matching(mm: Dictionary) -> void:
 			await toast(String(mm["match_ok"]), RetroTheme.PHOSPHOR, 0.7)
 		else:
 			await toast(String(mm["match_bad"]), Color("#ff9a7a"), 0.8)
+			mission_hud.remind()
 	_mode = ""
 	await wait(0.5)
 	panel.queue_free()
@@ -893,7 +916,7 @@ func _scene_storm(sc: Dictionary) -> void:
 		for k in int(_dust * 160):
 			c.draw_rect(Rect2(fmod(k * 53.0 + c.t * 90.0, W), GAME_TOP + fmod(k * 29.0, 244.0), 3, 1), Color(0.8, 0.55, 0.35, _dust * 0.8))
 		MissionBase.draw_bar(c, Rect2(440, GAME_TOP + 44, 180, 8), _dust, Color("#d08a4a"), String(mm["dust_label"]))
-		c.draw_string(ThemeDB.fallback_font, Vector2(8, GAME_BOTTOM - 6), String(mm["note"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.75))
+		c.draw_string(ThemeDB.fallback_font, Vector2(8, GAME_TOP + 134), String(mm["note"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.75))
 	)
 	_shots_taken.clear()
 	for i in shots:
@@ -914,6 +937,7 @@ func _scene_storm(sc: Dictionary) -> void:
 		if _shots_taken.count(false) == 0:
 			break
 		await toast(String(mm["fail"]), Color("#ff9a7a"), 1.6)
+		mission_hud.remind()
 	_shot_target = -1
 	_mm_info.text = "%s: %d / %d" % [mm["shots_label"], shots, shots]
 	await say(sc["outro"])

@@ -1,36 +1,226 @@
 {
-	"_nota": "Misión 2 – HUELLAS EN EL POLVO (Surveyor 3). Guion aprobado: textos literales. 'verificar' = dato a confirmar con science.nasa.gov/mission/surveyor-3.",
+	"_nota": "Misión 2 – HUELLAS EN EL POLVO (Surveyor 3). Adaptado a tercera persona desde el guion aprobado. Las máquinas no hablan en primera persona: el narrador (Control de Misión) explica todo en tercera persona. 'verificar' = dato a confirmar; 'propuesta' = añadido que no estaba en el guion aprobado.",
 	"f0_intro": [
-		{"speaker": "ETAPA CENTAUR", "portrait": "centaur", "verificar": "longitud de la etapa Centaur (12.6 m)", "text": "Hola, piloto. Soy la etapa Centaur, el primer cohete de hidrógeno líquido del mundo. Mido 12.6 metros y mi trabajo es empujar a la sonda Surveyor 3 fuera de la órbita terrestre. Antes de soltarte en la oscuridad espacial hacia el Oceanus Procellarum, necesito que verifiques mis válvulas y alinees los propulsores. ¿Listo? ¡Encendemos motores para cruzar el vacío!"}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Operador, esta es la etapa Centaur, el primer cohete de hidrógeno líquido del mundo. Mide 12.6 metros y su trabajo es empujar a la sonda Surveyor 3 fuera de la órbita terrestre.",
+			"verificar": "longitud de la etapa Centaur (12.6 m)"
+		},
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Antes de soltar la sonda en la oscuridad espacial hacia el Oceanus Procellarum, hay que verificar sus válvulas y alinear los propulsores. ¿Listo? Encendemos motores para cruzar el vacío."
+		}
 	],
 	"f0_ok": [
-		{"speaker": "ETAPA CENTAUR", "portrait": "centaur", "propuesta": true, "text": "Segundo encendido completado. Rumbo a la Luna. Aquí me separo de ti, Surveyor. Buen viaje."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Segundo encendido completado. La Centaur suelta a la Surveyor 3 rumbo a la Luna.",
+			"propuesta": true
+		}
 	],
 	"f1_frenado": [
-		{"speaker": "SURVEYOR 3", "portrait": "surveyor", "text": "¡Iniciando secuencia de descenso! Pero... algo va mal. Las rocas de la superficie están reflejando el radar de forma extraña. ¡El motor no se apagará a tiempo!"}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Comienza el descenso, pero algo va mal: las rocas de la superficie están reflejando el radar de forma extraña. ¡El motor no se apagará a tiempo!"
+		}
 	],
 	"f1_rebote": [
-		{"speaker": "SURVEYOR 3", "portrait": "surveyor", "text": "¡Impacto prematuro! ¡Estamos rebotando! ¡10 metros de altura... volvemos a caer... 3 metros de altura! ¡Pulsa los destellos de emergencia en orden para estabilizar las patas antes del golpe definitivo!"}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "¡Impacto prematuro! La sonda rebota: 10 metros de altura... vuelve a caer... 3 metros. Pulsa los destellos de emergencia en orden para estabilizar sus patas antes del golpe definitivo."
+		}
 	],
 	"f1_fallo": [
-		{"speaker": "SURVEYOR 3", "portrait": "surveyor", "propuesta": true, "text": "¡Ese no era el orden! Vuelve a mirar los destellos... ¡rápido!"}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Ese no era el orden. Vuelve a mirar los destellos... ¡rápido!",
+			"propuesta": true
+		}
 	],
 	"f2_touchdown": [
-		{"speaker": "SURVEYOR 3", "portrait": "surveyor", "text": "¡Apagado de motores! Hemos tocado suelo en el Oceanus Procellarum, aunque con un par de sustos y rebotes de más. Mis tres patas están firmes. Ahora... ¿resistirá el suelo el peso de una nave tripulada en el futuro?"}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "¡Motores apagados! La Surveyor 3 tocó el suelo del Oceanus Procellarum, aunque con un par de sustos y rebotes de más. Sus tres patas están firmes. Ahora la gran pregunta: ¿resistirá el suelo el peso de una nave tripulada en el futuro?"
+		}
 	],
 	"f2_fallo": [
-		{"speaker": "SURVEYOR 3", "portrait": "surveyor", "propuesta": true, "text": "¡Demasiado fuerte! Mis amortiguadores no aguantarían eso. Intentémoslo otra vez, más suave."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Demasiado fuerte: sus amortiguadores no aguantarían eso. Inténtalo otra vez, más suave.",
+			"propuesta": true
+		}
 	],
 	"f3_brazo": [
-		{"speaker": "BRAZO MECÁNICO", "portrait": "brazo", "verificar": "98 kPa no equivale a 0.7 kg/cm² (0.7 kg/cm² son unos 69 kPa): confirmar la cifra correcta", "text": "Soy el primer brazo excavador enviado a otro mundo. Al clavar mi cucharón en el regolito, descubro algo fascinante: el polvo lunar no es una trampa mortal movediza. Tiene una consistencia similar a la arena húmeda y soporta una presión de 98 kilopascales (0.7 kg/cm²). ¡La superficie es totalmente firme y segura para las futuras misiones Apolo!"}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Es el primer brazo excavador enviado a otro mundo. Al clavar su cucharón en el regolito revela algo fascinante: el polvo lunar no es una trampa movediza. Tiene una consistencia parecida a la arena húmeda y soporta una presión de 98 kilopascales (0.7 kg/cm²). ¡La superficie es firme y segura para las futuras misiones Apolo!",
+			"verificar": "98 kPa no equivale a 0.7 kg/cm² (0.7 kg/cm² son unos 69 kPa): confirmar la cifra correcta"
+		}
 	],
 	"f4_noche": [
-		{"speaker": "SURVEYOR 3", "portrait": "surveyor", "text": "El frío de la noche lunar se acerca y mis baterías se quedan sin sol. He cumplido mi misión: envié más de 6,300 fotos y datos clave a la Tierra. Ahora me quedo en silencio bajo las estrellas... esperando que alguien venga a buscarme."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Llega el frío de la noche lunar y las baterías de la sonda se quedan sin sol. Cumplió su misión: envió más de 6,300 fotos y datos clave a la Tierra. Ahora queda en silencio bajo las estrellas... esperando que alguien venga a buscarla."
+		}
 	],
 	"f5_bean": [
-		{"speaker": "ALAN BEAN · APOLO 12", "portrait": "bean", "verificar": "fecha: el Apolo 12 alunizó el 19 nov 1969; la caminata hasta la Surveyor fue el 20 nov. Distancia aprox. 180 m", "text": "¡Pete, mira eso! Ahí está la Surveyor 3, blanquecina bajo el polvo lunar. Aterrizamos justo a su lado."}
+		{
+			"speaker": "ALAN BEAN · APOLO 12",
+			"portrait": "bean",
+			"verificar": "fecha: el Apolo 12 alunizó el 19 nov 1969; la caminata hasta la Surveyor fue el 20 nov. Distancia aprox. 180 m",
+			"text": "¡Pete, mira eso! Ahí está la Surveyor 3, blanquecina bajo el polvo lunar. Aterrizamos justo a su lado."
+		}
 	],
 	"f5_surveyor": [
-		{"speaker": "SURVEYOR 3", "portrait": "surveyor", "verificar": "los astronautas se llevaron la cámara de TV, la pala del brazo y piezas de la sonda", "text": "Han pasado más de dos años y medio desde que me quedé sola. De repente, dos figuras humanas bajan por la colina del cráter. Son Charles Conrad y Alan Bean. Se acercan, me saludan y desmontan mi cámara de televisión y mi brazo excavador para llevarlos de regreso a la Tierra. Gracias a ti, piloto, mi sacrificio demostró que la humanidad podía pisar la Luna... y hoy volvemos a casa."}
-	]
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Han pasado más de dos años y medio desde que la Surveyor 3 quedó sola. Dos figuras humanas bajan por la colina del cráter: Charles Conrad y Alan Bean. Se acercan y desmontan su cámara de televisión y su brazo excavador para llevarlos de regreso a la Tierra.",
+			"verificar": "los astronautas se llevaron la cámara de TV, la pala del brazo y piezas de la sonda"
+		},
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Su trabajo demostró que la humanidad podía pisar la Luna. Y hoy, una parte de ella vuelve a casa."
+		}
+	],
+	"hud": {
+		"briefing": {
+			"header": "MISIÓN 2 · LUNA",
+			"badge": "M2 · SURVEYOR 3 · 1967",
+			"title": "HUELLAS EN EL POLVO",
+			"year": "SURVEYOR 3 · ABRIL DE 1967",
+			"place": "Oceanus Procellarum, la Luna",
+			"equipment": "Sonda robótica Surveyor 3 con cámara de TV y brazo excavador",
+			"narrators": "Control de Misión y Alan Bean (Apolo 12)",
+			"objective": "Llevar la Surveyor 3 hasta la Luna, comprobar que el suelo es firme y esperar el reencuentro con el Apolo 12.",
+			"scientist": "CIENTÍFICO · CONTROL DE MISIÓN"
+		},
+		"general_controls": [
+			[
+				"ENTER / CLIC",
+				"avanzar los mensajes de radio"
+			],
+			[
+				"ESC",
+				"pausa (continuar, reiniciar fase o volver)"
+			],
+			[
+				"C · O · I",
+				"controles, objetivos e información de la misión"
+			]
+		],
+		"phases": [
+			{
+				"tip": "Alinea la Centaur a 0° antes de encender. Cada encendido debe durar 1.5 s con menos de 5° de inclinación.",
+				"keys": [
+					[
+						"A",
+						"rotate_left",
+						"GIRAR"
+					],
+					[
+						"D",
+						"rotate_right",
+						"GIRAR"
+					],
+					[
+						"W / ESP",
+						"thrust",
+						"ENCENDER"
+					]
+				]
+			},
+			{
+				"tip": "Mira primero la secuencia completa de destellos. Después repítela en el mismo orden.",
+				"keys": [
+					[
+						"1-4",
+						"",
+						"LUCES"
+					],
+					[
+						"CLIC",
+						"",
+						"SOBRE LA LUZ"
+					]
+				]
+			},
+			{
+				"tip": "Baja despacio con los motores: al tocar el suelo, menos de 2.5 m/s y menos de 8° de inclinación.",
+				"keys": [
+					[
+						"W / ESP",
+						"thrust",
+						"MOTORES"
+					],
+					[
+						"A",
+						"rotate_left",
+						"GIRAR"
+					],
+					[
+						"D",
+						"rotate_right",
+						"GIRAR"
+					]
+				]
+			},
+			{
+				"tip": "El brazo trabaja en orden: extender, cavar la zanja y medir la resistencia del suelo.",
+				"keys": [
+					[
+						"1-3",
+						"",
+						"ACTIVAR PUNTO"
+					],
+					[
+						"CLIC",
+						"",
+						"SOBRE EL PUNTO"
+					]
+				]
+			},
+			{
+				"tip": "Esta fase es para observar: la sonda se queda sin luz al llegar la noche lunar.",
+				"keys": [
+					[
+						"ENTER",
+						"ui_accept",
+						"AVANZAR"
+					]
+				]
+			},
+			{
+				"tip": "Camina hacia la derecha hasta el cráter donde espera la Surveyor 3. Después desmonta su cámara.",
+				"keys": [
+					[
+						"A",
+						"rotate_left",
+						"IZQUIERDA"
+					],
+					[
+						"D",
+						"rotate_right",
+						"DERECHA"
+					],
+					[
+						"1 / CLIC",
+						"",
+						"DESMONTAR"
+					]
+				]
+			}
+		]
+	}
 }

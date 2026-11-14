@@ -25,6 +25,13 @@ Las misiones 1-3 siguen las mismas 6 fases (0 tutorial → 5 legado) sobre `scri
 La misión 4 (Marte) es un capítulo independiente: `scripts/missions/chapter_spirit_opportunity.gd`.
 ESC abre la pausa (continuar, reiniciar fase, volver al selector).
 
+## HUD común de las misiones (`scripts/components/mission_hud.gd`)
+- **Ficha de misión**: al empezar cada misión se muestra a pantalla completa y luego se minimiza en una insignia (clic en ella = ver la ficha).
+- **Tres botones de información**: `[C] CONTROLES`, `[O] OBJETIVOS`, `[I] MISIÓN` (también con las teclas C, O, I). Pausan el juego.
+- **Indicadores de controles**: las teclas de la fase actual, abajo a la izquierda; se iluminan al pulsarlas.
+- **Recordatorios del científico**: al empezar cada fase, tras un fallo o si el jugador pasa ~18 s sin actuar.
+- Los textos están en el bloque `"hud"` de cada `data/dialogos/mision_X.json` (y `"mission_hud"` en `spirit_opportunity.json`).
+
 ## Estructura
 ```
 data/                 sites.json · archive.json · dialogos/intro.json, mision_1..3.json, spirit_opportunity.json

@@ -29,7 +29,7 @@ var hud: Control
 var radio: RadioDialog
 var _phase_label: Label
 var _objective_label: Label
-var _controls_label: Label
+var mission_hud: MissionHUD
 var _telemetry_panel: PanelContainer
 var _telemetry_label: Label
 var _banner: Control
@@ -55,6 +55,11 @@ func _ready() -> void:
 # =========================================================================
 func run_mission() -> void:
 	var start := GameManager.consume_start_phase()
+	# Ficha de la misión a pantalla completa y luego minimizada (solo al empezar desde cero).
+	if start == 0:
+		await mission_hud.show_briefing()
+	else:
+		mission_hud.minimize_now()
 	for i in range(start, 6):
 		phase = i
 		await run_phase(i)
@@ -84,6 +89,13 @@ func begin_phase(index: int, objective: String, controls: String) -> void:
 	tw.tween_property(_banner, "modulate:a", 0.0, 0.4)
 	await tw.finished
 	_banner.hide()
+	# Teclas de la fase y pauta del científico (se muestra en cuanto no haya diálogo).
+	mission_hud.set_phase(index, phase_titles[index], objective, controls)
+
+
+## El científico de Control de Misión recuerda algo durante la fase.
+func remind(text: String = "") -> void:
+	mission_hud.remind(text)
 
 
 func say(key: String) -> void:
@@ -103,10 +115,14 @@ func wait_accept() -> void:
 
 func set_objective(text: String) -> void:
 	_objective_label.text = "OBJETIVO: " + text if text != "" else ""
+	if mission_hud:
+		mission_hud.set_objective(text)
 
 
-func set_controls(text: String) -> void:
-	_controls_label.text = text + "   ·   ESC PAUSA"
+## Compatibilidad: los controles ahora se muestran como teclas en el MissionHUD
+## (datos en el bloque "hud" del JSON). Este texto solo se usa si la fase no tiene teclas.
+func set_controls(_text: String) -> void:
+	pass
 
 
 func set_telemetry(text: String) -> void:
@@ -125,6 +141,9 @@ func toast(text: String, color: Color = RetroTheme.AMBER, seconds: float = 1.6) 
 	tw.tween_property(_toast, "modulate:a", 0.0, 0.3)
 	await tw.finished
 	_toast.hide()
+	# Tras un fallo (mensaje en rojo), el científico recuerda la pauta de la fase.
+	if color == Color("#ff5a4a"):
+		mission_hud.remind()
 
 
 # =========================================================================
@@ -255,6 +274,7 @@ func _restart_phase() -> void:
 
 func _complete() -> void:
 	clear_world()
+	mission_hud.mark_all_done()
 	GameManager.mark_completed(mission_id)
 	set_objective("")
 	set_telemetry("")
@@ -297,9 +317,6 @@ func _build_layers() -> void:
 	hud.add_child(bar)
 	_phase_label = _label(Vector2(8, 2), 12, RetroTheme.AMBER)
 	_objective_label = _label(Vector2(8, 18), 10, RetroTheme.PHOSPHOR)
-	_controls_label = _label(Vector2(0, 4), 10, Color("#80f2ff"))
-	_controls_label.size = Vector2(W - 8, 14)
-	_controls_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 	_telemetry_panel = PanelContainer.new()
 	_telemetry_panel.position = Vector2(W - 170, 40)
@@ -338,6 +355,17 @@ func _build_layers() -> void:
 
 	radio = RadioDialog.new()
 	add_child(radio)
+
+	# HUD común: ficha de misión, botones C/O/I, teclas de la fase y recordatorios del científico.
+	mission_hud = MissionHUD.new()
+	add_child(mission_hud)
+	mission_hud.badge_pos = Vector2(W - 8 - 180, 19)
+	mission_hud.buttons_pos = Vector2(W - 6, 3)
+	mission_hud.reminder_pos = Vector2(8, 40)
+	mission_hud.keys_pos = Vector2(8, H - 18)
+	mission_hud.busy_check = func() -> bool: return radio.is_active() or _banner.visible
+	mission_hud.setup(dialogs.get("hud", {}), phase_titles.duplicate())
+	mission_hud.apply_layout()
 
 	_build_pause_panel()
 

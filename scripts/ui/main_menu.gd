@@ -294,11 +294,11 @@ func _show_archive_entry(entry: Dictionary) -> void:
 	var s := "[color=#%s]%s[/color]\n[color=#%s]%s[/color]\n\n" % [amber, entry["name"], dim, entry["id"]]
 	for fact in entry["facts"]:
 		s += "[color=#%s]»[/color] %s: [color=#%s]%s[/color]\n" % [dim, fact[0], white, fact[1]]
-	# La transmisión de la máquina se desbloquea al completar su misión.
+	# La historia del equipo se desbloquea al completar su misión.
 	if GameManager.is_completed(String(entry.get("mission", ""))):
-		s += "\n[color=#%s]>> TRANSMISIÓN DE LA MÁQUINA:[/color]\n\"%s\"" % [amber, entry["voice"]]
+		s += "\n[color=#%s]>> SU HISTORIA:[/color]\n%s" % [amber, entry["voice"]]
 	else:
-		s += "\n[color=#%s]>> TRANSMISIÓN BLOQUEADA[/color]\n[color=#%s]Completa su misión para escuchar a esta máquina.[/color]" % [amber, dim]
+		s += "\n[color=#%s]>> HISTORIA BLOQUEADA[/color]\n[color=#%s]Completa su misión para desbloquearla.[/color]" % [amber, dim]
 
 	archive_body.text = s
 	archive_body.scroll_to_line(0)
@@ -316,14 +316,14 @@ func _start_voice_loop() -> void:
 	timer.autostart = true
 	timer.timeout.connect(_next_voice_line)
 	add_child(timer)
-	_next_voice_line()  # La primera frase es la bienvenida del Eagle.
+	_next_voice_line()  # Datos breves de los equipos, en tercera persona.
 
 
 func _next_voice_line() -> void:
 	var voices: Array = GameManager.get_archive()["voices"]
 	var line: Dictionary = voices[_voice_index % voices.size()]
 	_voice_index += 1
-	voice_speaker.text = "[ %s ] >>" % line["speaker"]
+	voice_speaker.text = "ARCHIVO · %s" % line["speaker"]
 	voice_text.text = line["text"]
 	voice_text.visible_characters = 0
 	if _voice_tween and _voice_tween.is_valid():

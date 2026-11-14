@@ -260,7 +260,7 @@ func _input(event: InputEvent) -> void:
 	if not _active or get_tree().paused:
 		return
 	var pressed: bool = event.is_action_pressed("ui_accept") \
-		or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
+		or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not MissionHUD.hover_ui)
 	if not pressed:
 		return
 	get_viewport().set_input_as_handled()

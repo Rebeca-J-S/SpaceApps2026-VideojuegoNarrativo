@@ -1,63 +1,268 @@
 {
-	"_nota": "Misión 3 – LA ÚLTIMA SEÑAL (Pioneer 10 y 11). Propuesta de guion: ajustable. 'verificar' = confirmar con science.nasa.gov/mission/pioneer-10.",
+	"_nota": "Misión 3 – LA ÚLTIMA SEÑAL (Pioneer 10 y 11). Propuesta de guion en tercera persona. Las máquinas no hablan en primera persona: el narrador (Control de Misión) explica todo en tercera persona. 'verificar' = dato a confirmar; 'propuesta' = añadido que no estaba en el guion aprobado.",
 	"f0_intro": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "verificar": "fecha de lanzamiento (2 mar 1972 hora local / 3 mar UT) y récord de velocidad", "text": "Hola, piloto. Soy Pioneer 10. Despegué en marzo de 1972 a bordo de un cohete Atlas-Centaur, más rápido que cualquier nave antes que yo. No tengo paneles solares: el Sol estará demasiado lejos a donde voy, así que mi energía viene de pequeños generadores nucleares (RTG). Mi antena es mi único hilo con la Tierra. Mantenla apuntando a casa."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Operador, esta es Pioneer 10. Despegó en marzo de 1972 a bordo de un cohete Atlas-Centaur, más rápido que cualquier nave antes que ella. No tiene paneles solares: el Sol estará demasiado lejos a donde va, así que su energía viene de pequeños generadores nucleares (RTG).",
+			"verificar": "fecha de lanzamiento (2 mar 1972 hora local / 3 mar UT) y récord de velocidad"
+		},
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Su antena es su único hilo con la Tierra. Mantenla apuntando a casa."
+		}
 	],
 	"f0_ok": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Señal fuerte. Te oigo, Tierra. Rumbo al cinturón de asteroides."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Señal fuerte: el enlace con la Tierra es estable. Rumbo al cinturón de asteroides."
+		}
 	],
 	"f1_inicio": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Nadie había cruzado este cinturón. Algunos pensaban que me haría pedazos. Si salimos de aquí, demostraremos que el camino a los planetas gigantes está abierto."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Nadie había cruzado este cinturón. Algunos pensaban que la sonda se haría pedazos. Si sale de aquí, quedará demostrado que el camino a los planetas gigantes está abierto."
+		}
 	],
 	"f1_ok": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "¡Lo cruzamos! Resultó menos peligroso de lo que temían. El camino a Júpiter está abierto."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "¡Lo cruzó! Resultó menos peligroso de lo que se temía. El camino a Júpiter está abierto."
+		}
 	],
 	"f1_fallo": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Demasiados impactos... Volvamos a intentarlo. Sube y baja con calma."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Demasiados impactos. Volvamos a intentarlo: sube y baja con calma."
+		}
 	],
 	"f2_inicio": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "verificar": "fecha del sobrevuelo: 3-4 de diciembre de 1973", "text": "Diciembre de 1973. Júpiter está ahí delante. Cuando entre en la ventana verde, suelta el control: su gravedad me lanzará como una honda."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Diciembre de 1973. Júpiter está ahí delante. Cuando la sonda entre en la ventana verde, suelta el control: la gravedad del planeta la lanzará como una honda.",
+			"verificar": "fecha del sobrevuelo: 3-4 de diciembre de 1973"
+		}
 	],
 	"f2_radiacion": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "La radiación de Júpiter está friendo mis circuitos... ¡Aguanta! Soy la primera nave en ver a este gigante de cerca."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "La radiación de Júpiter está dañando los circuitos de la sonda... ¡Aguanta! Pioneer 10 es la primera nave en ver a este gigante de cerca."
+		}
 	],
 	"f2_fallo": [
-		{"speaker": "HOUSTON", "portrait": "houston", "text": "Ángulo incorrecto. Repetimos la aproximación al sobrevuelo."}
+		{
+			"speaker": "HOUSTON",
+			"portrait": "houston",
+			"text": "Ángulo incorrecto. Repetimos la aproximación al sobrevuelo."
+		}
 	],
 	"f3_cinturones": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Júpiter está rodeado de cinturones de radiación miles de veces más intensos que los de la Tierra. Mis instrumentos los midieron por primera vez."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Júpiter está rodeado de cinturones de radiación miles de veces más intensos que los de la Tierra. Los instrumentos de Pioneer 10 los midieron por primera vez."
+		}
 	],
 	"f3_magnetico": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Su campo magnético es gigantesco: si pudieras verlo desde la Tierra, sería más grande que la Luna llena en el cielo."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Su campo magnético es gigantesco: si pudieras verlo desde la Tierra, sería más grande que la Luna llena en el cielo."
+		}
 	],
 	"f3_mancha": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Y esa es la Gran Mancha Roja: una tormenta más grande que la Tierra entera. Envié las primeras fotos cercanas de ella."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Y esa es la Gran Mancha Roja: una tormenta más grande que la Tierra entera. Pioneer 10 envió las primeras fotos cercanas de ella."
+		}
 	],
 	"f3_pioneer11": [
-		{"speaker": "PIONEER 11", "portrait": "pioneer11", "text": "Ahora me toca a mí, Pioneer 11. Usé la gravedad de Júpiter como impulso y en septiembre de 1979 llegué a Saturno. Escanea sus anillos."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Ahora sigue su hermana, Pioneer 11. Usó la gravedad de Júpiter como impulso y en septiembre de 1979 llegó a Saturno. Escanea sus anillos."
+		}
 	],
 	"f3_anillo": [
-		{"speaker": "PIONEER 11", "portrait": "pioneer11", "verificar": "descubrimiento del anillo F atribuido a Pioneer 11", "text": "¡Mira ese anillo fino y exterior! Lo descubrí yo: hoy se llama anillo F. Fui la primera nave en visitar Saturno."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "¡Mira ese anillo fino y exterior! Lo descubrió Pioneer 11: hoy se llama anillo F. Fue la primera nave en visitar Saturno.",
+			"verificar": "descubrimiento del anillo F atribuido a Pioneer 11"
+		}
 	],
 	"f4_p11": [
-		{"speaker": "PIONEER 11", "portrait": "pioneer11", "verificar": "último contacto: 30 sep 1995", "text": "Mis generadores se están apagando. En 1995 la Tierra dejó de escucharme. Me despido primero, hermana. Sigue tú."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Sus generadores se están apagando. En 1995 la Tierra dejó de escuchar a Pioneer 11.",
+			"verificar": "último contacto: 30 sep 1995"
+		}
 	],
 	"f4_p10": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "verificar": "última señal: enero de 2003, unos 12 mil millones de km", "text": "Enero de 2003. Estoy a unos 12 mil millones de kilómetros. Mi voz ya casi no llega... pero sigo avanzando."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Enero de 2003. Pioneer 10 está a unos 12 mil millones de kilómetros. Su señal ya casi no llega... pero sigue avanzando.",
+			"verificar": "última señal: enero de 2003, unos 12 mil millones de km"
+		}
 	],
 	"f5_hidrogeno": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Estos dos círculos son un átomo de hidrógeno, el elemento más común del universo. Es la regla con la que se miden los tamaños y tiempos de la placa."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Estos dos círculos son un átomo de hidrógeno, el elemento más común del universo. Es la regla con la que se miden los tamaños y tiempos de la placa."
+		}
 	],
 	"f5_pulsares": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Estas líneas son un mapa de púlsares: estrellas que parpadean como faros. Con ellas, quien me encuentre puede ubicar nuestro Sol."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Estas líneas son un mapa de púlsares: estrellas que parpadean como faros. Con ellas, quien encuentre la sonda puede ubicar nuestro Sol."
+		}
 	],
 	"f5_sistema": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Abajo está el sistema solar. Una flecha sale del tercer planeta, la Tierra, y pasa junto a Júpiter: es mi viaje."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Abajo está el sistema solar. Una flecha sale del tercer planeta, la Tierra, y pasa junto a Júpiter: es el viaje de la sonda."
+		}
 	],
 	"f5_humanos": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "text": "Y estas son dos personas, dibujadas delante de mi silueta para mostrar su tamaño. Así somos los que me enviaron."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Y estas son dos personas, dibujadas delante de la silueta de la sonda para mostrar su tamaño. Así son quienes la enviaron."
+		}
 	],
 	"f5_cierre": [
-		{"speaker": "PIONEER 10", "portrait": "pioneer10", "verificar": "Pioneer 10 pasará cerca de Aldebarán en unos 2 millones de años", "text": "Ya nadie escucha mi voz. Pero llevo un saludo de toda la humanidad grabado en el pecho. Pioneer 10 viaja hacia la estrella Aldebarán... llegará dentro de unos dos millones de años. Nos fuimos de casa... pero llevamos la casa con nosotras."}
-	]
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Ya nadie escucha su señal, pero lleva grabado un saludo de toda la humanidad. Pioneer 10 viaja hacia la estrella Aldebarán y llegará a sus cercanías dentro de unos dos millones de años. Se fueron de casa... pero se llevaron la casa con ellas.",
+			"verificar": "Pioneer 10 pasará cerca de Aldebarán en unos 2 millones de años"
+		}
+	],
+	"hud": {
+		"briefing": {
+			"header": "MISIÓN 3 · ESPACIO PROFUNDO",
+			"badge": "M3 · PIONEER 10 Y 11",
+			"title": "LA ÚLTIMA SEÑAL",
+			"year": "PIONEER 10 Y 11 · 1972-2003",
+			"place": "Del cinturón de asteroides a los confines del sistema solar",
+			"equipment": "Sondas Pioneer 10 y Pioneer 11 con su placa de oro",
+			"narrators": "Control de Misión y Houston",
+			"objective": "Mantener el enlace con las Pioneer mientras cruzan el sistema solar, y descubrir el mensaje que llevan.",
+			"scientist": "CIENTÍFICO · CONTROL DE MISIÓN"
+		},
+		"general_controls": [
+			[
+				"ENTER / CLIC",
+				"avanzar los mensajes de radio"
+			],
+			[
+				"ESC",
+				"pausa (continuar, reiniciar fase o volver)"
+			],
+			[
+				"C · O · I",
+				"controles, objetivos e información de la misión"
+			]
+		],
+		"phases": [
+			{
+				"tip": "La línea verde aparece cuando la antena apunta a la Tierra. Mantenla así 3 segundos.",
+				"keys": [
+					[
+						"A",
+						"rotate_left",
+						"GIRAR"
+					],
+					[
+						"D",
+						"rotate_right",
+						"GIRAR"
+					]
+				]
+			},
+			{
+				"tip": "Sube y baja para esquivar los asteroides. Puedes recibir hasta 2 impactos.",
+				"keys": [
+					[
+						"W",
+						"thrust",
+						"SUBIR"
+					],
+					[
+						"S",
+						"move_down",
+						"BAJAR"
+					]
+				]
+			},
+			{
+				"tip": "Espera a que la sonda entre en el tramo verde de la trayectoria y pulsa ESPACIO.",
+				"keys": [
+					[
+						"ESP",
+						"thrust",
+						"SOLTAR EL CONTROL"
+					]
+				]
+			},
+			{
+				"tip": "Escanea los tres puntos de Júpiter. Después Pioneer 11 te llevará a Saturno.",
+				"keys": [
+					[
+						"1-3",
+						"",
+						"ACTIVAR PUNTO"
+					],
+					[
+						"CLIC",
+						"",
+						"SOBRE EL PUNTO"
+					]
+				]
+			},
+			{
+				"tip": "Aunque apuntes perfecto, la señal se apagará: así terminó la misión real.",
+				"keys": [
+					[
+						"A",
+						"rotate_left",
+						"GIRAR"
+					],
+					[
+						"D",
+						"rotate_right",
+						"GIRAR"
+					]
+				]
+			},
+			{
+				"tip": "Toca cada parte de la placa de oro para descubrir su mensaje.",
+				"keys": [
+					[
+						"1-4",
+						"",
+						"ACTIVAR PUNTO"
+					],
+					[
+						"CLIC",
+						"",
+						"SOBRE EL PUNTO"
+					]
+				]
+			}
+		]
+	}
 }
