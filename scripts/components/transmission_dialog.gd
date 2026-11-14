@@ -28,6 +28,12 @@ var _lines: Array = []
 var _index := -1
 var _active := false
 var _hint_token := 0
+## Avance automático: cuando el texto termina, pasa a la siguiente línea tras un tiempo de lectura
+## (ENTER / clic siguen sirviendo para adelantar). Valores ajustables por cada capítulo.
+var auto_advance := false
+var type_speed := TYPE_SPEED
+var transit_range := Vector2(1.0, 1.5)   # segundos de "SEÑAL EN TRÁNSITO"
+var _auto_left := 0.0
 var _phase := 0            # 0 inactivo, 1 en tránsito, 2 escribiendo, 3 esperando
 var _transit_left := 0.0
 var _reveal_t := 0.0
@@ -214,7 +220,7 @@ func _next() -> void:
 	_accept_after = _clock + INPUT_GRACE
 	if _radio:
 		_phase = 1
-		_transit_left = _rng.randf_range(1.0, 1.5)
+		_transit_left = _rng.randf_range(transit_range.x, transit_range.y)
 		_crackle.play()
 		_set_robot_speaking(true)
 	else:
@@ -238,7 +244,7 @@ func _process(delta: float) -> void:
 		2:
 			_reveal_t += delta
 			var before := int(_chars)
-			_chars = minf(_chars + delta * TYPE_SPEED, _full.length())
+			_chars = minf(_chars + delta * type_speed, _full.length())
 			var n := int(_chars)
 			if n > before and not _radio and n % 2 == 0 and _full[n - 1] != " ":
 				_blip.pitch_scale = _rng.randf_range(0.9, 1.15)
@@ -247,6 +253,11 @@ func _process(delta: float) -> void:
 			_text.visible_characters = n
 			if n >= _full.length() and _glitch_done():
 				_finish_line()
+		3:
+			if auto_advance:
+				_auto_left -= delta
+				if _auto_left <= 0.0:
+					_next()
 
 
 ## Texto con las primeras letras "con interferencia" que se resuelven poco a poco.
@@ -274,6 +285,7 @@ func _finish_line() -> void:
 	_text.visible_characters = -1
 	_transit.text = ""
 	_hint.visible = true
+	_auto_left = clampf(1.0 + _full.length() * 0.03, 1.5, 5.5)
 	_noise_mat.set_shader_parameter("intensity", 0.08 if _radio else 0.0)
 	_set_robot_speaking(false)
 

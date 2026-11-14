@@ -45,15 +45,7 @@
 			"intro": [
 				{
 					"speaker": "CIENTIFICO",
-					"text": "Control de Misión a Spirit. Bienvenido a Marte. Tu misión es buscar señales de agua en el pasado de este planeta."
-				},
-				{
-					"speaker": "CIENTIFICO",
-					"text": "Has aterrizado en el cráter Gusev, un posible antiguo lago. Tu misión está planeada para unos tres meses."
-				},
-				{
-					"speaker": "CIENTIFICO",
-					"text": "Tu gemelo, Opportunity, aterrizará en unas semanas, al otro lado del planeta."
+					"text": "Control de Misión a Spirit. Bienvenido a Marte, al cráter Gusev, un posible antiguo lago. Tu misión: buscar señales de agua del pasado. Está planeada para unos tres meses."
 				}
 			],
 			"minimission": {
@@ -98,7 +90,7 @@
 				},
 				{
 					"speaker": "CIENTIFICO",
-					"text": "Opportunity acaba de enviar una imagen: hay pequeñas esferas en el suelo. ¿Qué serán?"
+					"text": "Opportunity, el gemelo de Spirit, aterrizó semanas después al otro lado del planeta. Acaba de enviar una imagen: hay pequeñas esferas en el suelo. ¿Qué serán?"
 				}
 			],
 			"minimission": {
@@ -139,11 +131,7 @@
 				},
 				{
 					"speaker": "CIENTIFICO",
-					"text": "La rueda de Spirit removió el suelo y apareció algo muy claro."
-				},
-				{
-					"speaker": "CIENTIFICO",
-					"text": "Es sílice casi pura, un 90 %. En la Tierra se forma en aguas termales, donde viven microbios."
+					"text": "La rueda de Spirit removió el suelo y apareció algo muy claro: sílice casi pura, un 90 %. En la Tierra se forma en aguas termales, donde viven microbios."
 				}
 			]
 		},
@@ -186,15 +174,7 @@
 			"intro": [
 				{
 					"speaker": "CIENTIFICO",
-					"text": "Opportunity, tengo noticias difíciles. En 2009, Spirit quedó atrapado en la arena, en un sitio llamado Troy."
-				},
-				{
-					"speaker": "CIENTIFICO",
-					"text": "Siguió trabajando como estación fija, pero no pudo inclinar sus paneles hacia el sol en el invierno."
-				},
-				{
-					"speaker": "CIENTIFICO",
-					"text": "Su última señal llegó el 22 de marzo de 2010. Intentamos contactarlo hasta 2011."
+					"text": "Opportunity, noticias difíciles: en 2009 Spirit quedó atrapado en la arena, en Troy, y no pudo inclinar sus paneles al Sol en invierno. Su última señal llegó el 22 de marzo de 2010; intentamos contactarlo hasta 2011."
 				},
 				{
 					"speaker": "OPPORTUNITY",
@@ -278,10 +258,6 @@
 				"note": "Simplificación: el panorama real se tomó entre el 13 de mayo y el 10 de junio de 2018."
 			},
 			"outro": [
-				{
-					"speaker": "CIENTIFICO",
-					"text": "Opportunity completó el panorama y lo está transmitiendo..."
-				},
 				{
 					"speaker": "OPPORTUNITY",
 					"mode": "TX",

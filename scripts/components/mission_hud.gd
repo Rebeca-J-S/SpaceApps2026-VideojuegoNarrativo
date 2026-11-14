@@ -27,6 +27,8 @@ var keys_pos := Vector2(8, 340)
 var busy_check: Callable = func() -> bool: return false
 ## Si se asigna, los recordatorios llaman a esto (con el texto) en lugar de mostrar el recuadro propio.
 var reminder_callback: Callable = Callable()
+## Si es > 0, la ficha inicial se minimiza sola pasado ese tiempo (ENTER / clic siguen adelantándola).
+var briefing_auto_seconds := 0.0
 
 var _data: Dictionary = {}
 var _phase_titles: Array = []
@@ -131,8 +133,12 @@ func show_briefing() -> void:
 	_buttons.hide()
 	_build_card()
 	_card_wait = true
+	var waited := 0.0
 	while _card_wait:
 		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if briefing_auto_seconds > 0.0 and waited >= briefing_auto_seconds and not get_tree().paused:
+			_card_wait = false
 	# Animación: la ficha se encoge hasta convertirse en la insignia.
 	var target_scale := Vector2(_badge.size.x / _card.size.x, _badge.size.y / _card.size.y)
 	var tw := create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)

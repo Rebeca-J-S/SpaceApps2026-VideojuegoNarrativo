@@ -142,10 +142,15 @@ func wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds, false).timeout
 
 
-func wait_click_or_accept() -> void:
+func wait_click_or_accept(auto_seconds: float = 0.0) -> void:
 	_mode = "continue"
+	var left := auto_seconds
 	while _mode == "continue":
 		await get_tree().process_frame
+		if auto_seconds > 0.0:
+			left -= get_process_delta_time()
+			if left <= 0.0:
+				_mode = ""   # continúa solo; ENTER / clic solo adelantan
 
 
 # =========================================================================
@@ -201,6 +206,10 @@ func _build() -> void:
 	dialog.size = Vector2(458, 82)
 	dialog.speakers = data["speakers"]
 	dialog.transit_text = data["hud"]["in_transit"]
+	# Menos ENTER: los mensajes avanzan solos (ENTER / clic solo adelantan) y la radio responde más rápido.
+	dialog.auto_advance = true
+	dialog.type_speed = 55.0
+	dialog.transit_range = Vector2(0.35, 0.6)
 	add_child(dialog)
 
 	_hud_draw = Control.new()
@@ -233,6 +242,7 @@ func _build() -> void:
 	mission_hud.badge_pos = Vector2(8, GAME_TOP + 3)
 	mission_hud.buttons_pos = Vector2(W - 6, GAME_TOP + 3)
 	mission_hud.reminder_pos = Vector2(8, GAME_TOP + 54)
+	mission_hud.briefing_auto_seconds = 7.0   # la ficha se minimiza sola; ENTER / clic la adelantan
 	mission_hud.keys_pos = Vector2(8, GAME_BOTTOM - 17)
 	mission_hud.busy_check = func() -> bool: return dialog.is_active() or _toast.visible
 	# Las pistas del Científico salen en la caja de diálogo de abajo, no en un recuadro sobre el juego.
@@ -441,7 +451,7 @@ func _disclaimer() -> void:
 	h.text = data["continue_hint"]
 	h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	await wait(0.4)
-	await wait_click_or_accept()
+	await wait_click_or_accept(4.0)
 
 
 # =========================================================================
