@@ -28,7 +28,7 @@
 		"distance": "DISTANCIA RECORRIDA",
 		"signal": "SEÑAL",
 		"in_transit": "SEÑAL EN TRÁNSITO",
-		"debug": "DEBUG · F1-F7: SALTAR ESCENA",
+		"debug": "DEBUG · F1-F7: ESCENA · F8: CIERRE",
 		"pause_title": "PAUSA",
 		"pause_continue": "CONTINUAR",
 		"pause_exit": "VOLVER AL SELECTOR"
@@ -127,7 +127,7 @@
 			"intro": [],
 			"minimission": {
 				"title": "MINIMISIÓN: RUEDA EXCAVADORA",
-				"instruction": "Arrastra la rueda (clic sostenido o flechas) para remover el suelo",
+				"instruction": "Arrastra la rueda (clic sostenido, WASD o flechas) para remover el suelo",
 				"counter": "SUELO REMOVIDO",
 				"goal_ratio": 0.7
 			},
@@ -177,11 +177,11 @@
 		{
 			"id": "endeavour",
 			"title": "ESCENA 3B · OPPORTUNITY SIGUE",
-			"year": "2010",
+			"year": "2010-2011",
 			"objective": "LLEGAR AL CRÁTER ENDEAVOUR",
 			"rover": "OPPORTUNITY",
-			"distance_km": 20.0,
-			"verificar": "distancia aproximada de Opportunity en 2010 (valor de juego)",
+			"distance_km": 18.0,
+			"verificar": "distancias de Opportunity en 2010 (18 km) y al llegar a Endeavour en agosto de 2011 (unos 21 km): valores aproximados, confirmar con el registro de odometría de la NASA",
 			"signal": 88,
 			"intro": [
 				{
@@ -203,33 +203,51 @@
 				},
 				{
 					"speaker": "CIENTIFICO",
-					"text": "Tu próximo destino es el cráter Endeavour."
+					"text": "Tu próximo destino es el cráter Endeavour, de unos 22 km de diámetro. Sus rocas son más antiguas que todo lo que has visto hasta ahora."
 				}
 			],
 			"minimission": {
 				"title": "MINIMISIÓN: RUMBO A ENDEAVOUR",
 				"instruction": "Conduce con A/D o flechas y esquiva los cráteres",
-				"marathon_km": 42.195,
-				"verificar_maraton": "el guion original decía 42,198 km; la distancia oficial de una maratón es 42,195 km",
-				"marathon_year": "2015",
-				"end_km": 42.5,
+				"end_km": 21.0,
 				"crater_hit": "¡Cráter! Rodeándolo...",
-				"match_title": "DESCUBRIMIENTOS EN ENDEAVOUR: EMPAREJA CADA HALLAZGO",
+				"match_title": "DESCUBRIMIENTOS: EMPAREJA CADA HALLAZGO CON LO QUE REVELÓ",
 				"match_left": [
-					"Venas de yeso (como Homestake)",
-					"Arcillas (Pillinger Point)"
+					"Blueberries de hematita (Opportunity)",
+					"Sílice casi pura (Spirit)",
+					"Venas de yeso, como Homestake (Endeavour)",
+					"Arcillas, en Pillinger Point (Endeavour)"
 				],
 				"match_right": [
+					"Agua ácida que estuvo en la superficie",
+					"Ambiente de aguas termales o fumarolas",
 					"Agua que circuló por grietas subterráneas",
-					"Agua de pH neutro: el sitio más amigable para vida microbiana antigua de los que estudió"
+					"Agua de pH neutro, más amigable para la vida"
 				],
+				"match_pick": "Primero elige un hallazgo de la izquierda",
 				"match_ok": "¡Correcto!",
 				"match_bad": "No coincide, prueba otra vez"
 			},
-			"marathon": [
+			"outro": []
+		},
+		{
+			"id": "maraton",
+			"title": "ESCENA 3C · UNA MARATÓN EN MARTE",
+			"year": "2015",
+			"objective": "EXPLORAR EL BORDE DEL CRÁTER",
+			"rover": "OPPORTUNITY",
+			"distance_km": 42.195,
+			"verificar": "el guion original decía 42,198 km; la distancia oficial de una maratón es 42,195 km. Opportunity la superó en 2015 (confirmar fecha exacta)",
+			"signal": 85,
+			"intro": [
 				{
 					"speaker": "CIENTIFICO",
-					"text": "Superaste los 42,195 km. ¡Una maratón completa en Marte!"
+					"text": "Opportunity, llevas años recorriendo el borde de Endeavour. Acabas de pasar los 42,195 km: ¡una maratón completa en Marte!"
+				},
+				{
+					"speaker": "OPPORTUNITY",
+					"mode": "TX",
+					"text": "MARATÓN COMPLETADA. SIGO AVANZANDO."
 				}
 			],
 			"outro": []
@@ -256,6 +274,7 @@
 				"dust_label": "POLVO",
 				"shots_label": "TOMAS",
 				"fail": "La tormenta llegó antes. Volvamos a intentarlo.",
+				"assist": "Control de Misión te da más tiempo en cada intento.",
 				"note": "Simplificación: el panorama real se tomó entre el 13 de mayo y el 10 de junio de 2018."
 			},
 			"outro": [
@@ -281,9 +300,13 @@
 			[
 				"SPIRIT",
 				"7,73 km · más de 6 años · más de 124.000 imágenes"
+			],
+			[
+				"FIN DE MISIÓN",
+				"Declarada terminada el 13 de febrero de 2019"
 			]
 		],
-		"epilogue_enabled": true,
+		"epilogue_enabled": false,
 		"epilogue": "En 2026, Perseverance superó el récord de distancia de Opportunity.",
 		"verificar_epilogo": "confirmar la fecha en que Perseverance superó los 45,16 km de Opportunity",
 		"button": "ENTER / CLIC: VOLVER AL SELECTOR"
@@ -349,7 +372,7 @@
 						"ARRASTRAR"
 					],
 					[
-						"FLECHAS",
+						"WASD / FLECHAS",
 						"",
 						"MOVER LA RUEDA"
 					]
@@ -387,6 +410,16 @@
 						"CLIC",
 						"",
 						"EMPAREJAR"
+					]
+				]
+			},
+			{
+				"tip": "Lee el mensaje de radio y pulsa ENTER para avanzar.",
+				"keys": [
+					[
+						"ENTER / CLIC",
+						"ui_accept",
+						"AVANZAR"
 					]
 				]
 			},

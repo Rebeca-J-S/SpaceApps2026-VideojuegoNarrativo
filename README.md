@@ -19,7 +19,7 @@ el espacio profundo, contada en primera persona por las propias máquinas, que t
 | `scenes/missions/mision_apolo11.tscn` | Misión 1 · Guardianes de la Tranquilidad (guion aprobado). |
 | `scenes/missions/mision_surveyor3.tscn` | Misión 2 · Huellas en el polvo (guion aprobado). |
 | `scenes/missions/mision_pioneer.tscn` | Misión 3 · La última señal (propuesta). |
-| `scenes/missions/chapter_spirit_opportunity.tscn` | Misión 4 · Capítulo Spirit y Opportunity (vista top-down, HUD propio, transmisiones TX/RX). Textos en `data/dialogos/spirit_opportunity.json`. Emite `chapter_finished`. Debug: F1-F6 saltan a cada escena, F7 al cierre. |
+| `scenes/missions/chapter_spirit_opportunity.tscn` | Misión 4 · Capítulo Spirit y Opportunity (vista top-down, HUD propio, transmisiones TX/RX). Textos en `data/dialogos/spirit_opportunity.json`. Emite `chapter_finished`. Debug: F1-F7 saltan a cada escena, F8 al cierre. |
 
 Las misiones 1-3 siguen las mismas 6 fases (0 tutorial → 5 legado) sobre `scripts/missions/mission_base.gd`.
 La misión 4 (Marte) es un capítulo independiente: `scripts/missions/chapter_spirit_opportunity.gd`.

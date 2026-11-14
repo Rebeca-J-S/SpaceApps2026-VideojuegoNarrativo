@@ -47,6 +47,7 @@ var _pause_panel: PanelContainer
 var _fade: ColorRect
 
 var _distance := 0.0
+var _rover_name := ""
 var _signal := 90.0
 var _signal_target := 90.0
 var _fluct_t := 0.0
@@ -89,7 +90,7 @@ func _ready() -> void:
 # Flujo del capítulo
 # =========================================================================
 func _run_chapter() -> void:
-	var start := GameManager.consume_start_phase()  # 0 = normal; 1-6 = escena; 7 = cierre
+	var start := GameManager.consume_start_phase()  # 0 = normal; 1-7 = escena; 8 = cierre
 	var scenes: Array = data["scenes"]
 	if start == 0:
 		# Ficha de la misión a pantalla completa y luego minimizada.
@@ -98,7 +99,7 @@ func _run_chapter() -> void:
 	else:
 		mission_hud.minimize_now()
 	var first := maxi(start - 1, 0)
-	if start < 7:
+	if start < 8:
 		for i in range(first, scenes.size()):
 			var sc: Dictionary = scenes[i]
 			if not bool(sc.get("enabled", true)):
@@ -117,6 +118,7 @@ func _run_scene(sc: Dictionary, index: int) -> void:
 	_year.text = "%s %s" % [data["hud"]["year"], sc["year"]]
 	_objective.text = "%s: %s" % [data["hud"]["objective"], sc["objective"]]
 	_distance = float(sc.get("distance_km", 0.0))
+	_rover_name = String(data["speakers"][String(sc.get("rover", "SPIRIT"))]["name"])
 	_signal_target = float(sc.get("signal", 90))
 	_signal = _signal_target
 	await _banner(String(sc["title"]))
@@ -128,6 +130,7 @@ func _run_scene(sc: Dictionary, index: int) -> void:
 		"silice": await _scene_silica(sc)
 		"invierno_spirit": await _scene_winter(sc)
 		"endeavour": await _scene_endeavour(sc)
+		"maraton": await say(sc["intro"])
 		"tormenta": await _scene_storm(sc)
 
 
@@ -352,6 +355,7 @@ func _draw_data_panel() -> void:
 	c.draw_rect(r, RetroTheme.PHOSPHOR, false, 1.0)
 	var font := ThemeDB.fallback_font
 	c.draw_string(font, Vector2(6, 12), data["hud"]["distance"], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.PHOSPHOR_DIM)
+	c.draw_string(font, Vector2(6, 42), _rover_name, HORIZONTAL_ALIGNMENT_LEFT, 100, 9, RetroTheme.AMBER)
 	# Barra de señal.
 	var bar := Rect2(6, 62, 92, 7)
 	var col := RetroTheme.PHOSPHOR if _signal > 35.0 else Color("#ff5a4a")
@@ -630,7 +634,7 @@ func _scene_silica(sc: Dictionary) -> void:
 	while true:
 		await get_tree().process_frame
 		var dt := get_process_delta_time()
-		var move := Vector2(Input.get_axis("ui_left", "ui_right"), Input.get_axis("ui_up", "ui_down"))
+		var move := Vector2(Input.get_axis("rotate_left", "rotate_right"), Input.get_axis("thrust", "move_down"))
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not dialog.is_active():
 			var target := get_local_mouse_position()
 			if target.distance_to(_wheel) > 2.0:
@@ -664,10 +668,10 @@ func _scene_winter(sc: Dictionary) -> void:
 	_layer(func(c: DrawNode) -> void:
 		_draw_ground(c, 2009)
 		# Arena suave de "Troy" con Spirit atrapado.
-		c.draw_set_transform(Vector2(320, 150), 0.0, Vector2(1.6, 1.0))
+		c.draw_set_transform(Vector2(320, 112), 0.0, Vector2(1.6, 1.0))
 		c.draw_circle(Vector2.ZERO, 50.0, Color("#d89a6a"))
 		c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		draw_rover_top(c, Vector2(320, 150), -0.2, _speaker_color("SPIRIT"), 1.0, 2.0)
+		draw_rover_top(c, Vector2(320, 112), -0.2, _speaker_color("SPIRIT"), 1.0, 2.0)
 		# El Sol cada vez más bajo y escarcha que aumenta.
 		var k := float(_day) / maxf(1.0, days)
 		c.draw_circle(Vector2(560, lerpf(60.0, 230.0, k)), 10.0, Color("#fff4c0"))
@@ -677,7 +681,7 @@ func _scene_winter(sc: Dictionary) -> void:
 	_mm_title.text = mm["title"]
 	_mm_info.text = mm["instruction"]
 	var panel := PanelContainer.new()
-	panel.position = Vector2(150, 190)
+	panel.position = Vector2(150, 160)   # sube para que el botón no quede tapado por la barra inferior
 	panel.custom_minimum_size = Vector2(340, 0)
 	ui_layer.add_child(panel)
 	var box := VBoxContainer.new()
@@ -702,10 +706,17 @@ func _scene_winter(sc: Dictionary) -> void:
 			mm["day"], _day + 1, days, int(e), mm["heaters"], int(slider.value * e / 100.0),
 			mm["instruments"], int((100.0 - slider.value) * e / 100.0)]
 		await get_tree().process_frame
+		# A/D mueven el slider (las flechas ya las maneja el propio slider mediante ui_left/ui_right).
+		if not Input.is_action_just_pressed("ui_left") and not Input.is_action_just_pressed("ui_right"):
+			if Input.is_action_just_pressed("rotate_left"):
+				slider.value -= slider.step
+			elif Input.is_action_just_pressed("rotate_right"):
+				slider.value += slider.step
 		var by_key := slider.has_focus() and Input.is_action_just_pressed("ui_accept")
 		if _confirmed(confirm) or by_key:
 			_day += 1
 			_signal_target = maxf(10.0, _signal_target - 15.0)
+			slider.grab_focus()   # el botón toma el foco al pulsarlo; lo devolvemos al slider
 	panel.queue_free()
 	# Aunque se haga bien, el invierno llega igual: la señal cae a 0 y queda la estática.
 	var tw := create_tween()
@@ -740,7 +751,6 @@ func _on_confirm_pressed() -> void:
 # =========================================================================
 func _scene_endeavour(sc: Dictionary) -> void:
 	var mm: Dictionary = sc["minimission"]
-	var marathon := float(mm["marathon_km"])
 	var end_km := float(mm["end_km"])
 	_rover_pos = Vector2(320, GAME_BOTTOM - 40)
 	_craters.clear()
@@ -762,7 +772,6 @@ func _scene_endeavour(sc: Dictionary) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	var spawn := 0.0
-	var said_marathon := false
 	var rate := (end_km - _distance) / 36.0   # km por segundo de juego (tiempo muy acelerado)
 	while _distance < end_km:
 		await get_tree().process_frame
@@ -788,10 +797,6 @@ func _scene_endeavour(sc: Dictionary) -> void:
 			if v.y < GAME_BOTTOM + 30:
 				keep.append(v)
 		_craters = keep
-		if not said_marathon and _distance >= marathon:
-			said_marathon = true
-			_year.text = "%s %s" % [data["hud"]["year"], mm["marathon_year"]]
-			await say(sc["marathon"])
 	_craters.clear()
 	await _matching(mm)
 	_mm_title.text = ""
@@ -814,21 +819,24 @@ func _matching(mm: Dictionary) -> void:
 	row.add_child(right_col)
 	var lefts: Array = mm["match_left"]
 	var rights: Array = mm["match_right"]
-	var order := [1, 0]   # Los de la derecha van en otro orden.
+	# Los de la derecha van en otro orden (barajado, nunca el mismo orden que la izquierda).
+	var order: Array = range(lefts.size())
+	while lefts.size() > 1 and order == range(lefts.size()):
+		order.shuffle()
 	var left_btns: Array[Button] = []
 	var right_btns: Array[Button] = []
 	for i in lefts.size():
 		var b := Button.new()
 		b.text = lefts[i]
 		b.toggle_mode = true
-		b.custom_minimum_size = Vector2(200, 44)
+		b.custom_minimum_size = Vector2(200, 40)
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		left_col.add_child(b)
 		left_btns.append(b)
 	for j in order.size():
 		var b := Button.new()
 		b.text = rights[order[j]]
-		b.custom_minimum_size = Vector2(350, 44)
+		b.custom_minimum_size = Vector2(350, 40)
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		b.set_meta("pair", order[j])
 		right_col.add_child(b)
@@ -849,6 +857,7 @@ func _matching(mm: Dictionary) -> void:
 			continue
 		var pair: int = _match_answers.pop_front()
 		if _match_picked < 0:
+			await toast(String(mm["match_pick"]), RetroTheme.WHITE, 0.7)
 			continue
 		if pair == _match_picked:
 			var lb := left_btns[_match_picked]
@@ -892,7 +901,9 @@ func _on_match_right(pair: int) -> void:
 func _scene_storm(sc: Dictionary) -> void:
 	var mm: Dictionary = sc["minimission"]
 	var shots := int(mm["shots"])
-	var dust_time := float(mm["dust_seconds"])
+	var base_dust_time := float(mm["dust_seconds"])
+	var dust_time := base_dust_time
+	var fails := 0
 	_layer(func(c: DrawNode) -> void:
 		_draw_ground(c, 2018)
 		draw_rover_top(c, Vector2(320, 200), -PI * 0.5, _speaker_color("OPPORTUNITY"), 1.0)
@@ -915,7 +926,7 @@ func _scene_storm(sc: Dictionary) -> void:
 		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(0.35, 0.18, 0.08, _dust * 0.65))
 		for k in int(_dust * 160):
 			c.draw_rect(Rect2(fmod(k * 53.0 + c.t * 90.0, W), GAME_TOP + fmod(k * 29.0, 244.0), 3, 1), Color(0.8, 0.55, 0.35, _dust * 0.8))
-		MissionBase.draw_bar(c, Rect2(440, GAME_TOP + 44, 180, 8), _dust, Color("#d08a4a"), String(mm["dust_label"]))
+		MissionBase.draw_bar(c, Rect2(440, GAME_TOP + 62, 180, 8), _dust, Color("#d08a4a"), String(mm["dust_label"]))
 		c.draw_string(ThemeDB.fallback_font, Vector2(8, GAME_TOP + 134), String(mm["note"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.75))
 	)
 	_shots_taken.clear()
@@ -938,6 +949,11 @@ func _scene_storm(sc: Dictionary) -> void:
 			break
 		await toast(String(mm["fail"]), Color("#ff9a7a"), 1.6)
 		mission_hud.remind()
+		# Ayuda progresiva: cada fallo da 25 % más de tiempo (máximo el doble).
+		fails += 1
+		dust_time = base_dust_time * minf(2.0, 1.0 + 0.25 * fails)
+		if fails == 2:
+			await toast(String(mm["assist"]), RetroTheme.PHOSPHOR, 1.8)
 	_shot_target = -1
 	_mm_info.text = "%s: %d / %d" % [mm["shots_label"], shots, shots]
 	await say(sc["outro"])
@@ -1026,7 +1042,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if debug_mode and OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo:
 		var k: int = event.physical_keycode
-		if k >= KEY_F1 and k <= KEY_F7:
+		if k >= KEY_F1 and k <= KEY_F8:
 			GameManager.set_start_phase(k - KEY_F1 + 1)
 			SceneTransition.change_scene(scene_file_path, 0.2)
 			return
