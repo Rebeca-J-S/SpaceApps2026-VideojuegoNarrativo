@@ -1,0 +1,101 @@
+{
+	"_nota": "Destinos y sitios del selector. 'verificar' marca datos aproximados que hay que confirmar con las fuentes oficiales.",
+	"destinations": [
+		{
+			"id": "luna",
+			"name": "LUNA",
+			"kind": "moon",
+			"missions_line": "APOLO 11 · 1969\nSURVEYOR 3 · 1967",
+			"count_label": "2 SITIOS DETECTADOS",
+			"sites": [
+				{
+					"id": "apolo11",
+					"name": "APOLO 11",
+					"place": "Base Tranquilidad, Mare Tranquillitatis",
+					"year": "1969",
+					"equipment": "Etapa de descenso del Eagle (LM-5), paquete EASEP y espejo láser LRRR",
+					"lat": 0.67,
+					"lon": 23.47,
+					"mission_title": "GUARDIANES DE LA TRANQUILIDAD",
+					"scene": "res://scenes/missions/mision_apolo11.tscn"
+				},
+				{
+					"id": "surveyor3",
+					"name": "SURVEYOR 3",
+					"place": "Oceanus Procellarum",
+					"year": "1967",
+					"equipment": "Sonda robótica Surveyor 3 con cámara de TV y brazo excavador",
+					"lat": -3.0,
+					"lon": -23.4,
+					"verificar": "coordenadas aproximadas (NSSDCA: 3.01 S, 23.42 O)",
+					"mission_title": "HUELLAS EN EL POLVO",
+					"scene": "res://scenes/missions/mision_surveyor3.tscn"
+				}
+			]
+		},
+		{
+			"id": "marte",
+			"name": "MARTE",
+			"kind": "mars",
+			"missions_line": "SPIRIT · OPPORTUNITY\n2004",
+			"count_label": "2 SITIOS DETECTADOS",
+			"sites": [
+				{
+					"id": "spirit",
+					"name": "SPIRIT",
+					"place": "Cráter Gusev",
+					"year": "2004",
+					"equipment": "Rover Spirit (MER-A), gemelo de Opportunity",
+					"lat": -14.6,
+					"lon": 175.5,
+					"verificar": "coordenadas aproximadas",
+					"mission_title": "SPIRIT Y OPPORTUNITY",
+					"twin": "spirit",
+					"scene": "res://scenes/missions/chapter_spirit_opportunity.tscn"
+				},
+				{
+					"id": "opportunity",
+					"name": "OPPORTUNITY",
+					"place": "Meridiani Planum",
+					"year": "2004",
+					"equipment": "Rover Opportunity (MER-B), gemelo de Spirit",
+					"lat": -1.9,
+					"lon": -5.5,
+					"verificar": "coordenadas aproximadas",
+					"mission_title": "SPIRIT Y OPPORTUNITY",
+					"twin": "opportunity",
+					"scene": "res://scenes/missions/chapter_spirit_opportunity.tscn"
+				}
+			]
+		},
+		{
+			"id": "espacio",
+			"name": "ESPACIO PROFUNDO",
+			"kind": "deep_space",
+			"missions_line": "PIONEER 10 · PIONEER 11\n1972 · 1973",
+			"count_label": "2 SONDAS EN RUTA",
+			"sites": [
+				{
+					"id": "pioneer10",
+					"name": "PIONEER 10",
+					"place": "Rumbo a la estrella Aldebarán",
+					"year": "1972",
+					"equipment": "Sonda Pioneer 10 con su placa de oro",
+					"angle": 205.0,
+					"mission_title": "LA ÚLTIMA SEÑAL",
+					"scene": "res://scenes/missions/mision_pioneer.tscn"
+				},
+				{
+					"id": "pioneer11",
+					"name": "PIONEER 11",
+					"place": "Rumbo a la constelación del Águila",
+					"year": "1973",
+					"equipment": "Sonda Pioneer 11 con su placa de oro",
+					"angle": 25.0,
+					"mission_title": "LA ÚLTIMA SEÑAL",
+					"scene": "res://scenes/missions/mision_pioneer.tscn"
+				}
+			]
+		}
+	]
+}

@@ -1,35 +1,55 @@
-# What Was Left Behind by NASA
+# What Was Left Behind
 
 Videojuego educativo en Pixel Art 2D (Godot 4.5, GDScript) para el **NASA Space Apps Challenge 2026**,
-desafío *"Abandoned but not Forgotten: Storytelling about NASA's Discarded Equipment on the Moon and Mars"*.
-La historia del hardware que la NASA dejó en la Luna y Marte, contada por las propias máquinas.
-Misión jugable actual: el alunizaje del Apolo 11 (Eagle LM-5, EASEP y LRRR).
+desafío *"Abandoned but not Forgotten"*. La historia del equipo que la NASA dejó en la Luna, en Marte y en
+el espacio profundo, contada en primera persona por las propias máquinas, que te hablan por radio.
 
 ## Cómo abrirlo
 1. Godot 4.5 → *Import* → selecciona `project.godot`.
 2. F5 para ejecutar (arranca en `scenes/ui/intro_screen.tscn`).
 
-## Flujo
-- **Intro** (`scenes/ui/intro_screen.tscn`): pasillo de la nave en pixel art, alarma roja y objetos
-  flotando en gravedad cero (cosas reales que los astronautas dejaron en la Luna; pasa el ratón
-  por encima para ver su ficha). Registro de a bordo con efecto máquina de escribir → INICIAR,
-  que hace zoom por el pasillo hacia la Luna de la ventana y llega al menú.
-- **Menú** (`scenes/ui/main_menu.tscn`): la Luna y Marte rotando, con los sitios de hardware
-  marcados (Apolo 11-17, Viking, Sojourner, Spirit, Opportunity, InSight, Ingenuity, Curiosity…).
-  Archivo científico por secciones LUNA / MARTE / MISIÓN.
-- **Selección de destino** (`scenes/ui/mission_select.tscn`): INICIAR MISIÓN lleva aquí. Elige la
-  Luna (Apolo 11 → `fase0_orbita`) o Marte (`marte_fase0`, en desarrollo); al confirmar, zoom al planeta.
+## Flujo de escenas
+`intro_screen` → `main_menu` → `planet_select` → misión → regreso al selector.
+
+| Escena | Qué hay |
+|---|---|
+| `scenes/ui/intro_screen.tscn` | Pasillo de nave abandonada, alarma roja, objetos en gravedad cero (con ficha al pasar el ratón), transmisión de radio y zoom hacia la Luna de la ventana. |
+| `scenes/ui/main_menu.tscn` | Luna y Marte girando con sus sitios. Iniciar misión, Archivo científico (lee `data/archive.json`; la "transmisión" de cada máquina se desbloquea al completar su misión), Controles, Salir. |
+| `scenes/ui/planet_select.tscn` | Tres destinos de `data/sites.json` (Luna, Marte, Espacio profundo) con puntos verdes en las coordenadas reales. Clic en un punto o ENTER → ficha → INICIAR MISIÓN → zoom con ondas de radar. |
+| `scenes/missions/mision_apolo11.tscn` | Misión 1 · Guardianes de la Tranquilidad (guion aprobado). |
+| `scenes/missions/mision_surveyor3.tscn` | Misión 2 · Huellas en el polvo (guion aprobado). |
+| `scenes/missions/mision_pioneer.tscn` | Misión 3 · La última señal (propuesta). |
+| `scenes/missions/chapter_spirit_opportunity.tscn` | Misión 4 · Capítulo Spirit y Opportunity (vista top-down, HUD propio, transmisiones TX/RX). Textos en `data/dialogos/spirit_opportunity.json`. Emite `chapter_finished`. Debug: F1-F6 saltan a cada escena, F7 al cierre. |
+
+Las misiones 1-3 siguen las mismas 6 fases (0 tutorial → 5 legado) sobre `scripts/missions/mission_base.gd`.
+La misión 4 (Marte) es un capítulo independiente: `scripts/missions/chapter_spirit_opportunity.gd`.
+ESC abre la pausa (continuar, reiniciar fase, volver al selector).
 
 ## Estructura
 ```
-assets/   shaders/ (crt_overlay, pixel_planet)  sprites/ fonts/ audio/ (arte final)
-scenes/   ui/ (intro, menú)   levels/ (fases de juego)
-scripts/  autoload/ SceneTransition       data/ MissionData (datos reales NASA)
-          fx/ ShipCorridor, PixelPlanet, PixelSprites, Starfield, MoonSurface (para la fase de alunizaje)
-          ui/ RetroTheme + escenas UI     levels/
+data/                 sites.json · archive.json · dialogos/intro.json, mision_1..3.json, spirit_opportunity.json
+scenes/ui/            intro, menú, selector          scenes/missions/   las 4 misiones
+scenes/components/    radio_dialog.tscn
+scripts/autoload/     SceneTransition (fundido) · GameManager (datos, progreso, Input Map)
+scripts/components/   RadioDialog · TransmissionDialog (TX/RX) · Lander · Hotspot · DrawNode
+scripts/missions/     MissionBase + una por misión
+scripts/fx/           ShipCorridor · PixelPlanet · DeepSpaceView · Starfield · PixelSprites
+assets/shaders/       crt_overlay · pixel_planet       assets/sprites, fonts, audio (arte final)
 ```
 
-## Configuración Pixel Art (en project.godot)
-- Viewport 640x360, ventana 1280x720, stretch `viewport` + aspect `keep` + scale mode `integer`.
-- Filtro de texturas `Nearest`, snap 2D a píxel, fuentes sin antialiasing.
-- Renderer `Compatibility` (necesario para exportar a Web/HTML5).
+## Datos y precisión
+- Todos los textos están en `data/`. Las entradas con `"verificar"` son datos por confirmar con las
+  fuentes oficiales; las de `"propuesta": true` son añadidos que no están en el guion aprobado.
+- Las constantes físicas reales están en `scripts/data/mission_data.gd`. Los límites de aterrizaje y la
+  aceleración del tiempo son valores de juego.
+
+## Input Map
+Se registra por código en `GameManager` (no hace falta crearlo a mano):
+`thrust` W/↑/Espacio · `move_down` S/↓ · `rotate_left` A/← · `rotate_right` D/→ · más `ui_accept` y `ui_cancel`.
+
+## Progreso
+`user://progreso.cfg` (ConfigFile) guarda las misiones completadas.
+
+## Exportar
+Renderer `Compatibility`. Al exportar, añade `*.json` en *Resources → Filters to export non-resource files*
+para que se incluya la carpeta `data/`.

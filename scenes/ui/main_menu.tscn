@@ -55,7 +55,7 @@ offset_bottom = 252.0
 theme_override_colors/font_color = Color(0.82, 0.84, 0.9, 1)
 theme_override_font_sizes/font_size = 10
 text = "LA LUNA
-6 sitios Apolo · 1969-1972"
+Apolo 11 · Surveyor 3"
 horizontal_alignment = 1
 
 [node name="Mars" type="ColorRect" parent="."]
@@ -81,8 +81,8 @@ offset_bottom = 198.0
 theme_override_colors/font_color = Color(0.94, 0.62, 0.45, 1)
 theme_override_font_sizes/font_size = 10
 text = "MARTE
-Landers, rovers y helicóptero
-1976-2024"
+Spirit · Opportunity
+2004"
 horizontal_alignment = 1
 
 [node name="LegendLabel" type="Label" parent="."]
@@ -93,9 +93,9 @@ offset_right = 630.0
 offset_bottom = 258.0
 theme_override_colors/font_color = Color(0.122, 0.541, 0.271, 1)
 theme_override_font_sizes/font_size = 10
-text = "ÁMBAR: misión jugable
-BLANCO: hardware en silencio
-VERDE: sigue activo"
+text = "PUNTOS VERDES:
+equipos de la NASA
+que siguen allí"
 horizontal_alignment = 2
 
 [node name="MenuPanel" type="PanelContainer" parent="."]
@@ -123,7 +123,7 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 16
 text = "WHAT WAS LEFT
-BEHIND BY NASA"
+BEHIND"
 
 [node name="GameSubtitle" type="Label" parent="MenuPanel/MenuVBox"]
 layout_mode = 2
@@ -166,7 +166,7 @@ alignment = 0
 layout_mode = 2
 theme_override_colors/font_color = Color(0.122, 0.541, 0.271, 1)
 theme_override_font_sizes/font_size = 10
-text = "NASA SPACE APPS 2026 · v0.2"
+text = "NASA SPACE APPS 2026 · v0.3"
 
 [node name="VoicePanel" type="PanelContainer" parent="."]
 layout_mode = 1
@@ -216,7 +216,7 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.122, 0.541, 0.271, 1)
 theme_override_font_sizes/font_size = 10
-text = "ENLACE ACTIVO · LUNA: LRRR RESPONDIENDO · MARTE: CURIOSITY Y PERSEVERANCE OPERANDO"
+text = "ENLACE ACTIVO · LUNA: EL ESPEJO LRRR SIGUE RESPONDIENDO · PIONEER 10 Y 11: EN RUTA"
 
 [node name="SiteTooltip" type="PanelContainer" parent="."]
 unique_name_in_owner = true
@@ -268,7 +268,7 @@ layout_mode = 2
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.702, 0.278, 1)
 theme_override_font_sizes/font_size = 14
-text = "ARCHIVO CIENTÍFICO · LO QUE LA NASA DEJÓ ATRÁS"
+text = "ARCHIVO CIENTÍFICO · EQUIPOS ABANDONADOS"
 
 [node name="SectionTabs" type="HBoxContainer" parent="ArchivePanel/ArchiveVBox"]
 unique_name_in_owner = true
@@ -328,7 +328,7 @@ layout_mode = 2
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.702, 0.278, 1)
 theme_override_font_sizes/font_size = 14
-text = "CONTROLES / TELEMETRÍA · LM-5"
+text = "CONTROLES DEL JUEGO"
 
 [node name="HSeparator" type="HSeparator" parent="ControlsPanel/ControlsVBox"]
 layout_mode = 2

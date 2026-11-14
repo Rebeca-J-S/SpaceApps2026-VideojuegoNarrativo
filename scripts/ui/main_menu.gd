@@ -4,7 +4,7 @@ extends Control
 ## (pasa el ratón por un marcador para ver qué hay allí).
 ## UI: consola de control (verde fósforo / ámbar). Paneles modales con efecto "encendido CRT".
 
-const MISSION_SCENE := "res://scenes/ui/mission_select.tscn"
+const MISSION_SCENE := "res://scenes/ui/planet_select.tscn"
 const VOICE_INTERVAL := 8.0   # segundos entre frases de las máquinas
 const VOICE_TYPE_SPEED := 40.0
 
@@ -44,7 +44,7 @@ var _current_section := ""
 
 func _ready() -> void:
 	theme = RetroTheme.build()
-	game_title.text = "WHAT WAS LEFT\nBEHIND BY NASA"
+	game_title.text = "WHAT WAS LEFT\nBEHIND"
 	_menu_buttons = [btn_start, btn_archive, btn_controls, btn_quit]
 
 	# En la versión Web "Salir" no tiene sentido (no se puede cerrar la pestaña).
@@ -244,7 +244,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # -------------------------------------------------------------------------
 func _build_section_tabs() -> void:
 	var group := ButtonGroup.new()
-	for section in MissionData.ARCHIVE_SECTIONS:
+	for section in GameManager.get_archive()["sections"]:
 		var tab := _make_toggle(section, group, 12)
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tab.alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -273,7 +273,7 @@ func _on_section_toggled(on: bool, section: String) -> void:
 		machine_list.remove_child(c)
 		c.queue_free()
 	var group := ButtonGroup.new()
-	var entries: Array = MissionData.ARCHIVE[section]
+	var entries: Array = GameManager.get_archive()["entries"][section]
 	for i in entries.size():
 		var b := _make_toggle(entries[i]["tab"], group, 10)
 		b.toggled.connect(_on_machine_toggled.bind(section, i))
@@ -283,7 +283,7 @@ func _on_section_toggled(on: bool, section: String) -> void:
 
 func _on_machine_toggled(on: bool, section: String, index: int) -> void:
 	if on:
-		_show_archive_entry(MissionData.ARCHIVE[section][index])
+		_show_archive_entry(GameManager.get_archive()["entries"][section][index])
 
 
 func _show_archive_entry(entry: Dictionary) -> void:
@@ -294,7 +294,11 @@ func _show_archive_entry(entry: Dictionary) -> void:
 	var s := "[color=#%s]%s[/color]\n[color=#%s]%s[/color]\n\n" % [amber, entry["name"], dim, entry["id"]]
 	for fact in entry["facts"]:
 		s += "[color=#%s]»[/color] %s: [color=#%s]%s[/color]\n" % [dim, fact[0], white, fact[1]]
-	s += "\n[color=#%s]>> TRANSMISIÓN DE LA MÁQUINA:[/color]\n\"%s\"" % [amber, entry["voice"]]
+	# La transmisión de la máquina se desbloquea al completar su misión.
+	if GameManager.is_completed(String(entry.get("mission", ""))):
+		s += "\n[color=#%s]>> TRANSMISIÓN DE LA MÁQUINA:[/color]\n\"%s\"" % [amber, entry["voice"]]
+	else:
+		s += "\n[color=#%s]>> TRANSMISIÓN BLOQUEADA[/color]\n[color=#%s]Completa su misión para escuchar a esta máquina.[/color]" % [amber, dim]
 
 	archive_body.text = s
 	archive_body.scroll_to_line(0)
@@ -316,7 +320,8 @@ func _start_voice_loop() -> void:
 
 
 func _next_voice_line() -> void:
-	var line: Dictionary = MissionData.VOICE_LINES[_voice_index % MissionData.VOICE_LINES.size()]
+	var voices: Array = GameManager.get_archive()["voices"]
+	var line: Dictionary = voices[_voice_index % voices.size()]
 	_voice_index += 1
 	voice_speaker.text = "[ %s ] >>" % line["speaker"]
 	voice_text.text = line["text"]

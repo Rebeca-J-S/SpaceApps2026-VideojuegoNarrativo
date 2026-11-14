@@ -1,48 +1,42 @@
 extends Control
-## Escena 1 — Pantalla de inicio dentro de la nave.
-## Secuencia: título -> registro de a bordo (máquina de escribir) -> "INICIAR" parpadeante.
-## Los objetos que flotan en el pasillo son cosas reales que los astronautas dejaron en la Luna:
-## al pasar el ratón por encima se muestra su ficha.
+## Escena 1 — Pantalla de inicio dentro de la nave abandonada (Referencia A).
+## Secuencia:
+##   1) Fundido desde negro.  2) Aparece el título WHAT WAS LEFT BEHIND.
+##   3) Transmisión de radio (RadioDialog) con estática y máquina de escribir.
+##   4) "PRESIONA ENTER O HAZ CLIC PARA INICIAR" parpadeante.
+## Una pulsación durante el texto lo completa; la siguiente avanza. Al iniciar, la cámara vuela
+## por el pasillo hacia la Luna de la ventana y pasa al menú principal.
+## Los objetos flotantes muestran su ficha al pasar el ratón.
 
 const NEXT_SCENE := "res://scenes/ui/main_menu.tscn"
-const TYPE_SPEED := 32.0      # caracteres por segundo
-const LINE_PAUSE := 0.4       # pausa entre líneas (s)
+const DIALOG_FILE := "res://data/dialogos/intro.json"
 
-## Primera línea en ámbar (cabecera del registro), el resto es la narración.
-const OPENING_LINES := [
-	"REGISTRO DE A BORDO · AÑO 2026 · RUMBO: LA LUNA Y MARTE",
-	"Desde 1969, la humanidad ha dejado máquinas en otros mundos.",
-	"Módulos, rovers, sismómetros... y hasta botas y fotografías.",
-	"Algunas siguen funcionando. Otras solo esperan ser recordadas.",
-	"Esta nave va a escuchar sus historias.",
-]
-
-enum State { INTRO, TYPING, READY, LEAVING }
+enum State { INTRO, RADIO, READY, LEAVING }
 
 @onready var corridor: ShipCorridor = %ShipCorridor
 @onready var title: Label = %Title
 @onready var subtitle: Label = %Subtitle
-@onready var narrative_panel: PanelContainer = %NarrativePanel
-@onready var narrative_box: VBoxContainer = %NarrativeBox
 @onready var prompt: Label = %Prompt
 @onready var tooltip: PanelContainer = %Tooltip
 @onready var tooltip_label: Label = %TooltipLabel
+@onready var fade: ColorRect = %FadeFromBlack
 
 var _state: State = State.INTRO
 var _sequence: Tween
 var _blink: Tween
-var _lines: Array[Label] = []
+var _radio: RadioDialog
 
 
 func _ready() -> void:
 	theme = RetroTheme.build()
 	title.text = MissionData.GAME_TITLE
-	_build_narrative_labels()
 	title.modulate.a = 0.0
 	subtitle.modulate.a = 0.0
-	narrative_panel.modulate.a = 0.0
 	prompt.modulate.a = 0.0
 	tooltip.hide()
+	_radio = RadioDialog.new()
+	add_child(_radio)
+	move_child(_radio, fade.get_index())  # Debajo del fundido y del overlay CRT.
 	_play_sequence()
 
 
@@ -50,40 +44,23 @@ func _process(_delta: float) -> void:
 	_update_tooltip()
 
 
-## Un Label por línea: el efecto máquina de escribir usa visible_characters
-## y el texto centrado no "baila" mientras se escribe.
-func _build_narrative_labels() -> void:
-	for i in OPENING_LINES.size():
-		var l := Label.new()
-		l.text = OPENING_LINES[i]
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.visible_characters = 0
-		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if i == 0:
-			l.add_theme_color_override("font_color", RetroTheme.AMBER)
-			l.add_theme_font_size_override("font_size", 10)
-		narrative_box.add_child(l)
-		_lines.append(l)
-
-
 func _play_sequence() -> void:
 	_sequence = create_tween()
-	# 1) Título, subtítulo y panel del registro.
-	_sequence.tween_interval(0.4)
+	# 1) Fundido desde negro en pasos (estilo retro).
+	_sequence.tween_method(func(v: float) -> void: fade.modulate.a = snappedf(v, 0.125), 1.0, 0.0, 1.2)
+	# 2) Título y subtítulo.
 	_sequence.tween_property(title, "modulate:a", 1.0, 1.0)
 	_sequence.tween_property(subtitle, "modulate:a", 1.0, 0.6)
-	_sequence.tween_property(narrative_panel, "modulate:a", 1.0, 0.3)
-	_sequence.tween_callback(func() -> void: _state = State.TYPING)
-	# 2) Máquina de escribir, línea a línea.
-	for l in _lines:
-		var duration := l.text.length() / TYPE_SPEED
-		_sequence.tween_property(l, "visible_characters", l.text.length(), duration).from(0)
-		_sequence.tween_interval(LINE_PAUSE)
-	# 3) Listo para avanzar.
-	_sequence.tween_callback(_on_sequence_done)
+	_sequence.tween_interval(0.3)
+	_sequence.tween_callback(_start_radio)
 
 
-func _on_sequence_done() -> void:
+## 3) Transmisión de radio. Al terminar, aparece el aviso para iniciar.
+func _start_radio() -> void:
+	if _state != State.INTRO:
+		return
+	_state = State.RADIO
+	await _radio.play_file(DIALOG_FILE, "apertura")
 	_state = State.READY
 	_start_blink()
 
@@ -97,16 +74,14 @@ func _start_blink() -> void:
 	_blink.tween_interval(0.35)
 
 
-## Completa la secuencia de golpe (el jugador tiene prisa).
-func _skip_sequence() -> void:
+## Si el jugador pulsa durante el fundido o el título, salta directamente a la radio.
+func _skip_intro() -> void:
 	if _sequence and _sequence.is_valid():
 		_sequence.kill()
+	fade.modulate.a = 0.0
 	title.modulate.a = 1.0
 	subtitle.modulate.a = 1.0
-	narrative_panel.modulate.a = 1.0
-	for l in _lines:
-		l.visible_characters = -1
-	_on_sequence_done()
+	_start_radio()
 
 
 # -------------------------------------------------------------------------
@@ -131,16 +106,15 @@ func _update_tooltip() -> void:
 
 
 # -------------------------------------------------------------------------
-# Entrada
+# Entrada (la radio gestiona sus propias pulsaciones mientras está activa)
 # -------------------------------------------------------------------------
-# _input (y no _unhandled_input) para capturar clics aunque haya Controls encima.
 func _input(event: InputEvent) -> void:
-	if not _is_advance_event(event):
+	if not _is_advance_event(event) or _state == State.RADIO:
 		return
 	get_viewport().set_input_as_handled()
 	match _state:
-		State.INTRO, State.TYPING:
-			_skip_sequence()
+		State.INTRO:
+			_skip_intro()
 		State.READY:
 			_leave()
 
@@ -150,7 +124,7 @@ func _is_advance_event(event: InputEvent) -> bool:
 		return true
 	if event is InputEventMouseButton:
 		return event.pressed and event.button_index == MOUSE_BUTTON_LEFT
-	if event is InputEventScreenTouch:  # Tablets / móviles en la versión web.
+	if event is InputEventScreenTouch:
 		return event.pressed
 	return false
 
@@ -161,7 +135,7 @@ func _leave() -> void:
 		_blink.kill()
 	tooltip.hide()
 	corridor.highlighted = -1
-	# 1) Parpadeo rápido de confirmación.
+	# Parpadeo rápido de confirmación.
 	prompt.text = "> TRANSMISIÓN RECIBIDA <"
 	var confirm := create_tween().set_loops(3)
 	confirm.tween_property(prompt, "modulate:a", 1.0, 0.0)
@@ -169,13 +143,10 @@ func _leave() -> void:
 	confirm.tween_property(prompt, "modulate:a", 0.2, 0.0)
 	confirm.tween_interval(0.06)
 	await confirm.finished
-
-	# 2) La interfaz se apaga y la "cámara" vuela por el pasillo hacia la Luna de la ventana.
+	# La interfaz se apaga y la cámara vuela por el pasillo hacia la Luna de la ventana.
 	var fly := create_tween().set_parallel()
-	for ui in [title, subtitle, narrative_panel, prompt]:
+	for ui in [title, subtitle, prompt]:
 		fly.tween_property(ui, "modulate:a", 0.0, 0.3)
 	fly.tween_property(corridor, "zoom", 12.0, 1.5).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
 	await fly.finished
-
-	# 3) Fundido corto al menú (donde la Luna y Marte esperan).
 	SceneTransition.change_scene(NEXT_SCENE, 0.35)

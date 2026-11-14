@@ -1,0 +1,135 @@
+{
+	"_nota": "Fichas del ARCHIVO CIENTÍFICO. 'mission' indica qué misión desbloquea la transmisión de la máquina. 'verificar' marca datos por confirmar.",
+	"sections": ["LUNA", "MARTE", "ESPACIO PROFUNDO"],
+	"entries": {
+		"LUNA": [
+			{
+				"tab": "EAGLE LM-5",
+				"name": "ETAPA DE DESCENSO DEL EAGLE",
+				"id": "LM-5 · COSPAR 1969-059C · En la superficie lunar",
+				"mission": "apolo11",
+				"facts": [
+					["Alunizaje", "20 jul 1969, 20:17:40 UT"],
+					["Ubicación", "Mare Tranquillitatis, 0.67416° N, 23.47314° E"],
+					["Masa total del LM", "15,103 kg"],
+					["Propelente de descenso", "8,248 kg"],
+					["Empuje máximo", "45,000 N (regulable)"],
+					["Ignición de descenso", "756.3 s"],
+					["Ancho / envergadura", "4.2 m / 9.4 m entre patas"]
+				],
+				"voice": "Fui la plataforma de lanzamiento de Neil y Buzz. Ellos volvieron a casa; yo me quedé guardando la placa que dice: 'Vinimos en paz en nombre de toda la humanidad'."
+			},
+			{
+				"tab": "EASEP",
+				"name": "PAQUETE CIENTÍFICO EASEP",
+				"id": "Early Apollo Scientific Experiments Package · Inactivo",
+				"mission": "apolo11",
+				"facts": [
+					["Masa", "48 kg"],
+					["Posición", "~17 m al sur del Eagle"],
+					["Energía", "2 paneles solares (este y oeste)"],
+					["Instrumentos", "Sismómetro pasivo y detector de polvo"],
+					["Enlace", "Recibía a 2119 MHz y transmitía a 2276.5 MHz"],
+					["Fin de operaciones", "27 de agosto de 1969"]
+				],
+				"voice": "Escuché los pasos de los astronautas y los temblores de la Luna. El calor apagó mi voz, pero abrí el camino a las estaciones sísmicas de las siguientes misiones Apolo."
+			},
+			{
+				"tab": "LRRR",
+				"name": "ESPEJO LÁSER LRRR",
+				"id": "Laser Ranging Retro-Reflector · Activo en 2026",
+				"mission": "apolo11",
+				"facts": [
+					["Posición", "~5 m al nor-noroeste del EASEP"],
+					["Reflectores", "100 prismas de sílice fundida"],
+					["Energía", "Ninguna: es un espejo pasivo"],
+					["Descubrimiento", "La Luna se aleja ~3.8 cm por año"]
+				],
+				"voice": "No necesito baterías. Cada pulso láser que la Tierra me envía, se lo devuelvo. Fuimos abandonados... pero jamás olvidados."
+			},
+			{
+				"tab": "SURVEYOR 3",
+				"name": "SONDA SURVEYOR 3",
+				"id": "Lander robótico · Visitada por el Apolo 12",
+				"mission": "surveyor3",
+				"facts": [
+					["Lanzamiento", "17 abr 1967 (Atlas-Centaur)"],
+					["Alunizaje", "20 abr 1967, Oceanus Procellarum"],
+					["Fotos enviadas", "Más de 6,300"],
+					["Primicia", "Primer brazo excavador en otro mundo"],
+					["Último contacto", "4 de mayo de 1967"],
+					["Reencuentro", "Apolo 12, noviembre de 1969"]
+				],
+				"voice": "Probé que el suelo lunar era firme para los astronautas. Dos años y medio después, el Apolo 12 vino a buscarme y se llevó mi cámara de vuelta a la Tierra."
+			}
+		],
+		"MARTE": [
+			{
+				"tab": "SPIRIT",
+				"name": "ROVER SPIRIT (MER-A)",
+				"id": "Mars Exploration Rover · Inactivo",
+				"mission": "gemelas",
+				"facts": [
+					["Aterrizaje", "4 ene 2004, cráter Gusev"],
+					["Misión prevista", "90 días marcianos"],
+					["Descubrimiento", "Suelo rico en sílice: antiguas aguas termales"],
+					["Atascado en arena", "2009"],
+					["Última comunicación", "22 de marzo de 2010"]
+				],
+				"voice": "Con una rueda trabada seguí adelante, arrastrándola. Y esa rueda rota descubrió las huellas de agua caliente bajo el polvo."
+			},
+			{
+				"tab": "OPPORTUNITY",
+				"name": "ROVER OPPORTUNITY (MER-B)",
+				"id": "Mars Exploration Rover · Inactivo",
+				"mission": "gemelas",
+				"facts": [
+					["Aterrizaje", "25 ene 2004, Meridiani Planum"],
+					["Misión prevista", "90 días marcianos"],
+					["Distancia recorrida", "45.16 km"],
+					["Descubrimiento", "Esferas de hematita: hubo agua"],
+					["Última comunicación", "10 de junio de 2018"],
+					["Fin de la misión", "13 de febrero de 2019"]
+				],
+				"voice": "Me pidieron 90 días y di casi 15 años. Una tormenta de polvo tapó el Sol, pero mis huellas dicen que Marte alguna vez tuvo agua."
+			}
+		],
+		"ESPACIO PROFUNDO": [
+			{
+				"tab": "PIONEER 10",
+				"name": "SONDA PIONEER 10",
+				"id": "Primera nave en cruzar el cinturón de asteroides",
+				"mission": "pioneer",
+				"facts": [
+					["Lanzamiento", "Marzo de 1972 (Atlas-Centaur)"],
+					["Energía", "Generadores nucleares RTG"],
+					["Júpiter", "Primer sobrevuelo, diciembre de 1973"],
+					["Última señal", "Enero de 2003"],
+					["Destino", "Dirección de la estrella Aldebarán"]
+				],
+				"voice": "Ya nadie escucha mi voz. Pero llevo un saludo de toda la humanidad grabado en una placa de oro."
+			},
+			{
+				"tab": "PIONEER 11",
+				"name": "SONDA PIONEER 11",
+				"id": "Primera nave en visitar Saturno",
+				"mission": "pioneer",
+				"facts": [
+					["Lanzamiento", "Abril de 1973"],
+					["Júpiter", "Diciembre de 1974"],
+					["Saturno", "Septiembre de 1979"],
+					["Descubrimiento", "El anillo F de Saturno"],
+					["Último contacto", "Septiembre de 1995"]
+				],
+				"voice": "Usé la gravedad de Júpiter como una honda para llegar a Saturno. Fui la primera en ver sus anillos de cerca."
+			}
+		]
+	},
+	"voices": [
+		{"speaker": "ETAPA DE DESCENSO EAGLE", "text": "Bienvenido, piloto. Llevo en la Luna desde 1969 esperando a alguien que recuerde nuestro viaje."},
+		{"speaker": "SURVEYOR 3", "text": "Yo llegué antes que los humanos. Probé que el suelo lunar podía sostenerlos."},
+		{"speaker": "PIONEER 10", "text": "Mi voz ya no llega a la Tierra... pero sigo avanzando entre las estrellas."},
+		{"speaker": "OPPORTUNITY", "text": "Me diseñaron para 90 días marcianos. Rodé casi 15 años."},
+		{"speaker": "ESPEJO LÁSER LRRR", "text": "No tengo baterías. Solo devuelvo la luz que la Tierra me envía. Sigo despierto."}
+	]
+}

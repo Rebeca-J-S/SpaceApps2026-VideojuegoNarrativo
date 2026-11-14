@@ -10,8 +10,8 @@ config_version=5
 
 [application]
 
-config/name="What Was Left Behind by NASA"
-config/description="Videojuego narrativo en pixel art: la historia del hardware que la NASA dejó en la Luna y Marte, contada por las propias máquinas."
+config/name="What Was Left Behind"
+config/description="Videojuego narrativo en pixel art: la historia del equipo que la NASA dejó en la Luna, en Marte y en el espacio profundo, contada por las propias máquinas."
 run/main_scene="res://scenes/ui/intro_screen.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 boot_splash/bg_color=Color(0.0157, 0.0196, 0.051, 1)
@@ -20,6 +20,7 @@ boot_splash/show_image=false
 [autoload]
 
 SceneTransition="*res://scripts/autoload/scene_transition.gd"
+GameManager="*res://scripts/autoload/game_manager.gd"
 
 [display]
 

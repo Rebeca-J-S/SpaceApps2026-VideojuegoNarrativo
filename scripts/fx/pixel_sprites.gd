@@ -71,6 +71,20 @@ const GOLF_BALL := [
 	".wwww.",
 ]
 
+# Casco de astronauta con visor dorado oscuro.
+const HELMET := [
+	"...wwwwww...",
+	"..wwwwwwww..",
+	".wwyyyyyyww.",
+	"wwykkkkkkyww",
+	"wwykkdkkkyww",
+	"wwykkkkkkyww",
+	"wwwyyyyyywww",
+	"wwwwwwwwwwww",
+	".gwwwwwwwwg.",
+	"..bbbbbbbb..",
+]
+
 # Foto familiar (Apolo 16).
 const PHOTO := [
 	"nnnnnnnnnn",
@@ -95,6 +109,8 @@ static func by_name(id: String) -> Array:
 			return BACKPACK
 		"PHOTO":
 			return PHOTO
+		"HELMET":
+			return HELMET
 	return GOLF_BALL
 
 
