@@ -26,7 +26,7 @@ const PORTRAIT_COLORS := {
 	"lrrr": Color("#9aa0b4"), "centaur": Color("#d8dce8"), "surveyor": Color("#c9c9d2"),
 	"brazo": Color("#8a8ea6"), "bean": Color("#e8ecf4"), "pioneer10": Color("#e0b040"),
 	"pioneer11": Color("#d0902a"), "spirit": Color("#c0532a"), "opportunity": Color("#cf7440"),
-	"gemelas": Color("#b5532a"), "senal": Color("#39ff7a"),
+	"gemelas": Color("#b5532a"), "senal": Color("#39ff7a"), "cientifico": Color("#c8963e"),
 }
 
 var _pages: Array = []
@@ -260,7 +260,7 @@ func _input(event: InputEvent) -> void:
 	if not _active:
 		return
 	var pressed: bool = event.is_action_pressed("ui_accept") \
-		or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
+		or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not MissionHUD.hover_ui)
 	if not pressed:
 		return
 	get_viewport().set_input_as_handled()
@@ -289,7 +289,7 @@ func _set_portrait(key: String) -> void:
 	else:
 		# PLACEHOLDER: iniciales sobre un color. Reemplazar con assets/sprites/portraits/<key>.png
 		_portrait_tex.texture = null
-		_portrait_code.text = key.substr(0, 2).to_upper()
+		_portrait_code.text = "CM" if key == "cientifico" else key.substr(0, 2).to_upper()
 	_portrait_box.queue_redraw()
 
 
