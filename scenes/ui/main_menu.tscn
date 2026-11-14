@@ -1,0 +1,359 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/fx/starfield.gd" id="2_stars"]
+[ext_resource type="Script" path="res://scripts/fx/pixel_planet.gd" id="3_planet"]
+[ext_resource type="Shader" path="res://assets/shaders/crt_overlay.gdshader" id="4_crt"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
+shader = ExtResource("4_crt")
+shader_parameter/scanline_strength = 0.14
+shader_parameter/vignette_strength = 0.4
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="SpaceBackground" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0157, 0.0196, 0.051, 1)
+
+[node name="Starfield" type="Node2D" parent="."]
+script = ExtResource("2_stars")
+star_count = 170
+twinkle_speed = 1.2
+
+[node name="Moon" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 292.0
+offset_top = 74.0
+offset_right = 436.0
+offset_bottom = 218.0
+mouse_filter = 2
+script = ExtResource("3_planet")
+pixels = 72.0
+spin_speed = 0.006
+
+[node name="MoonLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 284.0
+offset_top = 222.0
+offset_right = 444.0
+offset_bottom = 252.0
+theme_override_colors/font_color = Color(0.82, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 10
+text = "LA LUNA
+6 sitios Apolo · 1969-1972"
+horizontal_alignment = 1
+
+[node name="Mars" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 504.0
+offset_top = 58.0
+offset_right = 596.0
+offset_bottom = 150.0
+mouse_filter = 2
+script = ExtResource("3_planet")
+kind = 1
+pixels = 46.0
+spin_speed = 0.01
+start_spin = 0.3
+
+[node name="MarsLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 470.0
+offset_top = 154.0
+offset_right = 630.0
+offset_bottom = 198.0
+theme_override_colors/font_color = Color(0.94, 0.62, 0.45, 1)
+theme_override_font_sizes/font_size = 10
+text = "MARTE
+Landers, rovers y helicóptero
+1976-2024"
+horizontal_alignment = 1
+
+[node name="LegendLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 446.0
+offset_top = 214.0
+offset_right = 630.0
+offset_bottom = 258.0
+theme_override_colors/font_color = Color(0.122, 0.541, 0.271, 1)
+theme_override_font_sizes/font_size = 10
+text = "ÁMBAR: misión jugable
+BLANCO: hardware en silencio
+VERDE: sigue activo"
+horizontal_alignment = 2
+
+[node name="MenuPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 16.0
+offset_top = -150.0
+offset_right = 216.0
+offset_bottom = 70.0
+grow_vertical = 2
+
+[node name="MenuVBox" type="VBoxContainer" parent="MenuPanel"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="GameTitle" type="Label" parent="MenuPanel/MenuVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.702, 0.278, 1)
+theme_override_colors/font_shadow_color = Color(0.45, 0.18, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 16
+text = "WHAT WAS LEFT
+BEHIND BY NASA"
+
+[node name="GameSubtitle" type="Label" parent="MenuPanel/MenuVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.122, 0.541, 0.271, 1)
+theme_override_font_sizes/font_size = 10
+text = "LO QUE LA NASA DEJÓ ATRÁS"
+
+[node name="HSeparator" type="HSeparator" parent="MenuPanel/MenuVBox"]
+layout_mode = 2
+
+[node name="BtnStart" type="Button" parent="MenuPanel/MenuVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+text = "INICIAR MISIÓN"
+alignment = 0
+
+[node name="BtnArchive" type="Button" parent="MenuPanel/MenuVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+text = "ARCHIVO CIENTÍFICO"
+alignment = 0
+
+[node name="BtnControls" type="Button" parent="MenuPanel/MenuVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+text = "CONTROLES"
+alignment = 0
+
+[node name="BtnQuit" type="Button" parent="MenuPanel/MenuVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+text = "SALIR"
+alignment = 0
+
+[node name="VersionLabel" type="Label" parent="MenuPanel/MenuVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.122, 0.541, 0.271, 1)
+theme_override_font_sizes/font_size = 10
+text = "NASA SPACE APPS 2026 · v0.2"
+
+[node name="VoicePanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -262.0
+offset_top = -92.0
+offset_right = -12.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="VoiceVBox" type="VBoxContainer" parent="VoicePanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="VoiceSpeaker" type="Label" parent="VoicePanel/VoiceVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.702, 0.278, 1)
+theme_override_font_sizes/font_size = 10
+text = "[ ETAPA DE DESCENSO EAGLE ] >>"
+
+[node name="VoiceText" type="Label" parent="VoicePanel/VoiceVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 10
+text = "..."
+autowrap_mode = 3
+
+[node name="StatusLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -18.0
+offset_right = -16.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.122, 0.541, 0.271, 1)
+theme_override_font_sizes/font_size = 10
+text = "ENLACE ACTIVO · LUNA: LRRR RESPONDIENDO · MARTE: CURIOSITY Y PERSEVERANCE OPERANDO"
+
+[node name="SiteTooltip" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="SiteTooltipLabel" type="Label" parent="SiteTooltip"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "..."
+autowrap_mode = 3
+
+[node name="Dimmer" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0.02, 0.72)
+
+[node name="ArchivePanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -160.0
+offset_right = 280.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ArchiveVBox" type="VBoxContainer" parent="ArchivePanel"]
+layout_mode = 2
+
+[node name="ArchiveHeader" type="Label" parent="ArchivePanel/ArchiveVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.702, 0.278, 1)
+theme_override_font_sizes/font_size = 14
+text = "ARCHIVO CIENTÍFICO · LO QUE LA NASA DEJÓ ATRÁS"
+
+[node name="SectionTabs" type="HBoxContainer" parent="ArchivePanel/ArchiveVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="ArchivePanel/ArchiveVBox"]
+layout_mode = 2
+
+[node name="ArchiveContent" type="HBoxContainer" parent="ArchivePanel/ArchiveVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MachineList" type="VBoxContainer" parent="ArchivePanel/ArchiveVBox/ArchiveContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(112, 0)
+layout_mode = 2
+
+[node name="VSeparator" type="VSeparator" parent="ArchivePanel/ArchiveVBox/ArchiveContent"]
+layout_mode = 2
+
+[node name="ArchiveBody" type="RichTextLabel" parent="ArchivePanel/ArchiveVBox/ArchiveContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "..."
+scroll_active = true
+
+[node name="BtnCloseArchive" type="Button" parent="ArchivePanel/ArchiveVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+size_flags_horizontal = 8
+text = "[ESC] CERRAR"
+
+[node name="ControlsPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -150.0
+offset_right = 240.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ControlsVBox" type="VBoxContainer" parent="ControlsPanel"]
+layout_mode = 2
+
+[node name="ControlsHeader" type="Label" parent="ControlsPanel/ControlsVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.702, 0.278, 1)
+theme_override_font_sizes/font_size = 14
+text = "CONTROLES / TELEMETRÍA · LM-5"
+
+[node name="HSeparator" type="HSeparator" parent="ControlsPanel/ControlsVBox"]
+layout_mode = 2
+
+[node name="ControlsBody" type="RichTextLabel" parent="ControlsPanel/ControlsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "..."
+scroll_active = true
+
+[node name="BtnCloseControls" type="Button" parent="ControlsPanel/ControlsVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+size_flags_horizontal = 8
+text = "[ESC] CERRAR"
+
+[node name="CRTOverlay" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_crt")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

@@ -1,0 +1,39 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/fase0_orbita.gd" id="1_f0"]
+[ext_resource type="Script" path="res://scripts/fx/starfield.gd" id="2_stars"]
+
+[node name="Fase0Orbita" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_f0")
+
+[node name="SpaceBackground" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0157, 0.0196, 0.051, 1)
+
+[node name="Starfield" type="Node2D" parent="."]
+script = ExtResource("2_stars")
+drift = Vector2(-12, 0)
+
+[node name="Info" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "FASE 0"
+horizontal_alignment = 1
+vertical_alignment = 1
