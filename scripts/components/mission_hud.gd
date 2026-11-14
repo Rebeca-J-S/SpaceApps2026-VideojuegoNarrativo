@@ -25,6 +25,8 @@ var reminder_pos := Vector2(8, 40)
 var keys_pos := Vector2(8, 340)
 ## Devuelve true si hay un diálogo en pantalla (para no interrumpir con recordatorios).
 var busy_check: Callable = func() -> bool: return false
+## Si se asigna, los recordatorios llaman a esto (con el texto) en lugar de mostrar el recuadro propio.
+var reminder_callback: Callable = Callable()
 
 var _data: Dictionary = {}
 var _phase_titles: Array = []
@@ -103,6 +105,11 @@ func mark_all_done() -> void:
 func remind(text: String = "") -> void:
 	var t := text if text != "" else _tip
 	if t == "":
+		return
+	# Opcional: la misión puede mostrar la pista en su propia caja de diálogo en vez de este recuadro.
+	if reminder_callback.is_valid():
+		reminder_callback.call(t)
+		_idle = 0.0
 		return
 	_reminder_text.text = t
 	_reminder.reset_size()

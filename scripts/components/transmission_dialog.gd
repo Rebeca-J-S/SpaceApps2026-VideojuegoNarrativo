@@ -27,6 +27,7 @@ var transit_text := "SEÑAL EN TRÁNSITO"
 var _lines: Array = []
 var _index := -1
 var _active := false
+var _hint_token := 0
 var _phase := 0            # 0 inactivo, 1 en tránsito, 2 escribiendo, 3 esperando
 var _transit_left := 0.0
 var _reveal_t := 0.0
@@ -64,9 +65,36 @@ func is_active() -> bool:
 	return _active
 
 
+## Pista breve en la propia caja de diálogo (sin esperar ENTER): se muestra `seconds` segundos
+## y la caja vuelve a "CANAL ABIERTO". Si ya hay un diálogo activo, no hace nada.
+func show_hint(speaker_key: String, text: String, seconds: float = 7.0) -> void:
+	if _active or text == "":
+		return
+	_hint_token += 1
+	var token := _hint_token
+	var sp: Dictionary = speakers.get(speaker_key, {})
+	var col := Color(String(sp.get("color", "#ffb347")))
+	_name.text = String(sp.get("name", speaker_key))
+	_name.add_theme_color_override("font_color", col)
+	_tag.text = ""
+	_portrait_color = col
+	_set_portrait(String(sp.get("portrait", speaker_key.to_lower())), speaker_key)
+	_text.add_theme_color_override("font_color", RetroTheme.WHITE)
+	_text.text = text
+	_text.visible_characters = -1
+	_transit.text = ""
+	_hint.visible = false
+	_noise_mat.set_shader_parameter("intensity", 0.0)
+	_box.queue_redraw()
+	await get_tree().create_timer(seconds, false).timeout
+	if token == _hint_token and not _active:
+		_idle()
+
+
 func play(lines: Array) -> void:
 	if lines.is_empty():
 		return
+	_hint_token += 1   # cancela cualquier pista que esté a medias
 	_lines = lines
 	_index = -1
 	_active = true

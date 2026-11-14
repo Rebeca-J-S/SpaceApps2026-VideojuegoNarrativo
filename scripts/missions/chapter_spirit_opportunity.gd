@@ -235,6 +235,8 @@ func _build() -> void:
 	mission_hud.reminder_pos = Vector2(8, GAME_TOP + 54)
 	mission_hud.keys_pos = Vector2(8, GAME_BOTTOM - 17)
 	mission_hud.busy_check = func() -> bool: return dialog.is_active() or _toast.visible
+	# Las pistas del Científico salen en la caja de diálogo de abajo, no en un recuadro sobre el juego.
+	mission_hud.reminder_callback = func(t: String) -> void: dialog.show_hint("CIENTIFICO", t)
 	var titles: Array = []
 	for sc in data["scenes"]:
 		titles.append(String(sc["title"]))
