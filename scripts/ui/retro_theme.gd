@@ -58,6 +58,12 @@ static func build() -> Theme:
 	line.thickness = 1
 	t.set_stylebox("separator", "HSeparator", line)
 	t.set_constant("separation", "HSeparator", 6)
+	var vline := StyleBoxLine.new()
+	vline.color = PHOSPHOR_DIM
+	vline.thickness = 1
+	vline.vertical = true
+	t.set_stylebox("separator", "VSeparator", vline)
+	t.set_constant("separation", "VSeparator", 6)
 
 	# --- Contenedores ---
 	t.set_constant("separation", "VBoxContainer", 4)

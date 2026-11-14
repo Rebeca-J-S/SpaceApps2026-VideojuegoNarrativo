@@ -10,8 +10,8 @@ config_version=5
 
 [application]
 
-config/name="Guardianes de la Tranquilidad"
-config/description="Simulador de alunizaje narrativo contado por el hardware del Apolo 11 que quedó en la Luna."
+config/name="What Was Left Behind by NASA"
+config/description="Videojuego narrativo en pixel art: la historia del hardware que la NASA dejó en la Luna y Marte, contada por las propias máquinas."
 run/main_scene="res://scenes/ui/intro_screen.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 boot_splash/bg_color=Color(0.0157, 0.0196, 0.051, 1)

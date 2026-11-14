@@ -1,20 +1,27 @@
 extends Control
 ## Escena 2 — Menú principal.
-## Fondo: superficie lunar silenciosa con el Eagle abandonado, el EASEP brillando y el LRRR.
-## UI: consola de Houston (verde fósforo / ámbar). Paneles modales con animación "encendido CRT".
+## Fondo: la Luna y Marte rotando, con los sitios donde la NASA dejó hardware marcados
+## (pasa el ratón por un marcador para ver qué hay allí).
+## UI: consola de control (verde fósforo / ámbar). Paneles modales con efecto "encendido CRT".
 
 const MISSION_SCENE := "res://scenes/levels/fase0_orbita.tscn"
 const VOICE_INTERVAL := 8.0   # segundos entre frases de las máquinas
 const VOICE_TYPE_SPEED := 40.0
 
 @onready var menu_panel: PanelContainer = %MenuPanel
+@onready var game_title: Label = %GameTitle
 @onready var btn_start: Button = %BtnStart
 @onready var btn_archive: Button = %BtnArchive
 @onready var btn_controls: Button = %BtnControls
 @onready var btn_quit: Button = %BtnQuit
+@onready var moon: PixelPlanet = %Moon
+@onready var mars: PixelPlanet = %Mars
+@onready var site_tooltip: PanelContainer = %SiteTooltip
+@onready var site_tooltip_label: Label = %SiteTooltipLabel
 @onready var dimmer: ColorRect = %Dimmer
 @onready var archive_panel: PanelContainer = %ArchivePanel
-@onready var archive_tabs: HBoxContainer = %ArchiveTabs
+@onready var section_tabs: HBoxContainer = %SectionTabs
+@onready var machine_list: VBoxContainer = %MachineList
 @onready var archive_body: RichTextLabel = %ArchiveBody
 @onready var btn_close_archive: Button = %BtnCloseArchive
 @onready var controls_panel: PanelContainer = %ControlsPanel
@@ -32,10 +39,12 @@ var _animating := false
 var _leaving := false
 var _voice_index := 0
 var _voice_tween: Tween
+var _current_section := ""
 
 
 func _ready() -> void:
 	theme = RetroTheme.build()
+	game_title.text = "WHAT WAS LEFT\nBEHIND BY NASA"
 	_menu_buttons = [btn_start, btn_archive, btn_controls, btn_quit]
 
 	# En la versión Web "Salir" no tiene sentido (no se puede cerrar la pestaña).
@@ -55,17 +64,22 @@ func _ready() -> void:
 	btn_close_controls.pressed.connect(_close_panel)
 	dimmer.gui_input.connect(_on_dimmer_input)
 
-	_build_archive_tabs()
+	_build_section_tabs()
 	controls_body.text = MissionData.CONTROLS_BBCODE
 
 	archive_panel.hide()
 	controls_panel.hide()
 	dimmer.hide()
+	site_tooltip.hide()
 
 	_start_voice_loop()
 	_start_status_pulse()
 	await _play_menu_intro()
 	btn_start.grab_focus()
+
+
+func _process(_delta: float) -> void:
+	_update_site_tooltip()
 
 
 # -------------------------------------------------------------------------
@@ -76,8 +90,7 @@ func _decorate_button(b: Button) -> void:
 	b.text = "  " + label
 	b.focus_entered.connect(func() -> void: b.text = "> " + label)
 	b.focus_exited.connect(func() -> void: b.text = "  " + label)
-	# Ratón y teclado comparten el mismo "cursor".
-	b.mouse_entered.connect(_on_button_hovered.bind(b))
+	b.mouse_entered.connect(_on_button_hovered.bind(b))  # Ratón y teclado comparten cursor.
 
 
 func _on_button_hovered(b: Button) -> void:
@@ -92,17 +105,52 @@ func _set_menu_interactive(enabled: bool) -> void:
 
 
 # -------------------------------------------------------------------------
-# Animación de entrada del menú (desliza desde la izquierda).
+# Animación de entrada: el menú se desliza y los planetas aparecen.
 # -------------------------------------------------------------------------
 func _play_menu_intro() -> void:
 	menu_panel.modulate.a = 0.0
+	moon.modulate.a = 0.0
+	mars.modulate.a = 0.0
 	await get_tree().process_frame  # Esperamos a que los anchors calculen la posición.
 	var target_x := menu_panel.position.x
 	menu_panel.position.x = target_x - 40.0
 	var tw := create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tw.tween_property(menu_panel, "position:x", target_x, 0.6)
 	tw.tween_property(menu_panel, "modulate:a", 1.0, 0.6)
+	tw.tween_property(moon, "modulate:a", 1.0, 1.0).set_delay(0.2)
+	tw.tween_property(mars, "modulate:a", 1.0, 1.0).set_delay(0.5)
 	await tw.finished
+
+
+# -------------------------------------------------------------------------
+# Marcadores de los planetas
+# -------------------------------------------------------------------------
+func _update_site_tooltip() -> void:
+	var found := false
+	for planet in [moon, mars]:
+		var p := planet as PixelPlanet
+		var index := -1
+		if _open_panel == null:
+			index = p.get_site_at(p.get_local_mouse_position())
+		p.hovered = index
+		if index >= 0 and not found:
+			found = true
+			var info := p.get_site_info(index)
+			var state := "SILENCIOSO"
+			if info["status"] == "active":
+				state = "ACTIVO"
+			elif info["status"] == "focus":
+				state = "MISIÓN JUGABLE"
+			var text := "%s  [%s]\n%s" % [info["name"], state, info["info"]]
+			if site_tooltip_label.text != text:
+				site_tooltip_label.text = text
+				site_tooltip.reset_size()
+	site_tooltip.visible = found
+	if found:
+		var pos := get_local_mouse_position() + Vector2(12, 10)
+		pos.x = minf(pos.x, size.x - site_tooltip.size.x - 4)
+		pos.y = minf(pos.y, size.y - site_tooltip.size.y - 4)
+		site_tooltip.position = pos.floor()
 
 
 # -------------------------------------------------------------------------
@@ -145,8 +193,8 @@ func _open(panel: PanelContainer) -> void:
 	_animating = false
 
 	# Foco inicial dentro del panel para navegar con teclado / mando.
-	if panel == archive_panel and archive_tabs.get_child_count() > 0:
-		(archive_tabs.get_child(0) as Button).grab_focus()
+	if panel == archive_panel and section_tabs.get_child_count() > 0:
+		(section_tabs.get_child(0) as Button).grab_focus()
 	elif panel == controls_panel:
 		btn_close_controls.grab_focus()
 
@@ -188,32 +236,53 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 # -------------------------------------------------------------------------
-# ARCHIVO CIENTÍFICO: pestañas generadas desde MissionData.ARCHIVE
+# ARCHIVO CIENTÍFICO: secciones (LUNA / MARTE / MISIÓN) -> lista de máquinas -> ficha
 # -------------------------------------------------------------------------
-func _build_archive_tabs() -> void:
+func _build_section_tabs() -> void:
 	var group := ButtonGroup.new()
-	for i in MissionData.ARCHIVE.size():
-		var entry: Dictionary = MissionData.ARCHIVE[i]
-		var tab := Button.new()
-		tab.text = entry["tab"]
-		tab.toggle_mode = true
-		tab.button_group = group
+	for section in MissionData.ARCHIVE_SECTIONS:
+		var tab := _make_toggle(section, group, 12)
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tab.add_theme_font_size_override("font_size", 10)
-		tab.toggled.connect(_on_archive_tab_toggled.bind(i))
-		# Navegar con flechas cambia de ficha directamente.
-		tab.focus_entered.connect(func() -> void: tab.button_pressed = true)
-		archive_tabs.add_child(tab)
-	(archive_tabs.get_child(0) as Button).button_pressed = true
+		tab.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tab.toggled.connect(_on_section_toggled.bind(section))
+		section_tabs.add_child(tab)
+	(section_tabs.get_child(0) as Button).button_pressed = true
 
 
-func _on_archive_tab_toggled(on: bool, index: int) -> void:
+func _make_toggle(text: String, group: ButtonGroup, font_size: int) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.toggle_mode = true
+	b.button_group = group
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.add_theme_font_size_override("font_size", font_size)
+	# Navegar con flechas selecciona directamente.
+	b.focus_entered.connect(func() -> void: b.button_pressed = true)
+	return b
+
+
+func _on_section_toggled(on: bool, section: String) -> void:
+	if not on or section == _current_section:
+		return
+	_current_section = section
+	for c in machine_list.get_children():
+		machine_list.remove_child(c)
+		c.queue_free()
+	var group := ButtonGroup.new()
+	var entries: Array = MissionData.ARCHIVE[section]
+	for i in entries.size():
+		var b := _make_toggle(entries[i]["tab"], group, 10)
+		b.toggled.connect(_on_machine_toggled.bind(section, i))
+		machine_list.add_child(b)
+	(machine_list.get_child(0) as Button).button_pressed = true
+
+
+func _on_machine_toggled(on: bool, section: String, index: int) -> void:
 	if on:
-		_show_archive_entry(index)
+		_show_archive_entry(MissionData.ARCHIVE[section][index])
 
 
-func _show_archive_entry(index: int) -> void:
-	var entry: Dictionary = MissionData.ARCHIVE[index]
+func _show_archive_entry(entry: Dictionary) -> void:
 	var amber := RetroTheme.AMBER.to_html(false)
 	var dim := RetroTheme.PHOSPHOR_DIM.to_html(false)
 	var white := RetroTheme.WHITE.to_html(false)

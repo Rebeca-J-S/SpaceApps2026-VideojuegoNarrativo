@@ -1,26 +1,32 @@
 extends Control
-## Escena 1 — Pantalla de inicio.
-## Secuencia: título aparece -> narración del Eagle (máquina de escribir) -> prompt parpadeante.
-## Cualquier pulsación durante la secuencia la completa al instante; la siguiente avanza al menú.
+## Escena 1 — Pantalla de inicio dentro de la nave.
+## Secuencia: título -> registro de a bordo (máquina de escribir) -> "INICIAR" parpadeante.
+## Los objetos que flotan en el pasillo son cosas reales que los astronautas dejaron en la Luna:
+## al pasar el ratón por encima se muestra su ficha.
 
 const NEXT_SCENE := "res://scenes/ui/main_menu.tscn"
-const TYPE_SPEED := 30.0      # caracteres por segundo
-const LINE_PAUSE := 0.45      # pausa entre líneas (s)
+const TYPE_SPEED := 32.0      # caracteres por segundo
+const LINE_PAUSE := 0.4       # pausa entre líneas (s)
 
-## Primera línea en ámbar (cabecera de telemetría), el resto es la voz del Eagle.
+## Primera línea en ámbar (cabecera del registro), el resto es la narración.
 const OPENING_LINES := [
-	"20 DE JULIO DE 1969 · MARE TRANQUILLITATIS · 20:17 UTC",
-	"Soy la Etapa de Descenso del Eagle. Me llamaban LM-5.",
-	"Traje a dos humanos hasta aquí... y después me quedé.",
-	"Esta es la historia de las máquinas que nunca volvieron.",
+	"REGISTRO DE A BORDO · AÑO 2026 · RUMBO: LA LUNA Y MARTE",
+	"Desde 1969, la humanidad ha dejado máquinas en otros mundos.",
+	"Módulos, rovers, sismómetros... y hasta botas y fotografías.",
+	"Algunas siguen funcionando. Otras solo esperan ser recordadas.",
+	"Esta nave va a escuchar sus historias.",
 ]
 
 enum State { INTRO, TYPING, READY, LEAVING }
 
+@onready var corridor: ShipCorridor = %ShipCorridor
 @onready var title: Label = %Title
 @onready var subtitle: Label = %Subtitle
+@onready var narrative_panel: PanelContainer = %NarrativePanel
 @onready var narrative_box: VBoxContainer = %NarrativeBox
 @onready var prompt: Label = %Prompt
+@onready var tooltip: PanelContainer = %Tooltip
+@onready var tooltip_label: Label = %TooltipLabel
 
 var _state: State = State.INTRO
 var _sequence: Tween
@@ -30,15 +36,22 @@ var _lines: Array[Label] = []
 
 func _ready() -> void:
 	theme = RetroTheme.build()
+	title.text = MissionData.GAME_TITLE
 	_build_narrative_labels()
 	title.modulate.a = 0.0
 	subtitle.modulate.a = 0.0
+	narrative_panel.modulate.a = 0.0
 	prompt.modulate.a = 0.0
+	tooltip.hide()
 	_play_sequence()
 
 
-## Crea un Label por línea. Así el efecto máquina de escribir usa visible_characters
-## sin problemas de saltos de línea, y el texto centrado no "baila" al escribirse.
+func _process(_delta: float) -> void:
+	_update_tooltip()
+
+
+## Un Label por línea: el efecto máquina de escribir usa visible_characters
+## y el texto centrado no "baila" mientras se escribe.
 func _build_narrative_labels() -> void:
 	for i in OPENING_LINES.size():
 		var l := Label.new()
@@ -55,10 +68,11 @@ func _build_narrative_labels() -> void:
 
 func _play_sequence() -> void:
 	_sequence = create_tween()
-	# 1) Título y subtítulo.
-	_sequence.tween_property(title, "modulate:a", 1.0, 1.2)
-	_sequence.tween_property(subtitle, "modulate:a", 1.0, 0.8)
-	_sequence.tween_interval(0.5)
+	# 1) Título, subtítulo y panel del registro.
+	_sequence.tween_interval(0.4)
+	_sequence.tween_property(title, "modulate:a", 1.0, 1.0)
+	_sequence.tween_property(subtitle, "modulate:a", 1.0, 0.6)
+	_sequence.tween_property(narrative_panel, "modulate:a", 1.0, 0.3)
 	_sequence.tween_callback(func() -> void: _state = State.TYPING)
 	# 2) Máquina de escribir, línea a línea.
 	for l in _lines:
@@ -83,17 +97,42 @@ func _start_blink() -> void:
 	_blink.tween_interval(0.35)
 
 
-## Completa toda la secuencia de golpe (el jugador tiene prisa).
+## Completa la secuencia de golpe (el jugador tiene prisa).
 func _skip_sequence() -> void:
 	if _sequence and _sequence.is_valid():
 		_sequence.kill()
 	title.modulate.a = 1.0
 	subtitle.modulate.a = 1.0
+	narrative_panel.modulate.a = 1.0
 	for l in _lines:
 		l.visible_characters = -1
 	_on_sequence_done()
 
 
+# -------------------------------------------------------------------------
+# Ficha flotante de los objetos del pasillo
+# -------------------------------------------------------------------------
+func _update_tooltip() -> void:
+	var index := corridor.get_item_at(corridor.get_local_mouse_position())
+	corridor.highlighted = index
+	if index < 0 or _state == State.LEAVING:
+		tooltip.hide()
+		return
+	var info := corridor.get_item_info(index)
+	var text := "%s\n%s" % [info["title"], info["info"]]
+	if tooltip_label.text != text:
+		tooltip_label.text = text
+		tooltip.reset_size()
+	tooltip.show()
+	var p := get_local_mouse_position() + Vector2(12, 10)
+	p.x = minf(p.x, size.x - tooltip.size.x - 4)
+	p.y = minf(p.y, size.y - tooltip.size.y - 4)
+	tooltip.position = p.floor()
+
+
+# -------------------------------------------------------------------------
+# Entrada
+# -------------------------------------------------------------------------
 # _input (y no _unhandled_input) para capturar clics aunque haya Controls encima.
 func _input(event: InputEvent) -> void:
 	if not _is_advance_event(event):
@@ -120,8 +159,8 @@ func _leave() -> void:
 	_state = State.LEAVING
 	if _blink and _blink.is_valid():
 		_blink.kill()
-	# Parpadeo rápido de confirmación ("TRANSMISIÓN RECIBIDA") y fundido al menú.
-	prompt.text = "TRANSMISIÓN RECIBIDA"
+	# Parpadeo rápido de confirmación y fundido al menú.
+	prompt.text = "> TRANSMISIÓN RECIBIDA <"
 	var confirm := create_tween().set_loops(4)
 	confirm.tween_property(prompt, "modulate:a", 1.0, 0.0)
 	confirm.tween_interval(0.06)
