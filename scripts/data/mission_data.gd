@@ -29,9 +29,14 @@ const CONTROLS_BBCODE := """[color=#ffb347]GENERAL[/color]
 » A / D / FLECHAS IZQ-DER : propulsores laterales RCS (girar)
 » S / FLECHA ABAJO : bajar (Pioneer en el cinturón de asteroides)
 
-[color=#ffb347]ATERRIZAJE SEGURO DEL EAGLE[/color]
-» Suelo plano, lejos de las rocas.
-» Velocidad vertical menor a 2 m/s e inclinación menor a 6°.
-» La gravedad lunar es 1.62 m/s² (1/6 de la terrestre): caes despacio, pero no frenas solo.
+[color=#ffb347]APOLO 11 · ESTABILIZACIÓN DEL EAGLE[/color]
+» CLIC / ESPACIO / ENTER : pulso de motor (mueve el indicador a la izquierda)
+» Mantén el indicador en la franja VERDE hasta tocar el suelo.
 
-[color=#1f8a45](Los límites de aterrizaje son valores de juego, no especificaciones de la NASA.)[/color]"""
+[color=#ffb347]APOLO 11 · RECOLECCIÓN DE PRUEBAS[/color]
+» A / D : caminar  ·  W / ESPACIO : saltar (gravedad lunar)
+» E : recoger rocas, descargar la bolsa en el Eagle, sacar el EASEP / LRRR
+» Mantén E : clavar tubos de núcleo y desplegar los experimentos
+» La bolsa aguanta 6 kg por viaje; la meta son 21.55 kg (NSSDCA).
+
+[color=#1f8a45](Los límites de la bolsa y la turbulencia son valores de juego, no especificaciones de la NASA.)[/color]"""

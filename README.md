@@ -16,8 +16,7 @@ el espacio profundo, contada en primera persona por las propias máquinas, que t
 | `scenes/ui/intro_screen.tscn` | Pasillo de nave abandonada, alarma roja, objetos en gravedad cero (con ficha al pasar el ratón), transmisión de radio y zoom hacia la Luna de la ventana. |
 | `scenes/ui/main_menu.tscn` | Luna y Marte girando con sus sitios. Iniciar misión, Archivo científico (lee `data/archive.json`; la "transmisión" de cada máquina se desbloquea al completar su misión), Controles, Salir. |
 | `scenes/ui/planet_select.tscn` | Tres destinos de `data/sites.json` (Luna, Marte, Espacio profundo) con puntos verdes en las coordenadas reales. Clic en un punto o ENTER → ficha → INICIAR MISIÓN → zoom con ondas de radar. |
-| `scenes/missions/mision_apolo11.tscn` | Misión 1 · Guardianes de la Tranquilidad (guion aprobado). |
-| `scenes/missions/mision_surveyor3.tscn` | Misión 2 · Huellas en el polvo (guion aprobado). |
+| `scenes/missions/mision_apolo11.tscn` | Misión 1 · Guardianes de la Tranquilidad (Apolo 11): cinemática del viaje Tierra-Luna, descenso, minijuego de estabilización del aterrizaje, cinemática de Neil y Buzz, minijuego de recolección de pruebas (21.55 kg, 2 tubos de núcleo, EASEP y LRRR) y cinemática de ascenso. Datos: NSSDCA 1969-059C. |
 | `scenes/missions/mision_pioneer.tscn` | Misión 3 · La última señal (propuesta). |
 | `scenes/missions/chapter_spirit_opportunity.tscn` | Misión 4 · Capítulo Spirit y Opportunity (vista top-down, HUD propio, transmisiones TX/RX). Textos en `data/dialogos/spirit_opportunity.json`. Emite `chapter_finished`. Debug: F1-F7 saltan a cada escena, F8 al cierre. |
 | `scenes/missions/chapter_pioneer10.tscn` | Capítulo Pioneer 10 (selector → Espacio profundo → Pioneer 10): lanzamiento, cinturón (esquive), Júpiter (encuadre y disparo), silencio, la placa (púlsares) y epílogo. Las cinemáticas aún no existen y muestran "CINEMÁTICA PENDIENTE". Textos en `data/dialogos/pioneer10.json`. Debug: F1-F7 saltan a cada fase. |

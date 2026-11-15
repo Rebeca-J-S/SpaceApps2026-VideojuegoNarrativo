@@ -5,11 +5,10 @@ extends Node2D
 ## La misión decide dónde se dibuja en pantalla (position) según su cámara.
 ##
 ## Controles (Input Map): thrust = motor principal, rotate_left / rotate_right = RCS.
-## Estilos: LM (Módulo Lunar completo), LM_DESCENT (solo la etapa de descenso),
-##          SURVEYOR, CENTAUR (etapa con la Surveyor encima).
+## Estilos: LM (Módulo Lunar completo), LM_DESCENT (solo la etapa de descenso).
 ## Reemplazo por sprites: cambiar _draw_* por un Sprite2D hijo con la textura final.
 
-enum Style { LM, LM_DESCENT, SURVEYOR, CENTAUR }
+enum Style { LM, LM_DESCENT }
 
 @export var style: Style = Style.LM
 
@@ -44,11 +43,6 @@ var _t := 0.0
 
 ## Distancia (en píxeles de pantalla) del centro del dibujo a las patas.
 func feet_offset() -> float:
-	match style:
-		Style.SURVEYOR:
-			return 8.0 * px_scale
-		Style.CENTAUR:
-			return 12.0 * px_scale
 	return 10.0 * px_scale
 
 
@@ -90,37 +84,39 @@ func _draw() -> void:
 	match style:
 		Style.LM, Style.LM_DESCENT:
 			_draw_lm(style == Style.LM)
-		Style.SURVEYOR:
-			_draw_surveyor()
-		Style.CENTAUR:
-			_draw_centaur()
 	_draw_flame()
 	_draw_rcs()
 
 
 func _draw_lm(with_ascent: bool) -> void:
+	Lander.draw_lm_on(self, with_ascent)
+
+
+## Dibuja el Módulo Lunar (unidades del dibujo: 1 = 1 px a escala 1) sobre cualquier lienzo.
+## Las patas quedan en y = +10; la etapa de ascenso se apoya en y = -2.
+static func draw_lm_on(c: CanvasItem, with_ascent: bool) -> void:
 	var gold := Color("#c8962e")
 	var gold_l := Color("#f0c862")
 	var metal := Color("#a7a9b4")
 	var metal_d := Color("#6c6e78")
 	# Patas y almohadillas (envergadura 9.4 m).
-	draw_line(Vector2(-6, 2), Vector2(-10, 9), metal, 1.0)
-	draw_line(Vector2(6, 2), Vector2(10, 9), metal, 1.0)
-	draw_line(Vector2(0, 4), Vector2(0, 9), metal_d, 1.0)
-	draw_rect(Rect2(-12, 9, 4, 1), metal)
-	draw_rect(Rect2(8, 9, 4, 1), metal)
-	draw_rect(Rect2(-2, 9, 4, 1), metal_d)
+	c.draw_line(Vector2(-6, 2), Vector2(-10, 9), metal, 1.0)
+	c.draw_line(Vector2(6, 2), Vector2(10, 9), metal, 1.0)
+	c.draw_line(Vector2(0, 4), Vector2(0, 9), metal_d, 1.0)
+	c.draw_rect(Rect2(-12, 9, 4, 1), metal)
+	c.draw_rect(Rect2(8, 9, 4, 1), metal)
+	c.draw_rect(Rect2(-2, 9, 4, 1), metal_d)
 	# Tobera del motor de descenso.
-	draw_colored_polygon(PackedVector2Array([Vector2(-2, 4), Vector2(2, 4), Vector2(3, 7), Vector2(-3, 7)]), metal_d)
+	c.draw_colored_polygon(PackedVector2Array([Vector2(-2, 4), Vector2(2, 4), Vector2(3, 7), Vector2(-3, 7)]), metal_d)
 	# Etapa de descenso: octágono dorado (4.2 m de ancho).
-	draw_colored_polygon(PackedVector2Array([
+	c.draw_colored_polygon(PackedVector2Array([
 		Vector2(-6, -2), Vector2(6, -2), Vector2(7, -1), Vector2(7, 3),
 		Vector2(6, 4), Vector2(-6, 4), Vector2(-7, 3), Vector2(-7, -1),
 	]), gold)
-	draw_rect(Rect2(-6, -2, 12, 1), gold_l)
-	draw_rect(Rect2(-2, -1, 4, 4), Color("#22222a"))
+	c.draw_rect(Rect2(-6, -2, 12, 1), gold_l)
+	c.draw_rect(Rect2(-2, -1, 4, 4), Color("#22222a"))
 	if with_ascent:
-		_draw_ascent_stage(Vector2.ZERO)
+		draw_ascent_stage_on(c)
 
 
 ## Etapa de ascenso (la "cabina" que despega en la Fase 4). Origen: su base.
@@ -143,49 +139,10 @@ static func draw_ascent_stage_on(c: CanvasItem, base: Vector2 = Vector2.ZERO) ->
 	c.draw_rect(Rect2(base + Vector2(4, -14), Vector2(3, 1)), silver)
 
 
-func _draw_surveyor() -> void:
-	var white := Color("#e3e6f0")
-	var metal := Color("#a7a9b4")
-	var metal_d := Color("#6c6e78")
-	# Tres patas con amortiguadores.
-	draw_line(Vector2(-3, 2), Vector2(-8, 7), metal, 1.0)
-	draw_line(Vector2(3, 2), Vector2(8, 7), metal, 1.0)
-	draw_line(Vector2(0, 3), Vector2(0, 7), metal_d, 1.0)
-	draw_rect(Rect2(-10, 7, 4, 1), metal)
-	draw_rect(Rect2(6, 7, 4, 1), metal)
-	draw_rect(Rect2(-1, 7, 2, 1), metal_d)
-	# Cuerpo triangular y caja térmica.
-	draw_colored_polygon(PackedVector2Array([Vector2(-5, 3), Vector2(5, 3), Vector2(0, -3)]), metal_d)
-	draw_rect(Rect2(-3, -1, 6, 3), white)
-	# Mástil con panel solar y antena plana.
-	draw_line(Vector2(0, -3), Vector2(0, -10), metal, 1.0)
-	draw_colored_polygon(PackedVector2Array([Vector2(-6, -12), Vector2(0, -10), Vector2(0, -8), Vector2(-6, -10)]), Color("#1e3f8f"))
-	draw_rect(Rect2(1, -11, 4, 3), white)
-	# Cámara de TV (lo que se llevará el Apolo 12).
-	draw_rect(Rect2(3, 0, 2, 2), Color("#1c1d26"))
-
-
-func _draw_centaur() -> void:
-	var white := Color("#e3e6f0")
-	var band := Color("#a7a9b4")
-	draw_rect(Rect2(-4, -10, 8, 20), white)
-	draw_rect(Rect2(-4, -4, 8, 1), band)
-	draw_rect(Rect2(-4, 3, 8, 1), band)
-	draw_colored_polygon(PackedVector2Array([Vector2(-3, 10), Vector2(-1, 10), Vector2(-1, 12), Vector2(-4, 12)]), band)
-	draw_colored_polygon(PackedVector2Array([Vector2(1, 10), Vector2(3, 10), Vector2(4, 12), Vector2(1, 12)]), band)
-	# Surveyor plegada encima (cono de carga).
-	draw_colored_polygon(PackedVector2Array([Vector2(-4, -10), Vector2(4, -10), Vector2(0, -16)]), Color("#c9c9d2"))
-
-
 func _draw_flame() -> void:
 	if not thrusting:
 		return
 	var base_y := 7.0
-	match style:
-		Style.SURVEYOR:
-			base_y = 4.0
-		Style.CENTAUR:
-			base_y = 12.0
 	var flame_len := 6.0 + 3.0 * sin(_t * 40.0) + randf() * 2.0
 	draw_colored_polygon(PackedVector2Array([Vector2(-2, base_y), Vector2(2, base_y), Vector2(0, base_y + flame_len)]), Color("#ffb347"))
 	draw_colored_polygon(PackedVector2Array([Vector2(-1, base_y), Vector2(1, base_y), Vector2(0, base_y + flame_len * 0.6)]), Color("#fff4c0"))
