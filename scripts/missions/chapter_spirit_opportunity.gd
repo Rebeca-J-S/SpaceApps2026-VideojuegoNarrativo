@@ -2179,129 +2179,359 @@ var _cl_cfg: Dictionary = {}
 var _cl_quiz_ok := false
 
 
+var _st_sol := 0
+var _st_sol_t := 0.0
+var _st_temp := 0.0
+var _st_score := 0.0
+var _st_combo := 0
+var _st_faults := 0
+var _st_off := false
+var _st_sleep := false
+var _st_tp := 5.0
+var _st_gust := -9.0
+var _st_dust := -9.0
+var _st_gust_on := false
+var _st_dust_on := false
+var _st_heating := false
+var _st_heat_mouse := false
+var _st_rating := ""
+var _st_rating_col := GOLD
+var _st_rating_t := 0.0
+var _st_stars := 0
+var _st_hover := -1
+var _st_hist: Array = []
+var _st_hist_t := 0.0
+var _st_hum_t := 0.0
+
+
 func _act_storm(sc: Dictionary) -> void:
 	await _cinematic_pending(String(sc["cinematic_tag"]))
 	await say(sc["intro"])
 	_st_cfg = sc["minimission"]
 	_mm_title.text = String(_st_cfg["title"])
 	_mm_info.text = String(_st_cfg["info"])
-	_st_restart()
-	_st_done = false
 	_bar_name = tr("BATERÍA")
 	_bar_show = true
+	_bar_red_low = true
 	_tele_fn = func() -> Array:
 		_bar_val = _st_batt
 		return [
-			[tr("LUZ"), "%d%%" % int(_st_light(_st_t) * 100.0), GREEN if _st_light(_st_t) >= float(_st_cfg["threshold"]) else GRAY_DIM],
-			[tr("FOTOS"), "%d / %d" % [_st_frames, int(_st_cfg["frames_goal"])]],
+			[tr("SOL %d DE %d") % [mini(_st_sol + 1, int(_st_cfg["sols"])), int(_st_cfg["sols"])], tr("FALLOS") + " %d/%d" % [_st_faults, int(_st_cfg["fault_limit"])], RED if _st_faults > 0 else GRAY_DIM],
+			[tr("LUZ"), "%d%%" % int(_st_light_now() * 100.0), GREEN if _st_light_now() >= float(_st_cfg["thr_good"]) else GRAY_DIM],
+			[tr("PANORAMA"), "%d" % int(_st_score), GOLD],
 		]
 	_layer(_draw_storm)
 	_input_cb = _storm_input
-	while not _st_done:
-		await get_tree().process_frame
-		if get_tree().paused:
-			continue
-		_storm_step(get_process_delta_time())
+	while true:
+		_st_restart()
+		_st_done = false
+		while not _st_done:
+			await get_tree().process_frame
+			if get_tree().paused:
+				continue
+			_storm_step(get_process_delta_time())
+		var stars: Array = _st_cfg["stars"]
+		_st_stars = 0
+		for th in stars:
+			if _st_score >= float(th):
+				_st_stars += 1
+		if _st_stars >= 1:
+			break
+		sfx("lose")
+		await toast(String(_st_cfg["msg_low"]), RED, 2.6)
 	_input_cb = Callable()
+	_st_heat_mouse = false
 	sfx("win")
-	await toast(String(_st_cfg["done"]), GREEN, 1.8)
+	await toast(String(_st_cfg["done"]) + "  " + tr("ESTRELLAS: %d / 3") % _st_stars, GREEN, 2.4)
 	await _last_message(sc)
 	await say(sc["outro"])
 	await _closing(sc)
 
 
 func _st_restart() -> void:
-	_st_t = 0.0
+	_st_sol = 0
 	_st_batt = float(_st_cfg["battery_start"])
+	_st_temp = float(_st_cfg["temp_start"])
+	_st_score = 0.0
+	_st_combo = 0
+	_st_faults = 0
 	_st_frames = 0
 	_st_cool = 0.0
+	_st_off = false
+	_st_sleep = false
+	_st_hist = []
+	_st_new_sol()
 
 
-## Luz que llega a los paneles en el instante t: pulsos cada ~6 s dentro de una tormenta que se espesa.
-func _st_light(t: float) -> float:
-	var env := lerpf(1.0, 0.45, clampf(t / float(_st_cfg["seconds"]), 0.0, 1.0))
-	return env * (0.5 + 0.5 * sin(TAU * t / 6.0 + 0.6))
+func _st_new_sol() -> void:
+	_st_sol_t = 0.0
+	_st_tp = randf_range(3.5, 6.5)
+	_st_gust = randf_range(1.0, 8.0) if randf() < float(_st_cfg["gust_chance"]) else -9.0
+	_st_dust = randf_range(1.0, 8.0) if randf() < float(_st_cfg["dust_chance"]) else -9.0
+	_st_gust_on = false
+	_st_dust_on = false
+
+
+func _st_env(sol: int) -> float:
+	return lerpf(float(_st_cfg["env0"]), float(_st_cfg["env1"]), float(sol) / float(int(_st_cfg["sols"]) - 1))
+
+
+## Luz sin imprevistos (lo único que se puede prever, y solo unos segundos).
+func _st_base_at(t: float) -> float:
+	return _st_env(_st_sol) * (0.15 + 0.85 * exp(-pow((t - _st_tp) / 1.5, 2.0)))
+
+
+func _st_light_now() -> float:
+	if _st_cfg.is_empty():
+		return 0.0
+	var l := _st_base_at(_st_sol_t)
+	if _st_sol_t >= _st_gust and _st_sol_t < _st_gust + 2.0:
+		l += 0.3
+	if _st_sol_t >= _st_dust and _st_sol_t < _st_dust + 2.5:
+		l *= 0.5
+	return clampf(l, 0.0, 1.0)
+
+
+func _st_btn_rect(i: int) -> Rect2:
+	return [Rect2(20, 222, 200, 22), Rect2(230, 222, 170, 22), Rect2(410, 222, 130, 22)][i]
 
 
 func _storm_input(event: InputEvent, click: bool) -> void:
-	if click or event.is_action_pressed("ui_accept") or event.is_action_pressed("thrust"):
-		_storm_photo()
+	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_st_heat_mouse = false
+		return
+	if event is InputEventMouseMotion:
+		var h := -1
+		for i in 3:
+			if _st_btn_rect(i).has_point(get_local_mouse_position()):
+				h = i
+		if h != _st_hover and h >= 0:
+			sfx("hover")
+		_st_hover = h
+		return
+	if click:
+		var p := get_local_mouse_position()
+		if _st_btn_rect(1).has_point(p):
+			_st_heat_mouse = true
+		elif _st_btn_rect(2).has_point(p):
+			_st_toggle_sleep()
+		else:
+			_storm_photo()
+	elif event is InputEventKey and event.pressed and not event.echo:
+		var k := int(event.physical_keycode)
+		if k == KEY_ENTER or k == KEY_KP_ENTER or k == KEY_SPACE:
+			_storm_photo()
+		elif k == KEY_S or k == KEY_DOWN:
+			_st_toggle_sleep()
+
+
+func _st_toggle_sleep() -> void:
+	if _st_off:
+		return
+	_st_sleep = not _st_sleep
+	sfx("click")
+	if not _st_sleep:
+		_st_cool = maxf(_st_cool, 1.0)
 
 
 func _storm_photo() -> void:
+	if _st_off or _st_sleep:
+		_say_msg(String(_st_cfg["msg_cant"]), RED, 1.6)
+		sfx("error")
+		return
 	if _st_cool > 0.0:
 		return
-	_st_cool = float(_st_cfg.get("cooldown", 3.0))
-	sfx("shutter")
+	_st_cool = float(_st_cfg["cooldown"])
 	_st_batt = maxf(0.0, _st_batt - float(_st_cfg["photo_cost"]))
-	if _st_light(_st_t) >= float(_st_cfg["threshold"]):
-		_st_frames += 1
-		_say_msg(String(_st_cfg["good"]), GREEN, 1.4)
+	sfx("shutter")
+	var l := _st_light_now()
+	var mult: float = [1.0, 1.25, 1.5][mini(_st_combo, 2)]
+	if l < float(_st_cfg["thr_poor"]):
+		_st_combo = 0
+		_st_rating = String(_st_cfg["r_dark"])
+		_st_rating_col = RED
+		_st_rating_t = 1.3
+		sfx("error")
+		return
+	var gain := minf(34.0, 30.0 * l * l * mult)
+	_st_score += gain
+	_st_frames += 1
+	if l >= float(_st_cfg["thr_perfect"]):
+		_st_rating = String(_st_cfg["r_perfect"])
+		_st_rating_col = YEL
+		sfx("win")
+	elif l >= float(_st_cfg["thr_good"]):
+		_st_rating = String(_st_cfg["r_good"])
+		_st_rating_col = GREEN
 		sfx("ok")
 	else:
-		_say_msg(String(_st_cfg["dark"]), RED, 1.6)
-		sfx("error")
+		_st_rating = String(_st_cfg["r_poor"])
+		_st_rating_col = GRAY
+		sfx("tick")
+	_st_rating += "  +%d" % int(gain)
+	_st_rating_t = 1.3
+	_st_combo = _st_combo + 1 if l >= float(_st_cfg["thr_good"]) else 0
+
+
+func _st_fault(msg: String) -> void:
+	_st_off = true
+	_st_sleep = false
+	_st_faults += 1
+	_st_combo = 0
+	_st_score = maxf(0.0, _st_score - float(_st_cfg["fault_penalty"]))
+	sfx("lose")
+	_say_msg(msg, RED, 3.0)
+	if _st_faults >= int(_st_cfg["fault_limit"]):
+		_say_msg(String(_st_cfg["msg_retry3"]), RED, 3.2)
+		_st_restart()
 
 
 func _storm_step(delta: float) -> void:
-	_st_t += delta
+	_st_sol_t += delta
 	_st_cool = maxf(0.0, _st_cool - delta)
-	var on := _st_light(_st_t) >= float(_st_cfg["threshold"])
-	if on and not _st_was_on:
-		sfx("ping", 1.0, -13.0)
-	_st_was_on = on
-	_st_batt = clampf(_st_batt + (float(_st_cfg["gain"]) * _st_light(_st_t) - float(_st_cfg["drain"])) * delta, 0.0, 100.0)
-	if _st_frames >= int(_st_cfg["frames_goal"]):
-		_st_done = true
-	elif _st_batt <= 0.0:
-		_say_msg(String(_st_cfg["no_energy"]), RED, 2.6)
-		sfx("lose")
-		_st_restart()
-	elif _st_t >= float(_st_cfg["seconds"]):
-		_say_msg(String(_st_cfg["retry"]), RED, 2.6)
-		sfx("lose")
-		_st_restart()
+	_st_rating_t = maxf(0.0, _st_rating_t - delta)
+	# Imprevistos: ráfaga que limpia paneles y pico de polvo.
+	var in_gust := _st_sol_t >= _st_gust and _st_sol_t < _st_gust + 2.0
+	var in_dust := _st_sol_t >= _st_dust and _st_sol_t < _st_dust + 2.5
+	if in_gust and not _st_gust_on:
+		sfx("whoosh", 1.0, -8.0)
+		sfx("ping2")
+		_say_msg(String(_st_cfg["msg_gust"]), GREEN, 2.0)
+	if in_dust and not _st_dust_on:
+		sfx("warn")
+		_say_msg(String(_st_cfg["msg_dust"]), RED, 2.0)
+	_st_gust_on = in_gust
+	_st_dust_on = in_dust
+	var l := _st_light_now()
+	_st_hist_t += delta
+	if _st_hist_t >= 0.05:
+		_st_hist_t = 0.0
+		_st_hist.append(l)
+		if _st_hist.size() > 80:
+			_st_hist.pop_front()
+	_st_heating = (Input.is_physical_key_pressed(KEY_H) or _st_heat_mouse) and not _st_off
+	var cold := lerpf(float(_st_cfg["cold0"]), float(_st_cfg["cold1"]), float(_st_sol) / float(int(_st_cfg["sols"]) - 1))
+	var drain := float(_st_cfg["drain"])
+	if _st_sleep or _st_off:
+		drain *= float(_st_cfg["sleep_factor"])
+		cold *= 0.5
+	_st_temp = clampf(_st_temp + (-cold + (float(_st_cfg["heat"]) if _st_heating else 0.0)) * delta, 0.0, 100.0)
+	_st_batt = clampf(_st_batt + (float(_st_cfg["gain"]) * l - drain - (float(_st_cfg["heat_cost"]) if _st_heating else 0.0)) * delta, 0.0, 100.0)
+	if _st_heating:
+		_st_hum_t -= delta
+		if _st_hum_t <= 0.0:
+			_st_hum_t = 0.4
+			sfx("hum", 1.0, -16.0)
+	if not _st_off:
+		if _st_batt <= 0.0:
+			_st_fault(String(_st_cfg["msg_fault_batt"]))
+			return
+		if _st_temp <= 0.0:
+			_st_fault(String(_st_cfg["msg_fault_cold"]))
+			return
+	if _st_sol_t >= float(_st_cfg["sol_s"]):
+		_st_sol += 1
+		if _st_sol >= int(_st_cfg["sols"]):
+			_st_done = true
+			return
+		sfx("tick")
+		if _st_off:
+			_st_off = false
+			_st_batt = maxf(_st_batt, 15.0)
+			_st_temp = maxf(_st_temp, 25.0)
+		_st_new_sol()
+
+
+func _star(c: CanvasItem, ctr: Vector2, r: float, col: Color) -> void:
+	var pts := PackedVector2Array()
+	for i in 10:
+		var a := -PI * 0.5 + float(i) * PI / 5.0
+		var rr := r if i % 2 == 0 else r * 0.45
+		pts.append(ctr + Vector2(cos(a), sin(a)) * rr)
+	c.draw_colored_polygon(pts, col)
 
 
 func _draw_storm(c: DrawNode) -> void:
 	if _st_cfg.is_empty():
 		return
-	var prog := clampf(_st_t / float(_st_cfg["seconds"]), 0.0, 1.0)
-	_mars_sky(c, GAME_TOP, 170.0, prog * 0.55)
-	# Polvo en el aire.
+	var env := _st_env(_st_sol)
+	var dim := (1.0 - env) * 0.9 + (0.25 if _st_dust_on else 0.0)
+	_mars_sky(c, GAME_TOP, 150.0, dim)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 91
 	for i in 80:
-		var x := fmod(rng.randf() * W + _t * (20.0 + rng.randf() * 30.0), W)
-		c.draw_rect(Rect2(x, GAME_TOP + rng.randf() * 150.0, 2, 1), Color(0.9, 0.6, 0.4, 0.25 + prog * 0.3))
-	c.draw_rect(Rect2(0, 170, W, GAME_BOTTOM - 170), MARS_DARK.lerp(MARS, 0.5).darkened(prog * 0.4))
-	c.draw_rect(Rect2(0, 170, W, 2), MARS_LIGHT.darkened(prog * 0.4))
-	_draw_rover_side(c, Vector2(320, 188), 2.6, 0.0, 0.0, SILVER)
-	# Fotos del panorama.
-	var goal := int(_st_cfg["frames_goal"])
-	for i in goal:
-		var r := Rect2(20.0 + float(i) * 26.0, 78, 22, 14)
-		c.draw_rect(r, GREEN.darkened(0.4) if i < _st_frames else Color("#1a1210"))
-		c.draw_rect(r, GREEN if i < _st_frames else GRAY_DIM, false, 1.0)
-	# Gráfico de luz: pasado reciente y previsión de los próximos segundos.
-	var g := Rect2(20, 208, 600, 50)
+		var x := fmod(rng.randf() * W + _t * (20.0 + rng.randf() * 30.0 + (160.0 if _st_gust_on else 0.0)), W)
+		c.draw_rect(Rect2(x, GAME_TOP + rng.randf() * 130.0, 3 if _st_gust_on else 2, 1), Color(0.9, 0.6, 0.4, 0.25 + (1.0 - env) * 0.4))
+	c.draw_rect(Rect2(0, 150, W, GAME_BOTTOM - 150), MARS_DARK.lerp(MARS, 0.5).darkened((1.0 - env) * 0.5))
+	c.draw_rect(Rect2(0, 150, W, 2), MARS_LIGHT.darkened((1.0 - env) * 0.5))
+	if _st_heating:
+		c.draw_circle(Vector2(320, 150), 26.0 + sin(_t * 12.0) * 2.0, Color(1.0, 0.5, 0.2, 0.25))
+	_draw_rover_side(c, Vector2(320, 172), 2.0, 0.0, 0.0, SILVER)
+	if _st_off or _st_sleep:
+		c.draw_rect(Rect2(0, GAME_TOP, W, 150 - GAME_TOP), Color(0, 0, 0, 0.45))
+		_txt(c, Vector2(0, 126), tr("SIN ENERGÍA") if _st_off else tr("DURMIENDO"), 12, RED if _st_off else CYAN, W, HORIZONTAL_ALIGNMENT_CENTER)
+	# Panorama: barra con las tres estrellas.
+	var bar := Rect2(20, 84, 600, 10)
+	c.draw_rect(Rect2(bar.position - Vector2(2, 2), bar.size + Vector2(4, 4)), Color(0.04, 0.02, 0.02, 0.85))
+	var maxs := float(_st_cfg["max_score"])
+	c.draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(_st_score / maxs, 0.0, 1.0), bar.size.y)), GREEN)
+	c.draw_rect(bar, GRAY_DIM, false, 1.0)
+	_txt(c, Vector2(24, 82), tr("PANORAMA"), 8, GRAY)
+	for th in _st_cfg["stars"]:
+		var sx := bar.position.x + bar.size.x * float(th) / maxs
+		_star(c, Vector2(sx, 89), 7.0, YEL if _st_score >= float(th) else Color(0.3, 0.25, 0.2))
+	if _st_rating_t > 0.0:
+		_txt(c, Vector2(0, 128), _st_rating, 14, _st_rating_col, W, HORIZONTAL_ALIGNMENT_CENTER)
+	if _st_combo >= 1:
+		_txt(c, Vector2(24, 128), tr("COMBO") + " x%s" % _num([1.0, 1.25, 1.5][mini(_st_combo, 2)], 2), 11, YEL)
+	# Gráfico de luz: pasado (real) y futuro (borroso: solo se ve lo base, sin imprevistos).
+	var g := Rect2(20, 176, 440, 40)
 	c.draw_rect(g, Color("#120c0a"))
-	var thr := float(_st_cfg["threshold"])
-	for i in 200:
-		var tt := _st_t - 2.0 + float(i) / 20.0
-		if tt < 0.0:
-			continue
-		var v := _st_light(tt)
-		var h := v * 46.0
-		var col := GREEN if v >= thr else Color("#4a3a30")
-		if i < 40:
-			col = col.darkened(0.35)
-		c.draw_rect(Rect2(g.position.x + float(i) * 3.0, g.position.y + 48.0 - h, 3, h), col)
-	c.draw_line(Vector2(g.position.x, g.position.y + 48.0 - thr * 46.0), Vector2(g.end.x, g.position.y + 48.0 - thr * 46.0), YEL, 1.0)
-	c.draw_line(Vector2(g.position.x + 120.0, g.position.y), Vector2(g.position.x + 120.0, g.end.y), Color.WHITE, 2.0)
+	var now_x := g.position.x + g.size.x * 4.0 / 7.0
+	for lvl in [[float(_st_cfg["thr_poor"]), GRAY_DIM], [float(_st_cfg["thr_good"]), GREEN], [float(_st_cfg["thr_perfect"]), YEL]]:
+		var ly := g.end.y - 2.0 - float(lvl[0]) * (g.size.y - 4.0)
+		c.draw_line(Vector2(g.position.x, ly), Vector2(g.end.x, ly), Color(lvl[1], 0.5), 1.0)
+	var hn := _st_hist.size()
+	for i in hn:
+		var x := now_x - float(hn - i) * (now_x - g.position.x) / 80.0
+		var v: float = _st_hist[i]
+		var col := YEL if v >= float(_st_cfg["thr_perfect"]) else (GREEN if v >= float(_st_cfg["thr_good"]) else (GRAY if v >= float(_st_cfg["thr_poor"]) else Color("#4a3a30")))
+		var h := v * (g.size.y - 4.0)
+		c.draw_rect(Rect2(x, g.end.y - 2.0 - h, 3, h), col)
+	var frng := RandomNumberGenerator.new()
+	for i in 56:
+		var ft := float(i) / 56.0 * 3.0
+		var x := now_x + float(i) * (g.end.x - now_x) / 56.0
+		var fog := ft / 3.0
+		frng.seed = i * 31 + int(_st_sol_t * 4.0)
+		var v := clampf(_st_base_at(_st_sol_t + ft) + frng.randf_range(-0.12, 0.12) * fog, 0.0, 1.0)
+		var h := v * (g.size.y - 4.0)
+		c.draw_rect(Rect2(x, g.end.y - 2.0 - h, 3, h), Color(1, 1, 1, 0.35 * (1.0 - fog * 0.7)))
+	c.draw_line(Vector2(now_x, g.position.y), Vector2(now_x, g.end.y), Color.WHITE, 2.0)
 	c.draw_rect(g, GRAY_DIM, false, 1.0)
-	_txt(c, Vector2(g.position.x + 126, g.position.y + 10), tr("LUZ"), 8, GRAY)
-	_draw_msg(c, 186)
+	_txt(c, Vector2(g.position.x + 4, g.position.y + 10), tr("LUZ"), 8, GRAY)
+	# Temperatura, tiempo del sol y enfriamiento de la cámara.
+	var tx := 472.0
+	_txt(c, Vector2(tx, 184), tr("TEMPERATURA"), 8, GRAY)
+	c.draw_rect(Rect2(tx, 188, 148, 8), Color(0, 0, 0, 0.6))
+	c.draw_rect(Rect2(tx, 188, 148.0 * _st_temp / 100.0, 8), RED if _st_temp < 25.0 else Color("#ff8a50"))
+	c.draw_rect(Rect2(tx, 188, 148, 8), GRAY_DIM, false, 1.0)
+	_txt(c, Vector2(tx, 210), "SOL", 8, GRAY)
+	c.draw_rect(Rect2(tx + 24, 203, 124, 5), Color(0, 0, 0, 0.6))
+	c.draw_rect(Rect2(tx + 24, 203, 124.0 * _st_sol_t / float(_st_cfg["sol_s"]), 5), CYAN)
+	# Botones.
+	var labels := [tr("FOTO [ENTER]"), tr("CALENTAR [H]"), tr("DORMIR [S]")]
+	var lit := [_st_cool <= 0.0 and not _st_off and not _st_sleep, _st_heating, _st_sleep]
+	for i in 3:
+		var r := _st_btn_rect(i)
+		var hov := _st_hover == i
+		c.draw_rect(r, Color("#4a3020") if (hov or bool(lit[i]) and i > 0) else Color("#2a1c16"))
+		c.draw_rect(r, Color.WHITE if hov else (GREEN if bool(lit[i]) else GRAY_DIM), false, 2.0 if hov else 1.0)
+		_txt(c, Vector2(r.position.x, r.position.y + 15), String(labels[i]), 10, GREEN if bool(lit[i]) else GRAY, r.size.x, HORIZONTAL_ALIGNMENT_CENTER)
+	if _st_cool > 0.0:
+		var cr := _st_btn_rect(0)
+		c.draw_rect(Rect2(cr.position.x, cr.end.y - 3, cr.size.x * (1.0 - _st_cool / float(_st_cfg["cooldown"])), 3), YEL)
+	_draw_msg(c, 98)
 
 
 ## Imagen oscura y con ruido que se forma línea a línea y se corta antes de terminar.

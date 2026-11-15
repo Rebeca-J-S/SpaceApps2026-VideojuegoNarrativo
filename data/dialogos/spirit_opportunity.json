@@ -772,21 +772,48 @@
 				}
 			],
 			"minimission": {
-				"title": "MINIJUEGO: VENTANAS DE LUZ",
-				"info": "Pulsa ENTER o clic cuando la luz esté por encima de la línea para tomar una foto del panorama",
-				"frames_goal": 6,
-				"seconds": 55.0,
-				"battery_start": 60.0,
-				"drain": 1.0,
-				"gain": 3.0,
-				"photo_cost": 7.0,
-				"cooldown": 3.0,
-				"threshold": 0.5,
-				"no_energy": "SIN ENERGÍA: SE REINICIA EL INTENTO",
-				"dark": "FOTO DEMASIADO OSCURA: ENERGÍA PERDIDA",
-				"good": "FOTO DEL PANORAMA TOMADA",
+				"title": "MINIJUEGO: SOBREVIVE Y FOTOGRAFÍA",
+				"info": "ENTER o clic: foto con buena luz · mantén H: calentar · S: dormir. Cuida batería y temperatura",
+				"sols": 8,
+				"sol_s": 10.0,
+				"battery_start": 70.0,
+				"temp_start": 90.0,
+				"env0": 1.0,
+				"env1": 0.45,
+				"cold0": 1.0,
+				"cold1": 1.8,
+				"heat": 3.4,
+				"heat_cost": 3.5,
+				"drain": 0.8,
+				"gain": 4.0,
+				"photo_cost": 6.0,
+				"cooldown": 2.5,
+				"sleep_factor": 0.35,
+				"fault_limit": 3,
+				"fault_penalty": 12.0,
+				"stars": [
+					60,
+					100,
+					140
+				],
+				"max_score": 160.0,
+				"thr_poor": 0.35,
+				"thr_good": 0.55,
+				"thr_perfect": 0.8,
+				"gust_chance": 0.5,
+				"dust_chance": 0.4,
+				"r_perfect": "PERFECTA",
+				"r_good": "BUENA",
+				"r_poor": "FLOJA",
+				"r_dark": "OSCURA: ENERGÍA PERDIDA",
+				"msg_gust": "RÁFAGA DE VIENTO: ¡PANELES MÁS LIMPIOS!",
+				"msg_dust": "PICO DE POLVO: LA LUZ BAJA",
+				"msg_cant": "NO SE PUEDE FOTOGRAFIAR AHORA",
+				"msg_fault_batt": "BATERÍA A CERO: OPPORTUNITY SE APAGÓ EL RESTO DEL SOL",
+				"msg_fault_cold": "DEMASIADO FRÍO: OPPORTUNITY SE APAGÓ EL RESTO DEL SOL",
+				"msg_retry3": "TRES APAGONES: SE REPITE LA TORMENTA",
+				"msg_low": "PANORAMA INCOMPLETO: REPITE PARA CONSEGUIR AL MENOS 1 ESTRELLA",
 				"done": "PANORAMA COMPLETO. TRANSMITIENDO...",
-				"retry": "REINTENTO DE LA TORMENTA",
 				"note": "Simplificación: el panorama real se tomó entre el 13 de mayo y el 10 de junio de 2018."
 			},
 			"last_message": {
@@ -997,12 +1024,22 @@
 				]
 			},
 			{
-				"tip": "Toma la foto cuando la luz supere la línea. Una foto oscura gasta energía en vano.",
+				"tip": "Fotografía cerca del pico de luz: más calidad y combo. Mantén H para calentar y S para dormir; con batería o temperatura a cero se apaga ese sol.",
 				"keys": [
 					[
 						"ENTER / CLIC",
 						"ui_accept",
 						"TOMAR FOTO"
+					],
+					[
+						"H",
+						"",
+						"CALENTAR (MANTENER)"
+					],
+					[
+						"S",
+						"",
+						"DORMIR"
 					]
 				]
 			}
