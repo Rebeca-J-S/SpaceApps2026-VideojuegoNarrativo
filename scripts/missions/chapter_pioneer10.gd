@@ -1802,7 +1802,8 @@ func _begin_tune(i: int) -> void:
 	var k := maxi(1, int(ceil(float(mm["min_beat"]) / period)))   # los púlsares rápidos cuentan 1 de cada k destellos
 	_tune_i = i
 	_tune_beat = period * float(k)
-	_tune_tol = clampf(_tune_beat * 0.2, 0.12, float(mm["tolerance"]))
+	# El margen crece con la duración del tiempo: los púlsares lentos son mucho más fáciles de atinar.
+	_tune_tol = clampf(_tune_beat * float(mm["tolerance_ratio"]), 0.12, float(mm["tolerance"]))
 	_tune_t = 0.0
 	_tune_hits = 0
 	_tune_miss = 0
@@ -1989,6 +1990,9 @@ func _draw_plate(c: DrawNode) -> void:
 		var prog := 1.0 - (float(nb) * _tune_beat - _tune_t) / _tune_beat
 		var ring_col := Color(1, 1, 1, 0.55) if nb <= 2 else YELLOW
 		c.draw_arc(tp, lerpf(38.0, 7.0, prog), 0.0, TAU, 36, ring_col, 2.0)
+		# Zona de acierto: la franja que se ve alrededor del púlsar es el margen para pulsar a tiempo.
+		var win_px := clampf(_tune_tol / _tune_beat * 31.0, 2.0, 12.0)
+		c.draw_arc(tp, 7.0 + win_px * 0.5, 0.0, TAU, 28, Color(RetroTheme.PHOSPHOR, 0.3), win_px)
 		c.draw_arc(tp, 7.0, 0.0, TAU, 20, Color(1, 1, 1, 0.9), 1.0)
 		if _tune_flash > 0.0:
 			c.draw_circle(tp, 5.0 + 10.0 * _tune_flash, Color(1, 1, 1, 0.45 * _tune_flash))
