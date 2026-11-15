@@ -72,8 +72,8 @@
 			"id": "espacio",
 			"name": "ESPACIO PROFUNDO",
 			"kind": "deep_space",
-			"missions_line": "PIONEER 10 · PIONEER 11\n1972 · 1973",
-			"count_label": "2 SONDAS EN RUTA",
+			"missions_line": "PIONEER 10\n1972",
+			"count_label": "1 SONDA EN RUTA",
 			"sites": [
 				{
 					"id": "pioneer10",
@@ -84,16 +84,6 @@
 					"angle": 205.0,
 					"mission_title": "LA ÚLTIMA SEÑAL",
 					"scene": "res://scenes/missions/chapter_pioneer10.tscn"
-				},
-				{
-					"id": "pioneer11",
-					"name": "PIONEER 11",
-					"place": "Rumbo a la constelación del Águila",
-					"year": "1973",
-					"equipment": "Sonda Pioneer 11 con su placa de oro",
-					"angle": 25.0,
-					"mission_title": "LA ÚLTIMA SEÑAL",
-					"scene": "res://scenes/missions/mision_pioneer.tscn"
 				}
 			]
 		}
