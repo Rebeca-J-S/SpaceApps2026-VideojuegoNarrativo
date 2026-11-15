@@ -18,6 +18,7 @@ signal chapter_finished
 const PioneerArt := preload("res://scripts/missions/mision_pioneer.gd")
 const DATA_PATH := "res://data/dialogos/pioneer10.json"
 const MISSION_ID := "pioneer"          # id de progreso (desbloquea las fichas de Pioneer en el Archivo)
+const BADGE_ID := "pioneer10"           # insignia del cuaderno (data/badges.json)
 const W := 640.0
 const GAME_TOP := 22.0
 const GAME_BOTTOM := 266.0
@@ -43,7 +44,7 @@ var _mm_info: Label
 var _toast: Label
 var _fade_text: Label
 var _hud_draw: Control
-var _pause_panel: PanelContainer
+var _pause_menu: PauseMenu
 var _fade: ColorRect
 
 var _energy := 100.0
@@ -151,11 +152,16 @@ var _reveal_done := false
 var _buzz: AudioStreamPlayer
 
 
+var _badge_toast: BadgeToast
+
+
 func _ready() -> void:
 	theme = RetroTheme.build()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	data = GameManager.load_json(DATA_PATH)
 	_build()
+	_badge_toast = BadgeToast.new()
+	add_child(_badge_toast)
 	await get_tree().process_frame
 	_run_chapter()
 
@@ -174,11 +180,25 @@ func _run_chapter() -> void:
 	var first := maxi(start - 1, 0)
 	for i in range(first, scenes.size()):
 		await _run_scene(scenes[i], i, start > 0 and i == first)
+		await _award_badge_piece(i)
 	mission_hud.mark_all_done()
 	chapter_finished.emit()
 	if auto_return:
 		GameManager.mark_completed(MISSION_ID)
 		GameManager.go_to_planet_select()
+
+
+
+## Cuaderno de insignias: cada fase terminada gana una pieza de la insignia de la misión.
+func _award_badge_piece(index: int) -> void:
+	var b := GameManager.find_badge(BADGE_ID)
+	if b.is_empty() or not GameManager.unlock_badge_piece(BADGE_ID, index):
+		return
+	if GameManager.is_badge_complete(BADGE_ID):
+		# Insignia completa: se desbloquea su ficha técnica (aviso grande, espera al jugador).
+		await BadgeUnlockCard.present(self, b)
+	else:
+		_badge_toast.show_piece(b, GameManager.badge_pieces(BADGE_ID), index)
 
 
 func _run_scene(sc: Dictionary, index: int, jumped: bool) -> void:
@@ -194,6 +214,8 @@ func _run_scene(sc: Dictionary, index: int, jumped: bool) -> void:
 	_retry = false
 	await _banner(String(sc["title"]))
 	mission_hud.set_phase(index, String(sc["title"]), String(sc["objective"]))
+	# Tarjeta "CÓMO SE JUEGA" antes de cada minijuego (las fases que son solo cinemática no tienen).
+	await TutorialCard.present(self, GameManager.get_tutorial(BADGE_ID, String(sc["id"])), String(sc["title"]))
 	while true:
 		_depleted = false
 		var e0 := _energy
@@ -336,7 +358,8 @@ func _build() -> void:
 	mission_hud = MissionHUD.new()
 	add_child(mission_hud)
 	mission_hud.badge_pos = Vector2(8, GAME_TOP + 3)
-	mission_hud.buttons_pos = Vector2(W - 6, GAME_TOP + 3)
+	mission_hud.buttons_pos = Vector2(W - 28, GAME_TOP + 3)
+	mission_hud.show_info_buttons = false   # C / O / I van dentro del menú de tres puntos
 	mission_hud.reminder_pos = Vector2(8, GAME_TOP + 54)
 	mission_hud.briefing_auto_seconds = 7.0
 	mission_hud.briefing_area = Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP)   # ficha centrada en el área de juego
@@ -361,28 +384,14 @@ func _build() -> void:
 	add_child(crt)
 
 
+## Menú de pausa común (botón de tres puntos o ESC): sonido, ayuda de los minijuegos y salir.
 func _build_pause() -> void:
-	_pause_panel = PanelContainer.new()
-	_pause_panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	_pause_panel.position = Vector2(220, 100)
-	_pause_panel.custom_minimum_size = Vector2(200, 0)
-	add_child(_pause_panel)
-	var box := VBoxContainer.new()
-	_pause_panel.add_child(box)
-	var t := Label.new()
-	t.text = data["hud"]["pause_title"]
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	t.add_theme_color_override("font_color", RetroTheme.AMBER)
-	box.add_child(t)
-	var cont := Button.new()
-	cont.text = data["hud"]["pause_continue"]
-	cont.pressed.connect(_toggle_pause)
-	box.add_child(cont)
-	var exit := Button.new()
-	exit.text = data["hud"]["pause_exit"]
-	exit.pressed.connect(GameManager.go_to_planet_select)
-	box.add_child(exit)
-	_pause_panel.hide()
+	_pause_menu = PauseMenu.new()
+	_pause_menu.setup(BADGE_ID, data["scenes"])
+	_pause_menu.hud = mission_hud
+	_pause_menu.dots_pos = Vector2(W - 6, GAME_TOP + 3)
+	add_child(_pause_menu)
+	_pause_menu.apply_layout()
 
 
 func _label(pos: Vector2, sz: Vector2, font_size: int, color: Color, parent: Node = null) -> Label:
@@ -1294,7 +1303,7 @@ func _draw_jupiter(c: DrawNode) -> void:
 		var pulse := 0.5 + 0.5 * sin(c.t * 9.0)
 		c.draw_arc(_visor, tol + 3.0 + pulse * 3.0, 0.0, TAU, 28, Color(ac, 0.35 + 0.3 * pulse), 1.0)
 		if not _scanning:
-			c.draw_string(font, _visor + Vector2(-26, h + 12), "ENFOCADO", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, ac)
+			c.draw_string(font, _visor + Vector2(-26, h + 12), tr("ENFOCADO"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, ac)
 	# Barrido del escaneo dentro del visor.
 	if _scanning:
 		var sy2 := _visor.y - h + (_scan_t / _scan_dur) * h * 2.0
@@ -1306,7 +1315,7 @@ func _draw_jupiter(c: DrawNode) -> void:
 	var pr := Rect2(500, 106, 122, 130)
 	c.draw_rect(pr, Color(0.01, 0.03, 0.04, 0.9))
 	c.draw_rect(pr, Color(RetroTheme.PHOSPHOR, 0.7), false, 1.0)
-	c.draw_string(font, pr.position + Vector2(5, 11), "FOTO", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+	c.draw_string(font, pr.position + Vector2(5, 11), tr("FOTO"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
 	var pc := pr.position + Vector2(61, 70)
 	var mcol := Color(String(m["color"]))
 	_draw_scan_image(c, pc, 46.0, mcol, _scan_lines, _scan_n, float(mi))
@@ -1383,7 +1392,7 @@ func _draw_polaroid(c: CanvasItem) -> void:
 	c.draw_string(font, Vector2(-40, -56), "%d%%" % int(_pol["acc"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, _acc_color(int(_pol["acc"])).darkened(0.25))
 	c.draw_string(font, Vector2(30, -56), String(data["scenes"][2]["minimission"]["stars_label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#6a6a74"))
 	c.draw_multiline_string(font, Vector2(-40, -40), String(m["fact"]), HORIZONTAL_ALIGNMENT_LEFT, 205.0, 10, -1, ink)
-	c.draw_string(font, Vector2(60, 72), "ENTER: SEGUIR", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#8a8a94"))
+	c.draw_string(font, Vector2(60, 72), tr("ENTER: SEGUIR"), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#8a8a94"))
 	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -1645,7 +1654,7 @@ func _scene_silence(sc: Dictionary) -> void:
 		_static = _sil_frac * 0.25 + glitch * _sil_frac * 0.35
 		while shown < events.size() and float(events[shown]["year"]) <= _sil_year:
 			_sil_log.append(events[shown])
-			_mm_info.text = "ENLACE: %s" % String(events[shown]["link"])
+			_mm_info.text = tr("ENLACE: %s") % String(events[shown]["link"])
 			shown += 1
 	_static = 0.0
 	_set_year("2003")
@@ -1788,7 +1797,7 @@ func _plate_action(pos: Vector2) -> void:
 	var i := _pick_pulsar(pos)
 	if i >= 0:
 		if _decoded[i]:
-			toast("PÚLSAR %s YA SINCRONIZADO" % _pulsars[i]["id"], RetroTheme.WHITE, 0.8)
+			toast(tr("PÚLSAR %s YA SINCRONIZADO") % _pulsars[i]["id"], RetroTheme.WHITE, 0.8)
 		else:
 			_begin_tune(i)
 		return
@@ -1997,9 +2006,9 @@ func _draw_plate(c: DrawNode) -> void:
 		if _tune_flash > 0.0:
 			c.draw_circle(tp, 5.0 + 10.0 * _tune_flash, Color(1, 1, 1, 0.45 * _tune_flash))
 		if nb <= 2:
-			c.draw_string(font, tp + Vector2(-20, -16), "ESCUCHA", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.8))
+			c.draw_string(font, tp + Vector2(-20, -16), tr("ESCUCHA"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.8))
 		else:
-			c.draw_string(font, tp + Vector2(-8, -16), "¡YA!" if prog > 0.82 else "...", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
+			c.draw_string(font, tp + Vector2(-8, -16), tr("¡YA!") if prog > 0.82 else "...", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
 	# Revelado: la onda de cada púlsar viaja hasta el Sol y luego se desvanece.
 	var travel := float(mm.get("reveal_travel", 0.55))
 	for ring in _rev_rings:
@@ -2059,7 +2068,7 @@ func _draw_plate(c: DrawNode) -> void:
 		var sn := int(mm["streak_needed"])
 		for k in sn:
 			c.draw_circle(Vector2(560 + k * 14, 229), 4.0, YELLOW if k < _tune_hits else Color(1, 1, 1, 0.2))
-		c.draw_string(font, Vector2(398, 248), "Fallos: %d/3" % _tune_miss, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#ff9a7a") if _tune_miss > 0 else Color(1, 1, 1, 0.6))
+		c.draw_string(font, Vector2(398, 248), tr("Fallos: %d/3") % _tune_miss, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#ff9a7a") if _tune_miss > 0 else Color(1, 1, 1, 0.6))
 	else:
 		c.draw_string(font, Vector2(398, 232), "%s: %d/%d" % [mm["sync_label"], n_dec, needed], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW)
 		for k in needed:
@@ -2178,8 +2187,4 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _toggle_pause() -> void:
-	var p := not get_tree().paused
-	get_tree().paused = p
-	_pause_panel.visible = p
-	if p:
-		(_pause_panel.get_child(0).get_child(1) as Button).grab_focus()
+	_pause_menu.toggle()

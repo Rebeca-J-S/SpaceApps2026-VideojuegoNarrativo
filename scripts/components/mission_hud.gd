@@ -47,6 +47,9 @@ var _idle := 0.0
 
 var _badge: Button
 var _buttons: HBoxContainer
+## false = los botones C/O/I no se muestran en pantalla (están dentro del menú de tres puntos).
+var show_info_buttons := true
+var _ready_for_keys := false
 var _keys_view: Control
 var _reminder: PanelContainer
 var _reminder_text: Label
@@ -94,6 +97,15 @@ func set_phase(index: int, title: String, objective: String, fallback_controls: 
 	_idle = 0.0
 	if title != "":
 		_phase_titles_set(index, title)
+	_keys_view.queue_redraw()
+
+
+## Quita las teclas y las pautas de la fase (cuando el minijuego ya terminó y solo quedan escenas).
+func clear_guidance() -> void:
+	_keys = []
+	_tip = ""
+	_tip_pending = false
+	_idle = -9999.0
 	_keys_view.queue_redraw()
 
 
@@ -160,7 +172,8 @@ func show_briefing() -> void:
 ## Sin animación (al reiniciar una fase o saltar con debug).
 func minimize_now() -> void:
 	_badge.show()
-	_buttons.show()
+	_buttons.visible = show_info_buttons
+	_ready_for_keys = true
 
 
 # =========================================================================
@@ -206,7 +219,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			_open_modal(_section_for_key(event.physical_keycode))
 		return
-	if get_tree().paused or not _buttons.visible:
+	if get_tree().paused or not _ready_for_keys:
 		return
 	if event is InputEventKey and event.pressed and not event.echo \
 		and event.physical_keycode in [KEY_C, KEY_O, KEY_I]:
@@ -236,37 +249,42 @@ func _open_modal(section: String) -> void:
 	var s := ""
 	match section:
 		"controles":
-			_modal_title.text = "CONTROLES"
-			s += "[color=#%s]FASE ACTUAL[/color]\n" % amber
+			_modal_title.text = tr("CONTROLES")
+			s += tr("[color=#%s]FASE ACTUAL[/color]\n") % amber
 			if _keys.is_empty():
-				s += (_fallback_controls if _fallback_controls != "" else "ENTER / CLIC para avanzar") + "\n"
+				s += (_fallback_controls if _fallback_controls != "" else tr("ENTER / CLIC para avanzar")) + "\n"
 			for k in _keys:
-				s += "[color=#%s]%s[/color]  %s\n" % [white, k[0], k[2]]
-			s += "\n[color=#%s]SIEMPRE[/color]\n" % amber
+				s += tr("[color=#%s]%s[/color]  %s\n") % [white, k[0], k[2]]
+			s += tr("\n[color=#%s]SIEMPRE[/color]\n") % amber
 			for g in _data.get("general_controls", [
-				["ENTER / CLIC", "avanzar los mensajes de radio"],
+				["ENTER / CLIC", tr("avanzar los mensajes de radio")],
 				["ESC", "pausa"],
-				["C · O · I", "controles, objetivos e información de la misión"],
+				["C · O · I", tr("controles, objetivos e información de la misión")],
 			]):
-				s += "[color=#%s]%s[/color]  %s\n" % [white, g[0], g[1]]
+				s += tr("[color=#%s]%s[/color]  %s\n") % [white, g[0], g[1]]
 		"objetivos":
-			_modal_title.text = "OBJETIVOS"
-			s += "[color=#%s]OBJETIVO DE LA MISIÓN[/color]\n%s\n\n" % [amber, b.get("objective", "")]
-			s += "[color=#%s]AHORA[/color]\n%s\n" % [amber, _objective]
+			_modal_title.text = tr("OBJETIVOS")
+			s += tr("[color=#%s]OBJETIVO DE LA MISIÓN[/color]\n%s\n\n") % [amber, b.get("objective", "")]
+			s += tr("[color=#%s]AHORA[/color]\n%s\n") % [amber, _objective]
 			if _tip != "":
-				s += "[color=#%s]Consejo: %s[/color]\n" % [dim, _tip]
-			s += "\n[color=#%s]FASES[/color]\n" % amber
+				s += tr("[color=#%s]Consejo: %s[/color]\n") % [dim, _tip]
+			s += tr("\n[color=#%s]FASES[/color]\n") % amber
 			for i in _phase_titles.size():
 				var mark := "[x]" if _done.get(i, false) else ("[>]" if i == _phase else "[ ]")
 				s += "%s %s\n" % [mark, _phase_titles[i]]
 		_:
-			_modal_title.text = "MISIÓN"
-			s += "[color=#%s]%s[/color]\n" % [amber, b.get("title", "")]
-			s += "[color=#%s]%s · %s[/color]\n\n" % [dim, b.get("year", ""), b.get("place", "")]
-			s += "[color=#%s]EQUIPOS:[/color] %s\n" % [amber, b.get("equipment", "")]
-			s += "[color=#%s]NARRADORES:[/color] %s\n" % [amber, b.get("narrators", "")]
+			_modal_title.text = tr("MISIÓN")
+			s += tr("[color=#%s]%s[/color]\n") % [amber, b.get("title", "")]
+			s += tr("[color=#%s]%s · %s[/color]\n\n") % [dim, b.get("year", ""), b.get("place", "")]
+			s += tr("[color=#%s]EQUIPOS:[/color] %s\n") % [amber, b.get("equipment", "")]
+			s += tr("[color=#%s]NARRADORES:[/color] %s\n") % [amber, b.get("narrators", "")]
 	_modal_body.text = s
 	_modal_close.grab_focus()
+
+
+## Abre un panel de información ("controles", "objetivos" o "mision"); lo usa el menú de pausa.
+func open_section(section: String) -> void:
+	_open_modal(section)
 
 
 func _close_modal() -> void:
@@ -299,7 +317,7 @@ func _build() -> void:
 	_buttons = HBoxContainer.new()
 	_buttons.add_theme_constant_override("separation", 3)
 	add_child(_buttons)
-	for def in [["[C] CONTROLES", "controles"], ["[O] OBJETIVOS", "objetivos"], ["[I] MISIÓN", "mision"]]:
+	for def in [[tr("[C] CONTROLES"), "controles"], [tr("[O] OBJETIVOS"), "objetivos"], [tr("[I] MISIÓN"), "mision"]]:
 		var b := Button.new()
 		b.text = def[0]
 		b.add_theme_font_size_override("font_size", 9)
@@ -379,7 +397,7 @@ func _build() -> void:
 	_modal_body.custom_minimum_size = Vector2(400, 200)
 	box.add_child(_modal_body)
 	_modal_close = Button.new()
-	_modal_close.text = "[ESC] CERRAR"
+	_modal_close.text = tr("[ESC] CERRAR")
 	_modal_close.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_modal_close.pressed.connect(_close_modal)
 	box.add_child(_modal_close)
@@ -416,11 +434,11 @@ func _build_card() -> void:
 	box.add_child(title)
 	box.add_child(_card_label("%s · %s" % [b.get("year", ""), b.get("place", "")], 12, RetroTheme.WHITE))
 	box.add_child(HSeparator.new())
-	box.add_child(_card_label("EQUIPOS: " + String(b.get("equipment", "")), 11, RetroTheme.WHITE))
-	box.add_child(_card_label("NARRADORES: " + String(b.get("narrators", "")), 11, RetroTheme.WHITE))
-	box.add_child(_card_label("OBJETIVO: " + String(b.get("objective", "")), 11, RetroTheme.PHOSPHOR))
+	box.add_child(_card_label(tr("EQUIPOS: ") + String(b.get("equipment", "")), 11, RetroTheme.WHITE))
+	box.add_child(_card_label(tr("NARRADORES: ") + String(b.get("narrators", "")), 11, RetroTheme.WHITE))
+	box.add_child(_card_label(tr("OBJETIVO: ") + String(b.get("objective", "")), 11, RetroTheme.PHOSPHOR))
 	box.add_child(HSeparator.new())
-	var hint := _card_label("ENTER / CLIC PARA COMENZAR   ·   C · O · I: CONTROLES, OBJETIVOS, MISIÓN", 10, RetroTheme.AMBER)
+	var hint := _card_label(tr("ENTER / CLIC PARA COMENZAR   ·   C · O · I: CONTROLES, OBJETIVOS, MISIÓN"), 10, RetroTheme.AMBER)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(hint)
 	# Entrada con un pequeño "encendido".

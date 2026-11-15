@@ -1,0 +1,518 @@
+{
+	"_nota": "Cuaderno de insignias. Cada insignia tiene 'pieces' piezas: una por fase de su misión (se ganan al terminar cada fase). 'site' enlaza con data/sites.json; 'icon' elige el dibujo (scripts/components/badge_art.gd); 'body' el fondo (moon, mars, deep). 'sheet' es la ficha técnica que se desbloquea al completar la insignia: 'specs' (dato, valor), 'history' (párrafos) y 'today' (dónde está hoy).",
+	"badges": [
+		{
+			"id": "apolo11",
+			"site": "apolo11",
+			"body": "moon",
+			"icon": "lm",
+			"pieces": 6,
+			"name": "MÓDULOS LUNARES APOLO",
+			"link": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-059C",
+			"desc": "Las etapas de descenso de los módulos lunares (como el Eagle del Apolo 11) se quedaron en la Luna: sirvieron de plataforma de lanzamiento para volver.",
+			"sheet": {
+				"specs": [
+					[
+						"TIPO",
+						"Módulo lunar: etapas de descenso y de ascenso"
+					],
+					[
+						"LANZAMIENTO",
+						"16 jul 1969 · cohete Saturno V"
+					],
+					[
+						"ALUNIZAJE",
+						"20 jul 1969 · Mar de la Tranquilidad"
+					],
+					[
+						"TRIPULACIÓN",
+						"Neil Armstrong y Buzz Aldrin (Michael Collins, en órbita)"
+					],
+					[
+						"MASA",
+						"Unos 15 000 kg con combustible"
+					],
+					[
+						"TAMAÑO",
+						"Unos 7 m de alto con las patas desplegadas"
+					]
+				],
+				"history": [
+					"El módulo lunar fue la primera nave tripulada pensada para volar solo en el vacío del espacio. Tenía dos partes: la etapa de descenso, con el motor de frenado y las cuatro patas, y la etapa de ascenso, la pequeña cabina de los astronautas.",
+					"Para volver, la etapa de ascenso despegó usando la de descenso como plataforma de lanzamiento. Esa base se quedó en la Luna con una placa en una de sus patas que dice: «Aquí, hombres del planeta Tierra pusieron pie por primera vez en la Luna».",
+					"Seis etapas de descenso se quedaron en la Luna: las de los Apolo 11, 12, 14, 15, 16 y 17."
+				],
+				"today": "Sigue en la Base Tranquilidad, rodeada de huellas, de la bandera y de los experimentos que dejó el Apolo 11."
+			}
+		},
+		{
+			"id": "lrv",
+			"site": "lrv",
+			"body": "moon",
+			"icon": "lrv",
+			"pieces": 6,
+			"name": "VEHÍCULOS LUNARES (LRV)",
+			"link": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1971-063C",
+			"desc": "Tres \"autos lunares\" eléctricos conducidos por astronautas. Quedaron estacionados para siempre en la Luna.",
+			"sheet": {
+				"specs": [
+					[
+						"TIPO",
+						"Vehículo eléctrico de cuatro ruedas para dos astronautas"
+					],
+					[
+						"MISIONES",
+						"Apolo 15, 16 y 17 (1971–1972)"
+					],
+					[
+						"MASA",
+						"Unos 210 kg; podía cargar unos 490 kg"
+					],
+					[
+						"ENERGÍA",
+						"Dos baterías de plata y zinc, no recargables; un motor en cada rueda"
+					],
+					[
+						"VELOCIDAD",
+						"Unos 13 km/h"
+					],
+					[
+						"DISTANCIA",
+						"El del Apolo 17 recorrió unos 36 km"
+					]
+				],
+				"history": [
+					"El LRV viajaba plegado en un costado del módulo lunar y se desplegaba en la superficie. Gracias a él, los astronautas pudieron alejarse varios kilómetros del módulo y llevar más herramientas y muestras.",
+					"Llevaba una antena para hablar directamente con la Tierra y una cámara de televisión que los controladores movían a distancia. Con ella se transmitieron los despegues de los Apolo 15, 16 y 17 desde la Luna."
+				],
+				"today": "Los tres siguen aparcados cerca de los sitios de Hadley-Apeninos, Descartes y Taurus-Littrow, donde los dejaron sus tripulaciones."
+			}
+		},
+		{
+			"id": "alsep",
+			"site": "alsep",
+			"body": "moon",
+			"icon": "alsep",
+			"pieces": 6,
+			"name": "PAQUETES CIENTÍFICOS ALSEP",
+			"link": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-099C",
+			"desc": "Paquetes de experimentos de superficie del Apolo (sismómetros, retrorreflectores...) que siguieron haciendo ciencia cuando los astronautas se fueron.",
+			"sheet": {
+				"specs": [
+					[
+						"TIPO",
+						"Estaciones científicas automáticas en la superficie"
+					],
+					[
+						"MISIONES",
+						"Apolo 12, 14, 15, 16 y 17 (el Apolo 11 llevó una versión más simple, el EASEP)"
+					],
+					[
+						"ENERGÍA",
+						"Generador de radioisótopos (RTG) de plutonio-238, unos 70 W"
+					],
+					[
+						"INSTRUMENTOS",
+						"Sismómetros, magnetómetros, detectores de partículas, sondas de calor..."
+					],
+					[
+						"EN SERVICIO",
+						"Hasta el 30 de septiembre de 1977, cuando la NASA las apagó"
+					]
+				],
+				"history": [
+					"Cada estación tenía una central que enviaba los datos a la Tierra y varios experimentos conectados por cables. Los sismómetros detectaron los «lunamotos» y los impactos de meteoritos, y ayudaron a conocer el interior de la Luna.",
+					"Los retrorreflectores láser de los Apolo 11, 14 y 15 no necesitan energía. Todavía hoy los observatorios les disparan láseres para medir la distancia a la Luna con precisión de centímetros: así sabemos que se aleja unos 3,8 cm al año."
+				],
+				"today": "Las estaciones están apagadas, pero los retrorreflectores siguen devolviendo la luz de los láseres de la Tierra."
+			}
+		},
+		{
+			"id": "surveyor",
+			"site": "surveyor",
+			"body": "moon",
+			"icon": "surveyor",
+			"pieces": 6,
+			"name": "MÓDULOS SURVEYOR",
+			"link": "https://science.nasa.gov/mission/surveyor-3/",
+			"desc": "Sondas robóticas enviadas en los años 60 para demostrar que era posible alunizar con suavidad.",
+			"sheet": {
+				"specs": [
+					[
+						"PROGRAMA",
+						"7 sondas robóticas (1966–1968); 5 alunizaron con éxito"
+					],
+					[
+						"ALUNIZAJE",
+						"Surveyor 3: 20 abr 1967 · Océano de las Tormentas"
+					],
+					[
+						"MASA",
+						"Unos 1000 kg al despegar y unos 300 kg al alunizar"
+					],
+					[
+						"INSTRUMENTOS",
+						"Cámara de televisión; la Surveyor 3 llevaba una pala para excavar"
+					]
+				],
+				"history": [
+					"Antes de enviar astronautas había que saber si el suelo lunar aguantaría una nave o si era un mar de polvo donde hundirse. Las Surveyor bajaron frenando con cohetes y demostraron que se podía alunizar con suavidad.",
+					"En noviembre de 1969, el Apolo 12 alunizó a unos 180 m de la Surveyor 3. Los astronautas la visitaron y se trajeron su cámara y otras piezas para estudiar cómo las había cambiado el espacio."
+				],
+				"today": "Las Surveyor siguen en la Luna; a la Surveyor 3 le faltan las piezas que se llevó el Apolo 12."
+			}
+		},
+		{
+			"id": "sojourner",
+			"site": "sojourner",
+			"body": "mars",
+			"icon": "sojourner",
+			"pieces": 6,
+			"name": "ROVER SOJOURNER",
+			"link": "https://science.nasa.gov/mission/mars-pathfinder/",
+			"desc": "El primer rover en Marte (1997), llevado por el módulo Pathfinder. Hoy está estacionado para siempre.",
+			"sheet": {
+				"specs": [
+					[
+						"LANZAMIENTO",
+						"4 dic 1996 · misión Mars Pathfinder"
+					],
+					[
+						"ATERRIZAJE",
+						"4 jul 1997 · Ares Vallis, rebotando con bolsas de aire"
+					],
+					[
+						"MASA",
+						"10,6 kg · 6 ruedas · unos 65 cm de largo"
+					],
+					[
+						"ENERGÍA",
+						"Panel solar y baterías"
+					],
+					[
+						"EN SERVICIO",
+						"83 soles; su misión estaba planeada para 7"
+					]
+				],
+				"history": [
+					"Mars Pathfinder probó una forma nueva y barata de llegar a Marte: caer envuelto en bolsas de aire y rebotar hasta detenerse. Después, el pequeño Sojourner bajó por una rampa y se convirtió en el primer rover en otro planeta.",
+					"Analizó rocas con su espectrómetro de rayos X y recorrió unos 100 m, siempre cerca del módulo, que le servía de antena para hablar con la Tierra."
+				],
+				"today": "Cuando el módulo dejó de responder, en 1997, Sojourner se quedó sin enlace. Sigue cerca de la Estación Memorial Carl Sagan, el nombre que recibió el módulo."
+			}
+		},
+		{
+			"id": "spirit_opportunity",
+			"site": "spirit_opportunity",
+			"body": "mars",
+			"icon": "twins",
+			"pieces": 7,
+			"name": "SPIRIT Y OPPORTUNITY",
+			"link": "https://science.nasa.gov/mission/mars-exploration-rovers-spirit-and-opportunity/",
+			"desc": "Rovers gemelos que funcionaron durante años. Los dos son hoy monumentos inactivos de la exploración de Marte.",
+			"sheet": {
+				"specs": [
+					[
+						"LANZAMIENTO",
+						"Junio y julio de 2003"
+					],
+					[
+						"ATERRIZAJE",
+						"Spirit: 4 ene 2004, cráter Gusev · Opportunity: 25 ene 2004, Meridiani Planum"
+					],
+					[
+						"MASA",
+						"185 kg cada uno"
+					],
+					[
+						"EN SERVICIO",
+						"Planeados para 90 soles. Spirit: hasta 2010 · Opportunity: hasta 2018"
+					],
+					[
+						"DISTANCIA",
+						"Spirit: 7,7 km · Opportunity: 45 km"
+					]
+				],
+				"history": [
+					"Los rovers gemelos eran geólogos robóticos: tenían cámaras panorámicas, espectrómetros y una herramienta para raspar rocas. Su tarea era buscar pistas de agua en el pasado de Marte.",
+					"Opportunity encontró las «blueberries», pequeñas esferas de hematita que se forman con agua. Spirit, con una rueda bloqueada, la arrastró y dejó al descubierto un suelo casi de sílice pura, otra señal de agua caliente.",
+					"Spirit quedó atascada en arena en 2009 y no sobrevivió al invierno. Opportunity se apagó en 2018 por una tormenta de polvo que cubrió todo el planeta."
+				],
+				"today": "Spirit descansa en Troy, dentro del cráter Gusev. Opportunity, en el Valle de la Perseverancia, en el borde del cráter Endeavour."
+			}
+		},
+		{
+			"id": "viking",
+			"site": "viking",
+			"body": "mars",
+			"icon": "viking",
+			"pieces": 6,
+			"name": "MÓDULOS VIKING 1 Y 2",
+			"link": "https://science.nasa.gov/mission/viking-1/",
+			"desc": "Los primeros módulos de EE. UU. que funcionaron con éxito en Marte (1976). Siguen exactamente donde aterrizaron.",
+			"sheet": {
+				"specs": [
+					[
+						"LANZAMIENTO",
+						"20 ago 1975 (Viking 1) y 9 sep 1975 (Viking 2)"
+					],
+					[
+						"ATERRIZAJE",
+						"20 jul 1976, Chryse Planitia · 3 sep 1976, Utopia Planitia"
+					],
+					[
+						"MASA",
+						"Unos 600 kg cada módulo"
+					],
+					[
+						"ENERGÍA",
+						"Dos generadores de radioisótopos (RTG) por módulo"
+					],
+					[
+						"EN SERVICIO",
+						"Viking 2: hasta 1980 · Viking 1: hasta 1982"
+					]
+				],
+				"history": [
+					"Cada misión Viking tenía un orbitador y un módulo de aterrizaje. Los módulos tomaron las primeras fotos desde la superficie de Marte y midieron su clima durante años.",
+					"También hicieron los primeros experimentos para buscar vida en otro planeta: tomaban suelo con un brazo y lo analizaban dentro de pequeños laboratorios. Los resultados fueron ambiguos y todavía se discuten."
+				],
+				"today": "Siguen en las llanuras de Chryse y Utopia, a miles de kilómetros uno del otro, cubiertos de polvo."
+			}
+		},
+		{
+			"id": "phoenix_insight",
+			"site": "phoenix_insight",
+			"body": "mars",
+			"icon": "insight",
+			"pieces": 6,
+			"name": "PHOENIX E INSIGHT",
+			"link": "https://science.nasa.gov/mission/insight/",
+			"desc": "Phoenix excavó en busca de hielo de agua; InSight escuchó los martemotos. Los dos terminaron quedándose sin energía.",
+			"sheet": {
+				"specs": [
+					[
+						"ATERRIZAJE",
+						"Phoenix: 25 may 2008, cerca del polo norte · InSight: 26 nov 2018, Elysium Planitia"
+					],
+					[
+						"MASA",
+						"Unos 350 kg cada uno"
+					],
+					[
+						"ENERGÍA",
+						"Paneles solares"
+					],
+					[
+						"EN SERVICIO",
+						"Phoenix: hasta nov 2008 · InSight: hasta dic 2022"
+					],
+					[
+						"DESCUBRIMIENTOS",
+						"Hielo de agua bajo el suelo · más de 1300 martemotos"
+					]
+				],
+				"history": [
+					"Phoenix excavó el suelo helado del Ártico marciano con su brazo robótico y confirmó que bajo la superficie hay hielo de agua. Cuando llegó el invierno polar se quedó sin luz solar y no volvió a despertar.",
+					"InSight colocó un sismómetro sobre el suelo y registró más de 1300 martemotos. Gracias a ellos sabemos cómo son la corteza, el manto y el núcleo de Marte. El polvo cubrió poco a poco sus paneles hasta dejarla sin energía."
+				],
+				"today": "Los dos siguen donde aterrizaron: Phoenix en las llanuras heladas del norte e InSight en Elysium Planitia."
+			}
+		},
+		{
+			"id": "ingenuity",
+			"site": "ingenuity",
+			"body": "mars",
+			"icon": "heli",
+			"pieces": 6,
+			"name": "HELICÓPTERO INGENUITY",
+			"link": "https://science.nasa.gov/mission/mars-2020-perseverance/ingenuity-mars-helicopter/",
+			"desc": "El primer aparato que voló en otro planeta. Sus palas se dañaron y quedó en tierra como un artefacto inmóvil.",
+			"sheet": {
+				"specs": [
+					[
+						"LLEGADA",
+						"18 feb 2021 · bajo el rover Perseverance, cráter Jezero"
+					],
+					[
+						"MASA",
+						"1,8 kg"
+					],
+					[
+						"ROTORES",
+						"Dos rotores de 1,2 m que giran en sentidos opuestos"
+					],
+					[
+						"HITO",
+						"19 abr 2021: primer vuelo propulsado y controlado en otro planeta"
+					],
+					[
+						"VUELOS",
+						"72 vuelos; estaban planeados 5"
+					]
+				],
+				"history": [
+					"Ingenuity era una demostración tecnológica: el aire de Marte es tan fino que volar allí es como hacerlo a más de 30 km de altura en la Tierra. Sus palas tenían que girar muy rápido para sostenerlo.",
+					"Debía volar hasta 5 veces en 30 días, pero voló 72 veces en casi tres años y sirvió de explorador aéreo para el Perseverance. En enero de 2024 sus palas se dañaron y ya no pudo volar."
+				],
+				"today": "Se quedó en tierra en el cráter Jezero, convertido en un artefacto inmóvil."
+			}
+		},
+		{
+			"id": "pioneer10",
+			"site": "pioneer10",
+			"body": "deep",
+			"icon": "pioneer",
+			"pieces": 7,
+			"name": "PIONEER 10 Y 11",
+			"link": "https://science.nasa.gov/mission/pioneer-10/",
+			"desc": "Las primeras sondas de espacio profundo que exploraron los planetas exteriores. Hoy se alejan en silencio del sistema solar.",
+			"sheet": {
+				"specs": [
+					[
+						"LANZAMIENTO",
+						"Pioneer 10: 2 mar 1972 · Pioneer 11: 5 abr 1973"
+					],
+					[
+						"MASA",
+						"258 kg cada una"
+					],
+					[
+						"ENERGÍA",
+						"Cuatro generadores de radioisótopos (RTG) de plutonio-238"
+					],
+					[
+						"HITO",
+						"Pioneer 10: primera en visitar Júpiter (1973) · Pioneer 11: primera en visitar Saturno (1979)"
+					],
+					[
+						"FIN",
+						"Últimas señales: Pioneer 11 en 1995 y Pioneer 10 en 2003"
+					]
+				],
+				"history": [
+					"Las Pioneer 10 y 11 abrieron el camino a los planetas exteriores. Demostraron que se podía cruzar el cinturón de asteroides y sobrevivir a la radiación de Júpiter, y enviaron las primeras imágenes de cerca de Júpiter y de Saturno.",
+					"Las dos llevan una placa de aluminio dorado ideada por Carl Sagan y Frank Drake, con dibujos de Linda Salzman Sagan: un hombre, una mujer, el sistema solar y la posición del Sol respecto a 14 púlsares."
+				],
+				"today": "Viajan en silencio fuera del sistema solar. La Pioneer 10 va en dirección a la estrella Aldebarán: tardaría más de 2 millones de años en llegar."
+			}
+		},
+		{
+			"id": "dawn",
+			"site": "dawn",
+			"body": "deep",
+			"icon": "dawn",
+			"pieces": 6,
+			"name": "SONDA DAWN",
+			"link": "https://science.nasa.gov/mission/dawn/",
+			"desc": "Cartografió Vesta y Ceres. Se quedó sin combustible y sigue en una órbita perpetua, sin energía, alrededor de Ceres.",
+			"sheet": {
+				"specs": [
+					[
+						"LANZAMIENTO",
+						"27 sep 2007"
+					],
+					[
+						"LLEGADA",
+						"Vesta: 2011–2012 · Ceres: desde 2015"
+					],
+					[
+						"PROPULSIÓN",
+						"Motores iónicos de xenón"
+					],
+					[
+						"HITO",
+						"Primera nave en orbitar dos cuerpos más allá de la Tierra y la Luna, y la primera en orbitar un planeta enano"
+					],
+					[
+						"FIN",
+						"1 nov 2018, sin combustible para orientarse"
+					]
+				],
+				"history": [
+					"Los motores iónicos empujan muy suave, pero durante años sin parar. Gracias a ellos, Dawn pudo entrar en órbita de Vesta, salir de ella y viajar hasta Ceres, algo imposible con cohetes químicos de su tamaño.",
+					"En Ceres descubrió manchas brillantes de sales en el cráter Occator: restos de agua salada que subió desde el interior del planeta enano."
+				],
+				"today": "Apagada, sigue en órbita alrededor de Ceres, y se calcula que se quedará allí décadas."
+			}
+		},
+		{
+			"id": "near",
+			"site": "near",
+			"body": "deep",
+			"icon": "near",
+			"pieces": 6,
+			"name": "NEAR SHOEMAKER",
+			"link": "https://science.nasa.gov/mission/near-shoemaker/",
+			"desc": "La primera nave en orbitar un asteroide y posarse en él. Descansa en la superficie de 433 Eros.",
+			"sheet": {
+				"specs": [
+					[
+						"LANZAMIENTO",
+						"17 feb 1996"
+					],
+					[
+						"LLEGADA",
+						"14 feb 2000 · órbita del asteroide 433 Eros"
+					],
+					[
+						"ATERRIZAJE",
+						"12 feb 2001 · superficie de Eros"
+					],
+					[
+						"MASA",
+						"Unos 800 kg al despegar"
+					],
+					[
+						"FIN",
+						"Última señal: 28 feb 2001"
+					]
+				],
+				"history": [
+					"NEAR (Near Earth Asteroid Rendezvous) estudió durante un año el asteroide Eros, una roca de unos 34 km de largo, y lo fotografió con todo detalle. Recibió el nombre de Eugene Shoemaker, pionero en el estudio de los impactos.",
+					"No estaba diseñada para aterrizar, pero al final de la misión bajó despacio hasta la superficie y siguió enviando datos desde allí durante días."
+				],
+				"today": "Sigue posada sobre Eros, un asteroide que orbita el Sol cerca de la Tierra."
+			}
+		},
+		{
+			"id": "kepler",
+			"site": "kepler",
+			"body": "deep",
+			"icon": "kepler",
+			"pieces": 6,
+			"name": "TELESCOPIO KEPLER",
+			"link": "https://science.nasa.gov/mission/kepler/",
+			"desc": "Revolucionario telescopio cazador de exoplanetas. Se quedó sin combustible y va a la deriva en una órbita que sigue a la Tierra.",
+			"sheet": {
+				"specs": [
+					[
+						"LANZAMIENTO",
+						"6 mar 2009"
+					],
+					[
+						"ESPEJO",
+						"1,4 m · cámara de 95 megapíxeles"
+					],
+					[
+						"DESCUBRIMIENTOS",
+						"Más de 2600 exoplanetas confirmados"
+					],
+					[
+						"EN SERVICIO",
+						"2009–2018 (misión K2 desde 2014)"
+					],
+					[
+						"FIN",
+						"30 oct 2018, sin combustible"
+					]
+				],
+				"history": [
+					"Kepler miraba siempre la misma zona del cielo y medía el brillo de unas 150 000 estrellas a la vez. Cuando un planeta pasaba por delante de su estrella, el brillo bajaba un poquito: así descubrió miles de mundos.",
+					"Cuando fallaron dos de sus ruedas de orientación, los ingenieros usaron la presión de la luz del Sol para estabilizarlo y comenzó una segunda misión, K2. Kepler demostró que en nuestra galaxia hay más planetas que estrellas."
+				],
+				"today": "Apagado, sigue a la Tierra en su órbita alrededor del Sol, cada vez un poco más lejos de nosotros."
+			}
+		}
+	]
+}

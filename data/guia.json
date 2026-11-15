@@ -1,0 +1,350 @@
+{
+	"_nota": "Guía de los minijuegos: tarjeta de tutorial que se muestra antes de cada fase jugable y en MENÚ (ESC) > AYUDA. 'juegos' -> id de la misión (BADGE_ID del capítulo) -> id de la escena. Las fases que son solo cinemática no tienen tarjeta. Traducciones en data/i18n/en/guia.json.",
+	"juegos": {
+		"apolo11": {
+			"descenso": {
+				"title": "ESTABILIZAR EL EAGLE",
+				"goal": "Elige una zona segura y posa el Eagle nivelado y despacio.",
+				"keys": [
+					[
+						"FLECHAS / WASD · RATÓN",
+						"Mover el visor para elegir la zona"
+					],
+					[
+						"ENTER / CLIC",
+						"Elegir la zona"
+					],
+					[
+						"CLIC / ESPACIO",
+						"Pulso de los propulsores: inclina el Eagle a la izquierda"
+					]
+				],
+				"rules": [
+					"El piloto automático controla el frenado; tú solo controlas la inclinación.",
+					"La turbulencia inclina el Eagle a la derecha. Clics rápidos lo llevan a la izquierda; clics lentos lo dejan caer a la derecha.",
+					"Un ritmo constante, de unos 2 o 3 clics por segundo, lo mantiene nivelado.",
+					"Inclinado hacia un lado, el Eagle se desplaza hacia ese lado: úsalo para llegar a tu zona.",
+					"Para alunizar: poca velocidad, poca inclinación y zona segura. Vigila el combustible."
+				]
+			},
+			"primer_paso": {
+				"title": "ACCIONES EN LA SUPERFICIE",
+				"goal": "Después de la cinemática, completa las tareas de los astronautas.",
+				"keys": [
+					[
+						"CLIC",
+						"Elegir un punto"
+					],
+					[
+						"1-4",
+						"Elegir una acción por su número"
+					]
+				],
+				"rules": [
+					"No hay fracaso: tómate tu tiempo y lee cada acción.",
+					"Cuando termines todas, la misión sigue sola."
+				]
+			},
+			"rocas": {
+				"title": "RECOLECCIÓN DE ROCAS",
+				"goal": "Reúne 21,5 kg de muestras y vuelve al Eagle.",
+				"keys": [
+					[
+						"WASD / FLECHAS",
+						"Moverte en 8 direcciones"
+					]
+				],
+				"rules": [
+					"Recoges una roca al pasar por encima: las grandes pesan más.",
+					"El oxígeno baja con el tiempo, y más rápido cuanto más lejos estás del módulo.",
+					"No puedes alejarte más de 100 m del Eagle.",
+					"Si se acaba el oxígeno, lo reintentas con rocas nuevas."
+				]
+			},
+			"despegue": {
+				"title": "DESPEGUE",
+				"goal": "Enciende el motor con la fuerza justa y llega a la órbita.",
+				"keys": [
+					[
+						"ENTER / ESPACIO / CLIC",
+						"Detener el medidor de fuerza"
+					],
+					[
+						"A / D",
+						"Corregir el ángulo"
+					]
+				],
+				"rules": [
+					"Detén la barra dentro de la zona verde: con poca fuerza no despegas y con demasiada el módulo se desvía.",
+					"Cada intento fallido gasta combustible, y queda muy poco.",
+					"Después, mantén el ángulo dentro de la banda dorada hasta llegar a la órbita."
+				]
+			}
+		},
+		"pioneer10": {
+			"cinturon": {
+				"title": "ESQUIVA LOS ASTEROIDES",
+				"goal": "Cruza el cinturón de asteroides: aguanta 40 segundos.",
+				"keys": [
+					[
+						"WASD / FLECHAS",
+						"Moverte en 8 direcciones"
+					]
+				],
+				"rules": [
+					"Los asteroides con estela son más rápidos.",
+					"Cada impacto gasta un segmento del escudo; tienes 5.",
+					"Si el escudo se agota, pierdes tiempo de vuelo y energía."
+				]
+			},
+			"jupiter": {
+				"title": "ESCANEO DE LAS LUNAS",
+				"goal": "Fotografía las lunas de Júpiter antes de que la radiación dañe la cámara.",
+				"keys": [
+					[
+						"WASD / FLECHAS · RATÓN",
+						"Mover el visor"
+					],
+					[
+						"ENTER / CLIC",
+						"Escanear"
+					]
+				],
+				"rules": [
+					"Encuadra la luna y mantén el visor sobre ella mientras escanea: la foto necesita al menos 70 % de precisión.",
+					"El visor tiene retraso: muévelo con calma.",
+					"Durante un pico de radiación no puedes escanear: espera a que pase.",
+					"La radiación sube con el tiempo; si llega al máximo, se daña el instrumento."
+				]
+			},
+			"tormenta": {
+				"title": "APUNTA LA ANTENA",
+				"goal": "Mantén la señal con la Tierra durante la tormenta solar.",
+				"keys": [
+					[
+						"A / ←",
+						"Girar la antena a la izquierda"
+					],
+					[
+						"D / →",
+						"Girar la antena a la derecha"
+					],
+					[
+						"ENTER / CLIC",
+						"Avanzar la cinemática"
+					]
+				],
+				"rules": [
+					"Primero mira la cinemática de la tormenta.",
+					"Cuando aparezca la antena, mantén el haz sobre la Tierra durante 9 segundos.",
+					"Si el haz se aleja, la señal se debilita y se gasta energía."
+				]
+			},
+			"placa": {
+				"title": "LA POSICIÓN DEL SOL",
+				"goal": "Sincroniza 3 púlsares y ubica el Sol donde se cruzan sus círculos.",
+				"keys": [
+					[
+						"CLIC · FLECHAS + ENTER",
+						"Elegir un púlsar o un punto"
+					],
+					[
+						"ENTER / CLIC",
+						"Pulsar al ritmo del destello"
+					]
+				],
+				"rules": [
+					"Pulsa cuando el anillo llegue al púlsar; varios aciertos seguidos lo sincronizan.",
+					"Cada púlsar sincronizado dibuja un círculo a su alrededor.",
+					"Con 3 círculos, haz clic donde se cruzan: ahí está el Sol.",
+					"Los fallos gastan un poco de energía, y queda muy poca."
+				]
+			}
+		},
+		"spirit_opportunity": {
+			"aterrizaje": {
+				"title": "PLAN DEL PRIMER SOL",
+				"goal": "Arma el plan de tareas del rover para su primer día en Marte.",
+				"keys": [
+					[
+						"CLIC",
+						"Elegir o colocar una tarea"
+					],
+					[
+						"Q / E",
+						"Cambiar de tarea"
+					],
+					[
+						"P",
+						"Enviar el plan"
+					]
+				],
+				"rules": [
+					"Cada tarea tiene su regla: de día, de noche o en una ventana de comunicación.",
+					"No te pases de la energía disponible."
+				]
+			},
+			"agua": {
+				"title": "DETECTIVE DEL AGUA",
+				"goal": "Usa los instrumentos del rover para descubrir si hubo agua.",
+				"keys": [
+					[
+						"A / D",
+						"Mover el rover"
+					],
+					[
+						"1-5",
+						"Elegir un instrumento"
+					],
+					[
+						"RATÓN",
+						"Jugar cada reto"
+					]
+				],
+				"rules": [
+					"Cada instrumento es un reto distinto: filtros, enfoque, pulso firme, ritmo y presión.",
+					"Cada lectura puede descartar una hipótesis.",
+					"Si la roca tiene polvo, usa primero el abrasivo."
+				]
+			},
+			"purgatory": {
+				"title": "ATRAPADA EN PURGATORY",
+				"goal": "Encuentra la secuencia de órdenes que saca a Opportunity de la duna.",
+				"keys": [
+					[
+						"1-4 / CLIC",
+						"Dar una orden"
+					]
+				],
+				"rules": [
+					"En el ensayo no hay riesgo: prueba hasta encontrar lo que funciona.",
+					"Los pasos cortos y retroceder un poco ayudan."
+				]
+			},
+			"rueda": {
+				"title": "LA RUEDA ARRASTRADA",
+				"goal": "Conduce a Spirit con una rueda rota y analiza el suelo claro.",
+				"keys": [
+					[
+						"W / ↑",
+						"Avanzar"
+					],
+					[
+						"A / D",
+						"Corregir el rumbo"
+					],
+					[
+						"E",
+						"Analizar"
+					]
+				],
+				"rules": [
+					"La rueda arrastrada te desvía a la derecha: corrige con A y D.",
+					"Para analizar, quédate quieto sobre el suelo claro."
+				]
+			},
+			"invierno": {
+				"title": "INVIERNO EN TROY",
+				"goal": "Planea cada tramo del invierno para que Spirit aguante.",
+				"keys": [
+					[
+						"ARRASTRAR",
+						"Ajustar una barra"
+					],
+					[
+						"↑ / ↓ · ← / →",
+						"Ajustar con el teclado"
+					],
+					[
+						"ENTER",
+						"Enviar el tramo"
+					]
+				],
+				"rules": [
+					"Mira la previsión antes de enviar cada tramo.",
+					"El frío y la falta de comunicación son los peligros del invierno."
+				]
+			},
+			"endeavour": {
+				"title": "RUMBO A ENDEAVOUR",
+				"goal": "Traza la ruta de Opportunity hasta el cráter Endeavour.",
+				"keys": [
+					[
+						"CLIC",
+						"Poner un punto de ruta"
+					],
+					[
+						"CLIC DER.",
+						"Borrar un punto"
+					],
+					[
+						"RETROCESO",
+						"Borrar el último punto"
+					]
+				],
+				"rules": [
+					"El rover avanza solo hacia tus puntos y deja rastro.",
+					"Evita las dunas (frenan) y los cráteres (desvían).",
+					"No gastes todos los soles disponibles."
+				]
+			},
+			"tormenta": {
+				"title": "LA TORMENTA",
+				"goal": "Mantén vivo a Opportunity durante la tormenta de polvo.",
+				"keys": [
+					[
+						"ENTER / CLIC",
+						"Tomar una foto"
+					],
+					[
+						"H (MANTENER)",
+						"Calentar"
+					],
+					[
+						"S",
+						"Dormir"
+					]
+				],
+				"rules": [
+					"Fotografía cerca del pico de luz: más calidad y combo.",
+					"Mantén H para calentar y pulsa S para dormir y ahorrar batería.",
+					"Si la batería o la temperatura llegan a cero, se apaga ese sol."
+				]
+			}
+		}
+	},
+	"faq": [
+		{
+			"q": "¿Cómo pauso el juego?",
+			"a": "Pulsa ESC o el botón de tres puntos de la esquina. Desde ahí ajustas el sonido, lees esta ayuda o sales de la misión."
+		},
+		{
+			"q": "¿Qué pasa si fallo un minijuego?",
+			"a": "Control de Misión te explica qué salió mal y lo vuelves a intentar. No pierdes las piezas de insignia que ya ganaste."
+		},
+		{
+			"q": "¿Cómo gano insignias?",
+			"a": "Cada fase completada desbloquea una pieza de la insignia de esa misión. Cuando la completas, se desbloquea la ficha técnica del artefacto."
+		},
+		{
+			"q": "¿Dónde veo mis insignias y fichas?",
+			"a": "En el menú principal: ARCHIVO CIENTÍFICO > CUADERNO DE INSIGNIAS. Haz clic en una insignia completa y luego en FICHA TÉCNICA."
+		},
+		{
+			"q": "¿Qué hacen C, O e I?",
+			"a": "Abren los paneles de CONTROLES, OBJETIVOS e información de la MISIÓN. También puedes hacer clic en los botones de arriba."
+		},
+		{
+			"q": "¿Quién me habla por la radio?",
+			"a": "Control de Misión: el equipo en la Tierra que cuenta la historia y te guía. Tú eres un operador que ayuda a distancia."
+		},
+		{
+			"q": "¿Se guarda mi progreso?",
+			"a": "Sí. Las misiones completadas, las piezas de insignia, el idioma y el volumen se guardan solos en este equipo."
+		},
+		{
+			"q": "¿Cómo cambio el idioma?",
+			"a": "Con el botón EN | ES (o la tecla L) del menú principal y del selector de misiones."
+		}
+	]
+}

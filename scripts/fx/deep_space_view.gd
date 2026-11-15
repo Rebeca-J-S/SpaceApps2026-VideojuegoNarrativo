@@ -7,6 +7,7 @@ extends Control
 
 const C_SITE := Color("#39ff7a")
 const C_HOVER := Color("#ffb347")
+const C_LOCKED := Color("#c8ccd8")
 
 var sites: Array = []
 var hovered := -1
@@ -40,9 +41,10 @@ func _center() -> Vector2:
 	return size * 0.5
 
 
+## Las sondas se alejan del Sol; los objetos con "radius" (Dawn, NEAR, Kepler) se quedan en su órbita.
 func get_site_local_pos(index: int) -> Vector2:
 	var a := deg_to_rad(float(sites[index].get("angle", 0.0)))
-	var r := size.x * 0.5 * _progress[index]
+	var r := size.x * 0.5 * float(sites[index].get("radius", _progress[index]))
 	return (_center() + Vector2(cos(a), sin(a) * 0.75) * r).floor()
 
 
@@ -69,11 +71,16 @@ func _draw() -> void:
 		var p := get_site_local_pos(i)
 		var a := deg_to_rad(float(sites[i].get("angle", 0.0)))
 		var dir := Vector2(cos(a), sin(a) * 0.75)
-		for k in 6:
-			draw_rect(Rect2(p - dir * (k * 4.0 + 4.0), Vector2(1, 1)), Color(C_SITE, 0.5 - k * 0.08))
-		var col := C_HOVER if i == hovered else C_SITE
-		var pulse := fmod(_t * 0.9 + i * 0.4, 1.0)
-		draw_arc(p, 3.0 + pulse * 8.0, 0.0, TAU, 16, Color(col, 1.0 - pulse), 1.0)
+		var locked := bool(sites[i].get("locked", false))
+		var col := C_HOVER if i == hovered else (C_LOCKED if locked else C_SITE)
+		if not sites[i].has("radius"):
+			for k in 6:
+				draw_rect(Rect2(p - dir * (k * 4.0 + 4.0), Vector2(1, 1)), Color(col, 0.5 - k * 0.08))
+		if not locked:
+			var pulse := fmod(_t * 0.9 + i * 0.4, 1.0)
+			draw_arc(p, 3.0 + pulse * 8.0, 0.0, TAU, 16, Color(col, 1.0 - pulse), 1.0)
+		if locked:
+			draw_rect(Rect2(p - Vector2(3, 3), Vector2(6, 6)), Color(0.05, 0.05, 0.1, 0.9))
 		draw_rect(Rect2(p - Vector2(2, 2), Vector2(4, 4)), col)
 		if i == hovered:
 			draw_rect(Rect2(p - Vector2(6, 6), Vector2(12, 12)), col, false, 1.0)

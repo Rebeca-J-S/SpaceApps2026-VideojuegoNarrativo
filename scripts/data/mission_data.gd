@@ -21,22 +21,23 @@ const MARS_GRAVITY := 3.71          # m/s²
 # --- Panel de CONTROLES del menú (BBCode) ---
 const CONTROLS_BBCODE := """[color=#ffb347]GENERAL[/color]
 » ENTER / CLIC : avanzar diálogos y confirmar
-» ESC : pausa (continuar, reiniciar fase o volver al selector)
-» 1, 2, 3, 4 o CLIC : activar los puntos brillantes de las fases de ciencia
+» ESC o botón de tres puntos : menú de pausa (sonido, ayuda y salir)
+» F11 / Alt+Enter : pantalla completa
+» C · O · I : controles, objetivos e información de la misión
+» L o botón EN | ES : cambiar el idioma (en los menús)
 
-[color=#ffb347]VUELO Y ATERRIZAJE[/color]
-» W / FLECHA ARRIBA / ESPACIO : motor principal (empuje)
-» A / D / FLECHAS IZQ-DER : propulsores laterales RCS (girar)
-» S / FLECHA ABAJO : bajar (Pioneer en el cinturón de asteroides)
+[color=#ffb347]LUNA · APOLLO 11[/color]
+» Descenso: elige la zona con el visor y ENTER / CLIC
+» Estabilización: CLIC / ESPACIO al ritmo (rápido = izquierda, lento = derecha)
+» Superficie: CLIC o teclas 1-4 en los puntos · Rocas: WASD / FLECHAS
+» Despegue: ENTER / ESPACIO / CLIC para detener la barra · A / D: ángulo
 
-[color=#ffb347]APOLO 11 · ESTABILIZACIÓN DEL EAGLE[/color]
-» CLIC / ESPACIO / ENTER : pulso de motor (mueve el indicador a la izquierda)
-» Mantén el indicador en la franja VERDE hasta tocar el suelo.
+[color=#ffb347]MARTE · SPIRIT Y OPPORTUNITY[/color]
+» CLIC o teclas 1-5 en los puntos · CLIC mantenido: arrastrar
+» A / D: repartir la energía o conducir · ENTER: confirmar
 
-[color=#ffb347]APOLO 11 · RECOLECCIÓN DE PRUEBAS[/color]
-» A / D : caminar  ·  W / ESPACIO : saltar (gravedad lunar)
-» E : recoger rocas, descargar la bolsa en el Eagle, sacar el EASEP / LRRR
-» Mantén E : clavar tubos de núcleo y desplegar los experimentos
-» La bolsa aguanta 6 kg por viaje; la meta son 21.55 kg (NSSDCA).
+[color=#ffb347]ESPACIO PROFUNDO · PIONEER 10[/color]
+» WASD / FLECHAS: mover la nave o el visor · ENTER / CLIC: escanear
+» A / D: apuntar la antena · CLIC / FLECHAS + ENTER: ubicar el Sol en la placa
 
-[color=#1f8a45](Los límites de la bolsa y la turbulencia son valores de juego, no especificaciones de la NASA.)[/color]"""
+[color=#1f8a45](Los límites, tiempos y medidores de los minijuegos son valores de juego, no especificaciones de la NASA.)[/color]"""

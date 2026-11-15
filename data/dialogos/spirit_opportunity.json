@@ -1,18 +1,31 @@
 {
-	"_nota": "Capítulo SPIRIT Y OPPORTUNITY. El narrador (Control de Misión) explica todo; los rovers solo confirman que llegan datos (TX) o mensajes (RX). Los mensajes son ficción; los hechos vienen de fuentes de la NASA. No escribir que Spirit 'murió': usar 'dejó de comunicarse'.",
-	"disclaimer": "Los mensajes de esta misión son imaginados.\nLos hechos son reales.",
+	"_nota": "Capítulo SPIRIT Y OPPORTUNITY (2004-2018). El jugador es un planificador de operaciones del JPL (personaje imaginado). Los rovers solo se comunican con paquetes de datos: no se inventan citas. Las entradas 'verificar' son datos por confirmar. Las cinemáticas todavía no existen: se muestra la pantalla 'CINEMÁTICA PENDIENTE'. Este archivo se genera junto al catálogo inglés.",
+	"disclaimer": "El equipo de operaciones de esta misión es un personaje imaginado.\nLos rovers, las fechas y los hechos son reales.",
 	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
+	"cinematic_pending": "CINEMÁTICA PENDIENTE",
 	"speakers": {
-		"CIENTIFICO": {
-			"name": "CONTROL DE MISIÓN",
+		"CONTROL": {
+			"name": "CONTROL (JPL)",
 			"radio": false,
 			"color": "#ffb347",
-			"portrait": "cientifico"
+			"portrait": "control"
+		},
+		"CIENCIA": {
+			"name": "EQUIPO DE CIENCIA",
+			"radio": false,
+			"color": "#d8a0ff",
+			"portrait": "ciencia"
+		},
+		"INGENIERIA": {
+			"name": "INGENIERÍA",
+			"radio": false,
+			"color": "#c8d880",
+			"portrait": "ingenieria"
 		},
 		"SPIRIT": {
 			"name": "SPIRIT",
 			"radio": true,
-			"color": "#80f2ff",
+			"color": "#7ad0ff",
 			"portrait": "spirit"
 		},
 		"OPPORTUNITY": {
@@ -23,270 +36,935 @@
 		}
 	},
 	"hud": {
-		"year": "AÑO",
+		"date": "AÑO",
 		"objective": "OBJETIVO",
-		"distance": "DISTANCIA RECORRIDA",
-		"signal": "SEÑAL",
+		"energy": "ENERGÍA SOLAR",
 		"in_transit": "SEÑAL EN TRÁNSITO",
-		"debug": "DEBUG · F1-F7: ESCENA · F8: CIERRE",
+		"debug": "DEBUG · F1-F7: SALTAR FASE",
 		"pause_title": "PAUSA",
 		"pause_continue": "CONTINUAR",
-		"pause_exit": "VOLVER AL SELECTOR"
+		"pause_exit": "VOLVER AL SELECTOR",
+		"button_back": "ENTER / CLIC: VOLVER AL SELECTOR",
+		"new_evidence": "NUEVA EVIDENCIA: %s"
 	},
 	"scenes": [
 		{
-			"id": "llegada_spirit",
-			"title": "ESCENA 1 · LLEGADA DE SPIRIT",
-			"year": "2004",
-			"objective": "BUSCAR SEÑALES DE AGUA ANTIGUA",
-			"rover": "SPIRIT",
-			"distance_km": 0.0,
-			"signal": 92,
+			"id": "aterrizaje",
+			"title": "FASE 0 · ATERRIZAJE Y PRIMER SOL",
+			"date": "2004",
+			"objective": "PLANIFICAR EL PRIMER SOL",
+			"cinematic_tag": "ATERRIZAJE DE LOS GEMELOS",
 			"intro": [
 				{
-					"speaker": "CIENTIFICO",
-					"text": "Control de Misión a Spirit. Bienvenido a Marte, al cráter Gusev, un posible antiguo lago. Tu misión: buscar señales de agua del pasado. Está planeada para unos tres meses."
+					"speaker": "CONTROL",
+					"text": "Enero de 2004. Spirit aterrizó en el cráter Gusev y, tres semanas después, Opportunity en Meridiani Planum: dos rovers gemelos en lados opuestos de Marte."
+				},
+				{
+					"speaker": "CONTROL",
+					"text": "Nadie los conduce en directo. Cada día marciano, o «sol», el equipo planifica las tareas, las envía y espera los resultados."
+				},
+				{
+					"speaker": "CONTROL",
+					"text": "Tu primer trabajo: encajar las tareas de un sol sin pasarte de energía."
 				}
 			],
 			"minimission": {
-				"title": "MINIMISIÓN: SALIDA DEL MÓDULO",
-				"steps": [
-					"LEVANTAR EL MÁSTIL DE LA CÁMARA",
-					"ORIENTAR LA ANTENA HACIA LA TIERRA",
-					"ELEGIR RUTA DE SALIDA Y BAJAR"
+				"title": "MINIJUEGO: PLANIFICA EL SOL",
+				"info": "Elige una tarea (clic, o Q/E) y colócala en la línea de tiempo (clic, o flechas y ENTER). Envía con [P]",
+				"cols": 24,
+				"day_cols": 12,
+				"comm": [
+					[
+						4,
+						5
+					],
+					[
+						15,
+						16
+					]
 				],
-				"routes": [
-					"RUTA A",
-					"RUTA B",
-					"RUTA C"
-				],
-				"earth_label": "TIERRA"
+				"msg_overlap": "ESA TAREA SE CRUZA CON OTRA",
+				"msg_time": "ESA TAREA NO SE PUEDE HACER A ESA HORA",
+				"msg_missing": "FALTAN TAREAS OBLIGATORIAS",
+				"msg_energy": "TE PASAS DE ENERGÍA",
+				"msg_science": "FALTA CIENCIA PARA ESTE SOL",
+				"msg_ok": "PLAN ENVIADO: EL ROVER TRABAJA MIENTRAS TÚ DUERMES",
+				"tip_day": "Algunas tareas necesitan luz del día",
+				"tip_comm": "Los datos solo se envían cuando pasa un orbitador (franjas azules)",
+				"days": [
+					{
+						"title": "SOL 1 · SPIRIT",
+						"budget": 60,
+						"sci_target": 2,
+						"blocks": [
+							{
+								"id": "mastil",
+								"label": "LEVANTAR EL MÁSTIL",
+								"dur": 1,
+								"energy": 4,
+								"when": "day",
+								"sci": 0,
+								"req": true
+							},
+							{
+								"id": "antena",
+								"label": "ORIENTAR LA ANTENA",
+								"dur": 1,
+								"energy": 4,
+								"when": "day",
+								"sci": 0,
+								"req": true
+							},
+							{
+								"id": "pano",
+								"label": "PANORÁMICA",
+								"dur": 2,
+								"energy": 12,
+								"when": "day",
+								"sci": 2,
+								"req": false
+							},
+							{
+								"id": "calent",
+								"label": "CALEFACTORES",
+								"dur": 6,
+								"energy": 14,
+								"when": "night",
+								"sci": 0,
+								"req": true
+							},
+							{
+								"id": "enviar",
+								"label": "ENVIAR DATOS",
+								"dur": 1,
+								"energy": 6,
+								"when": "comm",
+								"sci": 0,
+								"req": true
+							}
+						]
+					},
+					{
+						"title": "SOL 12 · OPPORTUNITY",
+						"budget": 62,
+						"sci_target": 6,
+						"blocks": [
+							{
+								"id": "conducir",
+								"label": "CONDUCIR",
+								"dur": 3,
+								"energy": 18,
+								"when": "day",
+								"sci": 1,
+								"req": false
+							},
+							{
+								"id": "mi",
+								"label": "MICROSCOPIO",
+								"dur": 1,
+								"energy": 5,
+								"when": "day",
+								"sci": 2,
+								"req": false
+							},
+							{
+								"id": "brazo",
+								"label": "BRAZO ROBÓTICO",
+								"dur": 2,
+								"energy": 10,
+								"when": "day",
+								"sci": 3,
+								"req": false
+							},
+							{
+								"id": "pano",
+								"label": "PANORÁMICA",
+								"dur": 2,
+								"energy": 12,
+								"when": "day",
+								"sci": 2,
+								"req": false
+							},
+							{
+								"id": "calent",
+								"label": "CALEFACTORES",
+								"dur": 6,
+								"energy": 14,
+								"when": "night",
+								"sci": 0,
+								"req": true
+							},
+							{
+								"id": "enviar",
+								"label": "ENVIAR DATOS",
+								"dur": 1,
+								"energy": 6,
+								"when": "comm",
+								"sci": 0,
+								"req": true
+							}
+						]
+					},
+					{
+						"title": "SOL 40 · POLVO EN LOS PANELES",
+						"budget": 48,
+						"sci_target": 6,
+						"blocks": [
+							{
+								"id": "conducir",
+								"label": "CONDUCIR",
+								"dur": 3,
+								"energy": 18,
+								"when": "day",
+								"sci": 1,
+								"req": false
+							},
+							{
+								"id": "mi",
+								"label": "MICROSCOPIO",
+								"dur": 1,
+								"energy": 5,
+								"when": "day",
+								"sci": 2,
+								"req": false
+							},
+							{
+								"id": "brazo",
+								"label": "BRAZO ROBÓTICO",
+								"dur": 2,
+								"energy": 10,
+								"when": "day",
+								"sci": 3,
+								"req": false
+							},
+							{
+								"id": "pano",
+								"label": "PANORÁMICA",
+								"dur": 2,
+								"energy": 12,
+								"when": "day",
+								"sci": 2,
+								"req": false
+							},
+							{
+								"id": "calent",
+								"label": "CALEFACTORES",
+								"dur": 6,
+								"energy": 14,
+								"when": "night",
+								"sci": 0,
+								"req": true
+							},
+							{
+								"id": "enviar",
+								"label": "ENVIAR DATOS",
+								"dur": 1,
+								"energy": 6,
+								"when": "comm",
+								"sci": 0,
+								"req": true
+							}
+						]
+					}
+				]
 			},
 			"outro": [
 				{
 					"speaker": "SPIRIT",
-					"mode": "TX",
-					"text": "TELEMETRÍA RECIBIDA."
+					"text": "PAQUETE DE DATOS RECIBIDO.",
+					"mode": "TX"
 				},
 				{
-					"speaker": "CIENTIFICO",
-					"text": "Spirit está en línea y todos sus sistemas funcionan. Empieza la exploración."
+					"speaker": "CONTROL",
+					"text": "Funcionó. Spirit y Opportunity estaban pensados para unos 90 soles, tres meses. Aún no sabíamos cuánto durarían."
 				}
-			]
+			],
+			"verificar": "Horas, ventanas de comunicación y presupuestos de energía son valores de juego. Fechas de aterrizaje (3 y 24 de enero de 2004, UTC) según science.nasa.gov."
 		},
 		{
-			"id": "blueberries",
-			"title": "ESCENA 2A · LAS BLUEBERRIES",
-			"year": "2004",
+			"id": "agua",
+			"title": "FASE 1 · DETECTIVE DEL AGUA",
+			"date": "2004",
 			"objective": "ENCONTRAR PRUEBAS DE AGUA",
-			"rover": "OPPORTUNITY",
-			"distance_km": 0.0,
-			"signal": 90,
 			"intro": [
 				{
-					"speaker": "OPPORTUNITY",
-					"mode": "TX",
-					"text": "IMAGEN RECIBIDA."
+					"speaker": "CIENCIA",
+					"text": "Meridiani Planum se conoce como «el sitio de la hematita»: desde la órbita se vio un mineral que suele formarse con agua."
 				},
 				{
-					"speaker": "CIENTIFICO",
-					"text": "Opportunity, el gemelo de Spirit, aterrizó semanas después al otro lado del planeta. Acaba de enviar una imagen: hay pequeñas esferas en el suelo. ¿Qué serán?"
+					"speaker": "CIENCIA",
+					"text": "Hay tres explicaciones posibles para lo que vemos: solo viento y polvo, un origen volcánico o agua líquida."
+				},
+				{
+					"speaker": "CIENCIA",
+					"text": "Explora el afloramiento, mide con los instrumentos y descarta hipótesis. Cada medición gasta energía."
 				}
 			],
 			"minimission": {
-				"title": "MINIMISIÓN: CAZADOR DE BLUEBERRIES",
-				"instruction": "Haz clic en las esferas pequeñas, no en las rocas normales",
-				"counter": "ESFERAS",
-				"goal": 8,
-				"wrong": "Esa es una roca normal"
-			},
-			"outro": [
-				{
-					"speaker": "CIENTIFICO",
-					"text": "Les llamamos 'blueberries'. Son esferas de hematita y suelen formarse con agua. Aquí hubo agua, aunque era ácida."
-				}
-			]
-		},
-		{
-			"id": "silice",
-			"title": "ESCENA 2B · LA SÍLICE",
-			"year": "2007",
-			"objective": "ANALIZAR EL SUELO",
-			"rover": "SPIRIT",
-			"distance_km": 6.9,
-			"verificar": "distancia aproximada de Spirit en mayo de 2007",
-			"signal": 85,
-			"intro": [],
-			"minimission": {
-				"title": "MINIMISIÓN: RUEDA EXCAVADORA",
-				"instruction": "Arrastra la rueda (clic sostenido, WASD o flechas) para remover el suelo",
-				"counter": "SUELO REMOVIDO",
-				"goal_ratio": 0.7
-			},
-			"outro": [
-				{
-					"speaker": "SPIRIT",
-					"mode": "TX",
-					"text": "DATOS RECIBIDOS."
+				"title": "MINIJUEGO: DETECTIVE DEL AGUA",
+				"info": "Camina (A/D o clic), acércate a una muestra y usa un instrumento (1-5): supera su micro-reto",
+				"mg": {
+					"pancam": "Q/E o clic: cambia de filtro. Clic en los destellos ocultos (6)",
+					"mi": "Mueve el ratón (o A/D) para enfocar y mantén la imagen nítida",
+					"moss": "Mantén el visor dentro del círculo (ratón o WASD): el viento lo sacude",
+					"apxs": "ENTER o clic cuando un pico verde cruce la línea; ignora los grises",
+					"rat": "Mantén clic/ENTER: presión en la banda verde, sin sobrecalentar"
 				},
+				"mg_fail": "LECTURA FALLIDA: REPITE LA MEDICIÓN",
+				"mg_hot": "SOBRECALENTAMIENTO",
+				"energy": 90,
+				"range": 28.0,
+				"scan_range": 150.0,
+				"speed": 130.0,
+				"drive_cost": 1.0,
+				"hyp_title": "HIPÓTESIS: ¿QUÉ PASÓ AQUÍ?",
+				"no_energy": "SIN ENERGÍA: SE REINICIA LA JORNADA",
+				"done_target": "MUESTRA ANALIZADA",
+				"msg_far": "NO HAY NADA CERCA: ACÉRCATE A UNA MUESTRA",
+				"msg_scan": "PRIMERO ESCANEA CON LA PANCAM",
+				"msg_nothing": "LA PANCAM NO VE NADA NUEVO AQUÍ",
+				"msg_scanned": "LA PANCAM ENCUENTRA %d MUESTRA(S)",
+				"msg_used": "Ya usaste ese instrumento en esta muestra.",
+				"msg_done": "Esta muestra ya está analizada.",
+				"conclusion": "SOLO QUEDA UNA EXPLICACIÓN: HUBO AGUA LÍQUIDA, SALADA Y ÁCIDA",
+				"hypotheses": [
+					{
+						"id": "viento",
+						"name": "SOLO VIENTO Y POLVO"
+					},
+					{
+						"id": "volcan",
+						"name": "ORIGEN VOLCÁNICO"
+					},
+					{
+						"id": "agua",
+						"name": "AGUA LÍQUIDA"
+					}
+				],
+				"tools": [
+					{
+						"id": "pancam",
+						"name": "1 PANCAM",
+						"q": "Escanea los alrededores",
+						"cost": 4
+					},
+					{
+						"id": "mi",
+						"name": "2 MICROSCOPIO",
+						"q": "Forma y textura",
+						"cost": 8
+					},
+					{
+						"id": "moss",
+						"name": "3 MÖSSBAUER",
+						"q": "Mineral de hierro",
+						"cost": 10
+					},
+					{
+						"id": "apxs",
+						"name": "4 APXS",
+						"q": "Elementos químicos",
+						"cost": 10
+					},
+					{
+						"id": "rat",
+						"name": "5 RAT",
+						"q": "Lima el polvo",
+						"cost": 12
+					}
+				],
+				"targets": [
+					{
+						"id": "esferas",
+						"x": 95,
+						"name": "ESFERAS EN EL SUELO",
+						"desc": "Pequeñas esferas azuladas, las «blueberries».",
+						"needs": [
+							"mi",
+							"moss"
+						],
+						"ordered": false,
+						"results": {
+							"mi": "Son esferas casi perfectas, de unos milímetros. No parecen granos de arena.",
+							"moss": "El hierro está en forma de hematita.",
+							"apxs": "Mucho hierro, pero no dice en qué mineral. No es concluyente.",
+							"rat": "No hace falta limar unas esferas sueltas."
+						},
+						"rules_out": [
+							"viento"
+						],
+						"why": "Esferas casi perfectas de hematita: se forman cuando el agua circula por la roca. El viento solo no las explica.",
+						"evidence": {
+							"id": "hematita",
+							"title": "ESFERAS DE HEMATITA",
+							"text": "La hematita en forma de esferas suele formarse cuando el agua circula por la roca."
+						}
+					},
+					{
+						"id": "basalto",
+						"x": 215,
+						"name": "ROCA OSCURA Y LISA",
+						"desc": "Una roca oscura de superficie lisa.",
+						"needs": [
+							"apxs"
+						],
+						"ordered": false,
+						"results": {
+							"mi": "Granos finos y oscuros, de aspecto volcánico.",
+							"moss": "Hierro en minerales típicos de roca volcánica.",
+							"apxs": "Composición de basalto: una roca volcánica muy común en Marte.",
+							"rat": "Bajo el polvo, la misma roca oscura."
+						},
+						"rules_out": [],
+						"why": "Basalto: roca volcánica común. Existe, pero no explica las esferas ni las sales."
+					},
+					{
+						"id": "capas",
+						"x": 340,
+						"name": "ROCA CON CAPAS",
+						"desc": "Un afloramiento con capas finas, cubierto de polvo.",
+						"needs": [
+							"rat",
+							"apxs"
+						],
+						"ordered": true,
+						"results": {
+							"mi": "Solo se ve polvo rojo. Primero hay que limpiar la roca.",
+							"moss": "El polvo tapa la roca: lectura poco clara.",
+							"apxs": "Abundan el azufre y las sales de sulfato.",
+							"rat": "El abrasivo dejó al descubierto roca fresca."
+						},
+						"dusty": "Solo mide el polvo: lectura inútil. Antes hay que usar el abrasivo.",
+						"rules_out": [
+							"volcan"
+						],
+						"why": "Sales de sulfato: quedan cuando un charco o un mar salado se evapora. No es lava ni ceniza.",
+						"evidence": {
+							"id": "sales",
+							"title": "SALES DE SULFATO",
+							"text": "Las sales quedan cuando un charco o un mar salado se evapora."
+						}
+					},
+					{
+						"id": "arena",
+						"x": 480,
+						"name": "ARENA SUELTA",
+						"desc": "Arena fina acumulada por el viento.",
+						"needs": [
+							"mi"
+						],
+						"ordered": false,
+						"results": {
+							"mi": "Granos de arena sueltos y redondeados por el viento.",
+							"moss": "Hierro en minerales comunes en la arena.",
+							"apxs": "Composición parecida a la del basalto triturado.",
+							"rat": "No hay roca que limar: es arena suelta."
+						},
+						"rules_out": [],
+						"why": "Arena del viento: el viento existe, pero no explica lo demás."
+					}
+				]
+			},
+			"outro": [
 				{
-					"speaker": "CIENTIFICO",
-					"text": "La rueda de Spirit removió el suelo y apareció algo muy claro: sílice casi pura, un 90 %. En la Tierra se forma en aguas termales, donde viven microbios."
+					"speaker": "CIENCIA",
+					"text": "Las esferas de hematita y las sales dicen lo mismo: Meridiani estuvo empapado de agua, aunque era un agua ácida y salada."
 				}
-			]
+			],
+			"verificar": "Confirmar con la NASA las conclusiones de 2004 sobre Meridiani (agua líquida, salada y ácida) y el detalle de la jarosita. Los instrumentos (MI, Mössbauer, APXS, RAT) vienen de NSSDC."
 		},
 		{
-			"id": "invierno_spirit",
-			"title": "ESCENA 3A · INVIERNO DE SPIRIT",
-			"enabled": true,
-			"year": "2009-2010",
-			"objective": "SOBREVIVIR AL INVIERNO",
-			"rover": "SPIRIT",
-			"distance_km": 7.73,
-			"signal": 70,
+			"id": "purgatory",
+			"title": "FASE 2 · ATRAPADA EN PURGATORY",
+			"date": "2005",
+			"objective": "SALIR DE LA DUNA",
+			"cinematic_tag": "OPPORTUNITY ATRAPADA EN LA DUNA",
 			"intro": [
 				{
-					"speaker": "CIENTIFICO",
-					"text": "Spirit, llega el invierno y hay poca luz. Reparte la energía de tu batería entre los calefactores y los instrumentos."
+					"speaker": "CONTROL",
+					"text": "26 de abril de 2005. Opportunity se hundió en una duna de arena blanda, «Purgatory». Pasará varias semanas atrapada."
+				},
+				{
+					"speaker": "INGENIERIA",
+					"text": "En Marte no se prueba a ciegas. Primero ensayamos en un cajón de arena del JPL, con una copia del rover; después lo hacemos de verdad."
 				}
 			],
 			"minimission": {
-				"title": "MINIMISIÓN: INVIERNO DE ENERGÍA",
-				"instruction": "Reparte la energía con A/D o los botones y confirma cada día marciano",
-				"heaters": "CALEFACTORES",
-				"instruments": "INSTRUMENTOS",
-				"confirm": "CONFIRMAR DÍA",
-				"day": "DÍA MARCIANO",
-				"days": 4,
-				"final_text": "SPIRIT DEJÓ DE COMUNICARSE\nÚltima señal: 22 de marzo de 2010"
+				"title": "MINIJUEGO: ENSAYA Y ESCAPA",
+				"info_test": "ENSAYO EN LA TIERRA: sin riesgo. Da órdenes con 1-4 o con clic. Cada 4 órdenes pasa un sol",
+				"coach_start": "Mira PATINAJE y HUNDIMIENTO: si las ruedas patinan, retrocede un poco.",
+				"coach_ok": "Buen ritmo: los pasos cortos patinan menos.",
+				"coach_slip": "Las ruedas giran en falso: prueba un paso corto o retrocede.",
+				"coach_sink": "El rover se hunde: retrocede para soltar las ruedas.",
+				"coach_stop": "El slip check te detuvo: retrocede antes de volver a avanzar.",
+				"info_real": "EN MARTE: la arena real es un poco más blanda y tienes pocos soles",
+				"slip_stop": "SLIP CHECK: EL ROVER SE DETIENE PORQUE LAS RUEDAS PATINAN",
+				"test_ok": "ENSAYO LOGRADO: YA SABES QUÉ FUNCIONA",
+				"freed": "¡LIBRE! OPPORTUNITY SALE DE LA DUNA",
+				"fail_real": "SE ACABARON LOS SOLES: VUELVE A INTENTARLO",
+				"need_test": "PRIMERO LOGRA SALIR EN EL ENSAYO",
+				"k_test": 0.75,
+				"k_real": 1.0,
+				"sols_real": 10,
+				"slip_limit": 0.78,
+				"start_sink": 0.35,
+				"cmds": {
+					"fl": {
+						"step": 0.12,
+						"slip0": 0.3,
+						"sink": 0.2,
+						"relief": 0.0,
+						"name": "AVANZAR LARGO",
+						"desc": "Mucho avance, pero patina y se hunde"
+					},
+					"fs": {
+						"step": 0.07,
+						"slip0": 0.1,
+						"sink": 0.05,
+						"relief": 0.0,
+						"name": "AVANZAR CORTO",
+						"desc": "Poco avance, patina poco"
+					},
+					"bs": {
+						"step": -0.03,
+						"slip0": 0.0,
+						"sink": 0.0,
+						"relief": 0.1,
+						"name": "RETROCEDER CORTO",
+						"desc": "Pierde poco y suelta algo la arena"
+					},
+					"bl": {
+						"step": -0.06,
+						"slip0": 0.0,
+						"sink": 0.0,
+						"relief": 0.22,
+						"name": "RETROCEDER LARGO",
+						"desc": "Pierde más, pero libera las ruedas"
+					}
+				}
 			},
-			"outro": []
+			"outro": [
+				{
+					"speaker": "INGENIERIA",
+					"text": "Salió. Después de aquello, el software del rover aprendió a detener la marcha si las ruedas patinan demasiado."
+				},
+				{
+					"speaker": "CONTROL",
+					"text": "Ensayar en la Tierra y actuar con calma en Marte: así se evitan errores que allí no tienen arreglo."
+				}
+			],
+			"verificar": "Fecha (26 de abril de 2005), varias semanas atrapada y ensayo en un cajón de arena del JPL: NASA. El nuevo software que detiene la marcha por patinaje: confirmar la redacción. Los parámetros de arena son de juego."
+		},
+		{
+			"id": "rueda",
+			"title": "FASE 3 · LA RUEDA ARRASTRADA",
+			"date": "2006-2007",
+			"objective": "ENCONTRAR SUELO CLARO",
+			"intro": [
+				{
+					"speaker": "INGENIERIA",
+					"text": "En 2006 la rueda delantera derecha de Spirit se quedó inmóvil. Desde entonces conduce arrastrándola y se desvía hacia ese lado."
+				},
+				{
+					"speaker": "CIENCIA",
+					"text": "Pero al arrastrarla, la rueda remueve el suelo como un arado. Pasa por las zonas marcadas desde la órbita y mira qué aparece."
+				}
+			],
+			"minimission": {
+				"title": "MINIJUEGO: LA RUEDA ARRASTRADA",
+				"info": "Conduce con W/↑ y corrige con A/D. Si aparece suelo claro, párate y mantén E o ENTER para analizarlo",
+				"analyze_s": 1.4,
+				"speed": 40.0,
+				"bias": 0.55,
+				"burn": 1.5,
+				"need": 2,
+				"no_energy": "SIN ENERGÍA: SE REINICIA EL INTENTO",
+				"zone_hint": "ZONA MARCADA DESDE LA ÓRBITA",
+				"found": "¡SUELO CLARO BAJO EL SURCO!",
+				"silica": "ANÁLISIS: SÍLICE CASI PURA",
+				"decoy": "ANÁLISIS: SOLO POLVO CLARO, NO INTERESA",
+				"zones": [
+					{
+						"x": 190,
+						"y": 150,
+						"r": 34,
+						"kind": "silice"
+					},
+					{
+						"x": 330,
+						"y": 214,
+						"r": 30,
+						"kind": "decoy"
+					},
+					{
+						"x": 470,
+						"y": 112,
+						"r": 34,
+						"kind": "silice"
+					}
+				],
+				"rocks": [
+					[
+						120,
+						205,
+						10
+					],
+					[
+						260,
+						100,
+						11
+					],
+					[
+						400,
+						170,
+						12
+					],
+					[
+						540,
+						205,
+						11
+					],
+					[
+						300,
+						150,
+						9
+					]
+				]
+			},
+			"outro": [
+				{
+					"speaker": "CIENCIA",
+					"text": "Sílice casi pura. En la Tierra se forma en fuentes termales y fumarolas, donde viven microbios."
+				},
+				{
+					"speaker": "CIENCIA",
+					"text": "Spirit hizo otro hallazgo: carbonatos en Husband Hill, señal de un agua poco ácida (resultado publicado en 2010)."
+				}
+			],
+			"evidence": [
+				{
+					"id": "silice",
+					"title": "SÍLICE CASI PURA",
+					"text": "La sílice casi pura apunta a fuentes termales o fumarolas antiguas."
+				},
+				{
+					"id": "carbonatos",
+					"title": "CARBONATOS",
+					"text": "Los carbonatos indican un agua menos ácida, más amable para la vida."
+				}
+			],
+			"verificar": "Rueda inmóvil desde 2006 y sílice descubierta al arrastrarla en 2007: JPL. Carbonatos en Husband Hill (informe de 2010 con datos de 2005): JPL. Las zonas del mapa son de juego."
+		},
+		{
+			"id": "invierno",
+			"title": "FASE 4 · INVIERNO EN TROY",
+			"date": "2009-2010",
+			"objective": "SACAR LA MAYOR CIENCIA POSIBLE",
+			"cinematic_tag": "SPIRIT EN TROY",
+			"intro": [
+				{
+					"speaker": "INGENIERIA",
+					"text": "Abril de 2009: Spirit se hundió en un sitio blando llamado Troy y quedó con los paneles casi planos."
+				},
+				{
+					"speaker": "INGENIERIA",
+					"text": "En invierno el Sol está bajo y casi no llega energía. No podemos salvarla, pero sí sacar el máximo de ciencia y mantener el contacto el mayor tiempo posible."
+				}
+			],
+			"minimission": {
+				"title": "MINIJUEGO: REPARTE LA ENERGÍA",
+				"info": "Arrastra las barras (o ↑/↓ y ←/→) para repartir la energía. ENTER envía el tramo",
+				"turns": 12,
+				"income": [
+					62,
+					58,
+					54,
+					50,
+					46,
+					42,
+					38,
+					34,
+					30,
+					27,
+					24,
+					22
+				],
+				"heat_base": 20.0,
+				"heat_growth": 2.2,
+				"temp_gain": 0.8,
+				"temp_start": 70.0,
+				"temp_min": 10.0,
+				"comm_need": 6,
+				"batt_start": 60.0,
+				"batt_draw": 30.0,
+				"sci_goal": 28.0,
+				"step": 2,
+				"msg_cold": "SPIRIT SE ENFRIÓ DEMASIADO",
+				"msg_silent": "SIN COMUNICACIÓN DOS TRAMOS SEGUIDOS: SE PIERDE EL ENLACE",
+				"msg_retry": "REINTENTO DEL INVIERNO",
+				"msg_end": "LLEGASTE AL FINAL DEL INVIERNO CON %d DE CIENCIA",
+				"msg_low_sci": "PERO TE FALTÓ CIENCIA: REPARTE MEJOR",
+				"over": "NO HAY TANTA ENERGÍA"
+			},
+			"outro": [
+				{
+					"speaker": "CONTROL",
+					"text": "Seguimos intentando recuperar el contacto hasta el 25 de mayo de 2011."
+				},
+				{
+					"speaker": "CONTROL",
+					"text": "Spirit recorrió 7,73 km, trabajó más de seis años y envió más de 124.000 imágenes. Su misión planeada era de tres meses."
+				}
+			],
+			"final_title": "SPIRIT DEJÓ DE COMUNICARSE",
+			"final_sub": "Última señal: 22 de marzo de 2010",
+			"verificar": "Troy desde abril de 2009, última comunicación (22 de marzo de 2010), fin de los intentos (25 de mayo de 2011), 7,73 km y más de 124.000 imágenes: JPL/NASA. El modelo de energía es de juego."
 		},
 		{
 			"id": "endeavour",
-			"title": "ESCENA 3B · OPPORTUNITY SIGUE",
-			"year": "2010-2011",
+			"title": "FASE 5 · RUMBO A ENDEAVOUR",
+			"date": "2008-2011",
 			"objective": "LLEGAR AL CRÁTER ENDEAVOUR",
-			"rover": "OPPORTUNITY",
-			"distance_km": 18.0,
-			"verificar": "distancias de Opportunity en 2010 (18 km) y al llegar a Endeavour en agosto de 2011 (unos 21 km): valores aproximados, confirmar con el registro de odometría de la NASA",
-			"signal": 88,
 			"intro": [
 				{
-					"speaker": "CIENTIFICO",
-					"text": "Opportunity, noticias difíciles: en 2009 Spirit quedó atrapado en la arena, en Troy, y no pudo inclinar sus paneles al Sol en invierno. Su última señal llegó el 22 de marzo de 2010; intentamos contactarlo hasta 2011."
+					"speaker": "CONTROL",
+					"text": "Opportunity siguió sola. Su nueva meta: Endeavour, un cráter de unos 22 km de diámetro con rocas más antiguas que todo lo visto hasta entonces."
 				},
 				{
-					"speaker": "OPPORTUNITY",
-					"mode": "RX",
-					"text": "MENSAJE RECIBIDO."
-				},
-				{
-					"speaker": "CIENTIFICO",
-					"text": "Tu próximo destino es el cráter Endeavour, de unos 22 km de diámetro. Sus rocas son más antiguas que todo lo que has visto hasta ahora."
+					"speaker": "INGENIERIA",
+					"text": "Tú marcas los puntos de ruta y el piloto automático del rover resuelve el detalle. Evita dunas y cráteres, y ajústate a los soles que tienes."
 				}
 			],
 			"minimission": {
-				"title": "MINIMISIÓN: RUMBO A ENDEAVOUR",
-				"instruction": "Conduce con A/D o flechas y esquiva los cráteres",
-				"end_km": 21.0,
-				"crater_hit": "¡Cráter! Rodeándolo...",
-				"match_title": "DESCUBRIMIENTOS: EMPAREJA CADA HALLAZGO CON LO QUE REVELÓ",
-				"match_left": [
-					"Blueberries de hematita (Opportunity)",
-					"Sílice casi pura (Spirit)",
-					"Venas de yeso, como Homestake (Endeavour)",
-					"Arcillas, en Pillinger Point (Endeavour)"
+				"title": "MINIJUEGO: TRAZA LA RUTA",
+				"info": "Clic: poner un punto (el rover se mueve y deja rastro). Clic derecho: borrar un punto",
+				"speed": 30.0,
+				"msg_wait": "EL ROVER ESPERA: PON OTRO PUNTO",
+				"msg_full": "YA HAY 5 PUNTOS: ESPERA O BORRA UNO",
+				"budget": 46,
+				"px_per_sol": 13.0,
+				"max_wps": 5,
+				"dune_cost": 5,
+				"crater_detour": 1.0,
+				"start": [
+					48,
+					212
 				],
-				"match_right": [
-					"Agua ácida que estuvo en la superficie",
-					"Ambiente de aguas termales o fumarolas",
-					"Agua que circuló por grietas subterráneas",
-					"Agua de pH neutro, más amigable para la vida"
+				"end": [
+					566,
+					112
 				],
-				"match_pick": "Primero elige un hallazgo de la izquierda",
-				"match_ok": "¡Correcto!",
-				"match_bad": "No coincide, prueba otra vez"
+				"craters": [
+					[
+						150,
+						190,
+						24
+					],
+					[
+						250,
+						120,
+						28
+					],
+					[
+						330,
+						205,
+						22
+					],
+					[
+						430,
+						150,
+						26
+					],
+					[
+						500,
+						205,
+						20
+					]
+				],
+				"dunes": [
+					[
+						190,
+						150,
+						70,
+						30
+					],
+					[
+						360,
+						100,
+						80,
+						26
+					],
+					[
+						300,
+						160,
+						60,
+						24
+					],
+					[
+						470,
+						100,
+						50,
+						30
+					]
+				],
+				"msg_over": "SE ACABARON LOS SOLES: EL ROVER VUELVE AL INICIO (EL RASTRO QUEDA DE GUÍA)",
+				"msg_dune": "DUNA: EL ROVER PATINA Y PIERDE SOLES",
+				"msg_crater": "AUTONAV: DESVÍO POR UN CRÁTER",
+				"msg_arrive": "¡OPPORTUNITY LLEGA A ENDEAVOUR!",
+				"reverse_note": "El rover conduce a menudo hacia atrás para cuidar una rueda con más desgaste.",
+				"milestone_a": "2014 · RÉCORD DE DISTANCIA EN OTRO MUNDO",
+				"milestone_b": "2015 · 42,195 KM: UN MARATÓN EN MARTE"
 			},
-			"outro": []
-		},
-		{
-			"id": "maraton",
-			"title": "ESCENA 3C · UNA MARATÓN EN MARTE",
-			"year": "2015",
-			"objective": "EXPLORAR EL BORDE DEL CRÁTER",
-			"rover": "OPPORTUNITY",
-			"distance_km": 42.195,
-			"verificar": "el guion original decía 42,198 km; la distancia oficial de una maratón es 42,195 km. Opportunity la superó en 2015 (confirmar fecha exacta)",
-			"signal": 85,
-			"intro": [
+			"outro": [
 				{
-					"speaker": "CIENTIFICO",
-					"text": "Opportunity, llevas años recorriendo el borde de Endeavour. Acabas de pasar los 42,195 km: ¡una maratón completa en Marte!"
+					"speaker": "CIENCIA",
+					"text": "Noviembre de 2011: una vena clara en el borde, «Homestake». Es yeso: solo se forma con agua que circuló por las grietas."
 				},
 				{
-					"speaker": "OPPORTUNITY",
-					"mode": "TX",
-					"text": "MARATÓN COMPLETADA. SIGO AVANZANDO."
+					"speaker": "CIENCIA",
+					"text": "También hay arcillas, que se forman con un agua mucho menos ácida: un ambiente más amable para la vida."
 				}
 			],
-			"outro": []
+			"evidence": [
+				{
+					"id": "yeso",
+					"title": "VENA DE YESO (HOMESTAKE)",
+					"text": "El yeso solo se forma con agua que circuló por las grietas."
+				},
+				{
+					"id": "arcillas",
+					"title": "ARCILLAS",
+					"text": "Las arcillas se forman con un agua poco ácida."
+				}
+			],
+			"verificar": "Récord de distancia en 2014 y vena Homestake (noviembre de 2011): NASA. El maratón de 2015 (42,195 km) y la descripción de las arcillas (agua menos ácida): confirmar con la NASA. Mapa y presupuesto de soles de juego."
 		},
 		{
 			"id": "tormenta",
-			"title": "ESCENA 4 · LA TORMENTA",
-			"year": "2018",
+			"title": "FASE 6 · LA TORMENTA",
+			"date": "2018",
 			"objective": "COMPLETAR EL PANORAMA",
-			"rover": "OPPORTUNITY",
-			"distance_km": 45.16,
-			"signal": 80,
+			"cinematic_tag": "TORMENTA GLOBAL DE POLVO",
 			"intro": [
 				{
-					"speaker": "CIENTIFICO",
-					"text": "Opportunity, se acerca una tormenta de polvo que cubrirá todo el planeta. Tus paneles necesitan luz."
+					"speaker": "CONTROL",
+					"text": "Mayo de 2018. Una tormenta de polvo cubre todo Marte y tapa el Sol. Opportunity está en el valle Perseverance, en el borde de Endeavour."
+				},
+				{
+					"speaker": "INGENIERIA",
+					"text": "Cada vez llega menos luz. Solo hay ventanas breves para tomar fotos sin gastar energía de más."
 				}
 			],
 			"minimission": {
-				"title": "MINIMISIÓN: CARRERA CONTRA LA TORMENTA",
-				"instruction": "Haz clic en la toma iluminada (o pulsa ESPACIO) antes de que el polvo llene la barra",
-				"shots": 8,
-				"dust_seconds": 16.0,
-				"dust_label": "POLVO",
-				"shots_label": "TOMAS",
-				"fail": "La tormenta llegó antes. Volvamos a intentarlo.",
-				"assist": "Control de Misión te da más tiempo en cada intento.",
+				"title": "MINIJUEGO: SOBREVIVE Y FOTOGRAFÍA",
+				"info": "ENTER o clic: foto con buena luz · mantén H: calentar · S: dormir. Cuida batería y temperatura",
+				"sols": 8,
+				"sol_s": 10.0,
+				"battery_start": 70.0,
+				"temp_start": 90.0,
+				"env0": 1.0,
+				"env1": 0.45,
+				"cold0": 1.0,
+				"cold1": 1.8,
+				"heat": 3.4,
+				"heat_cost": 3.5,
+				"drain": 0.8,
+				"gain": 4.0,
+				"photo_cost": 6.0,
+				"cooldown": 2.5,
+				"sleep_factor": 0.35,
+				"fault_limit": 3,
+				"fault_penalty": 12.0,
+				"stars": [
+					60,
+					100,
+					140
+				],
+				"max_score": 160.0,
+				"thr_poor": 0.35,
+				"thr_good": 0.55,
+				"thr_perfect": 0.8,
+				"gust_chance": 0.5,
+				"dust_chance": 0.4,
+				"r_perfect": "PERFECTA",
+				"r_good": "BUENA",
+				"r_poor": "FLOJA",
+				"r_dark": "OSCURA: ENERGÍA PERDIDA",
+				"msg_gust": "RÁFAGA DE VIENTO: ¡PANELES MÁS LIMPIOS!",
+				"msg_dust": "PICO DE POLVO: LA LUZ BAJA",
+				"msg_cant": "NO SE PUEDE FOTOGRAFIAR AHORA",
+				"msg_fault_batt": "BATERÍA A CERO: OPPORTUNITY SE APAGÓ EL RESTO DEL SOL",
+				"msg_fault_cold": "DEMASIADO FRÍO: OPPORTUNITY SE APAGÓ EL RESTO DEL SOL",
+				"msg_retry3": "TRES APAGONES: SE REPITE LA TORMENTA",
+				"msg_low": "PANORAMA INCOMPLETO: REPITE PARA CONSEGUIR AL MENOS 1 ESTRELLA",
+				"done": "PANORAMA COMPLETO. TRANSMITIENDO...",
 				"note": "Simplificación: el panorama real se tomó entre el 13 de mayo y el 10 de junio de 2018."
+			},
+			"last_message": {
+				"title": "EL ÚLTIMO MENSAJE",
+				"caption": "10 de junio de 2018 · sol 5.111",
+				"cut": "LA TRANSMISIÓN SE CORTÓ ANTES DE TERMINAR"
 			},
 			"outro": [
 				{
 					"speaker": "OPPORTUNITY",
-					"mode": "TX",
-					"text": "PANORAMA RECIBIDO. TRANSMISIÓN EN CURSO..."
+					"text": "IMAGEN PARCIAL RECIBIDA.",
+					"mode": "TX"
+				},
+				{
+					"speaker": "CONTROL",
+					"text": "10 de junio de 2018, sol 5.111: llega esta imagen, oscura y con ruido, y se corta antes de terminar. Fue su último mensaje."
+				},
+				{
+					"speaker": "CONTROL",
+					"text": "Enviamos más de mil comandos para recuperar el contacto. El 13 de febrero de 2019 la misión se dio por terminada."
 				}
-			]
+			],
+			"closing": {
+				"title": "DOS GEMELOS, UNA MISMA PREGUNTA",
+				"stats": [
+					[
+						"SPIRIT",
+						"7,73 km · más de 6 años · más de 124.000 imágenes"
+					],
+					[
+						"OPPORTUNITY",
+						"45,16 km · casi 14 años (misión planeada: 3 meses)"
+					]
+				],
+				"map_title": "RECORRIDO DE LOS GEMELOS",
+				"map_spirit": "SPIRIT · GUSEV · acabó en Troy",
+				"map_opp": "OPPORTUNITY · MERIDIANI · acabó en el valle Perseverance",
+				"pts_spirit": [
+					"Aterrizaje",
+					"Husband Hill",
+					"Home Plate",
+					"Troy"
+				],
+				"pts_opp": [
+					"Aterrizaje",
+					"Purgatory",
+					"Victoria",
+					"Endeavour",
+					"Valle Perseverance"
+				],
+				"quiz_title": "LIBRETA DE EVIDENCIAS",
+				"quiz_q": "¿Qué nos dijeron los gemelos sobre el agua de Marte?",
+				"quiz_options": [
+					"Siempre fue la misma: ácida y salada.",
+					"Hubo agua en muchos ambientes: ácida, de fuentes termales, subterránea y menos ácida.",
+					"Las pruebas no bastan para saber si hubo agua."
+				],
+				"quiz_correct": 1,
+				"quiz_right": "Correcto: hubo ambientes con agua, ácidos y menos ácidos.",
+				"quiz_wrong": "Repasa las pruebas de la libreta: hay más de un tipo de agua.",
+				"perseverance": "El 11 de octubre de 2026, Perseverance superó la distancia de Opportunity: 45,22 km.",
+				"final": "Spirit descansa en Troy. Opportunity, en el valle Perseverance.\nSiguen ahí, quietos en Marte, y siguen enseñándonos.",
+				"badge_hint": "ENTER / CLIC PARA CONTINUAR"
+			},
+			"verificar": "Último mensaje (imagen parcial, oscura y con ruido, 10 de junio de 2018, sol 5.111), más de mil comandos y fin de misión (13 de febrero de 2019): NASA/JPL. Perseverance superó el récord el 11 de octubre de 2026 (45,22 km): science.nasa.gov. La mecánica de ventanas de luz es una simplificación de juego."
 		}
 	],
-	"closing": {
-		"title": "Opportunity: última comunicación el 10 de junio de 2018.",
-		"stats": [
-			[
-				"OPPORTUNITY",
-				"45,16 km · unos 14 años (misión planeada: 3 meses)"
-			],
-			[
-				"SPIRIT",
-				"7,73 km · más de 6 años · más de 124.000 imágenes"
-			],
-			[
-				"FIN DE MISIÓN",
-				"Declarada terminada el 13 de febrero de 2019"
-			]
-		],
-		"epilogue_enabled": false,
-		"epilogue": "En 2026, Perseverance superó el récord de distancia de Opportunity.",
-		"verificar_epilogo": "confirmar la fecha en que Perseverance superó los 45,16 km de Opportunity",
-		"button": "ENTER / CLIC: VOLVER AL SELECTOR"
-	},
 	"mission_hud": {
 		"briefing": {
 			"header": "MISIÓN 4 · MARTE",
@@ -295,18 +973,18 @@
 			"year": "2004-2018",
 			"place": "Cráter Gusev y Meridiani Planum, Marte",
 			"equipment": "Rovers gemelos Spirit (MER-A) y Opportunity (MER-B)",
-			"narrators": "Control de Misión, con las señales de Spirit y Opportunity (mensajes imaginados, hechos reales)",
-			"objective": "Acompañar a los rovers gemelos en su búsqueda de pruebas de agua antigua en Marte.",
-			"scientist": "CONTROL DE MISIÓN"
+			"narrators": "Un equipo de operaciones del JPL imaginado, con hechos reales",
+			"objective": "Planifica cada sol de los rovers gemelos, junta pruebas de agua y despídete de ellos: dos máquinas que hoy descansan en Marte.",
+			"scientist": "CONTROL (JPL)"
 		},
 		"general_controls": [
 			[
 				"ENTER / CLIC",
-				"avanzar los mensajes de radio"
+				"avanzar los mensajes"
 			],
 			[
 				"ESC",
-				"pausa (continuar, reiniciar fase o volver)"
+				"menú de pausa: sonido, ayuda y salir"
 			],
 			[
 				"C · O · I",
@@ -315,102 +993,137 @@
 		],
 		"phases": [
 			{
-				"tip": "Sigue los pasos en orden: primero el mástil, luego la antena y al final elige una ruta para bajar.",
-				"keys": [
-					[
-						"1-5",
-						"",
-						"ACTIVAR PUNTO"
-					],
-					[
-						"CLIC",
-						"",
-						"SOBRE EL PUNTO"
-					]
-				]
-			},
-			{
-				"tip": "Las blueberries son esferas pequeñas y grisáceas. Las rocas normales son más grandes y oscuras.",
+				"tip": "Cada tarea tiene sus reglas: de día, de noche o en una ventana de comunicación. No te pases de energía.",
 				"keys": [
 					[
 						"CLIC",
 						"",
-						"TOCAR ESFERA"
-					]
-				]
-			},
-			{
-				"tip": "Pasa la rueda por toda la zona oscura hasta que aparezca el suelo claro.",
-				"keys": [
-					[
-						"CLIC (MANTENER)",
-						"",
-						"ARRASTRAR"
+						"ELEGIR / COLOCAR"
 					],
 					[
-						"WASD / FLECHAS",
+						"Q / E",
 						"",
-						"MOVER LA RUEDA"
+						"CAMBIAR TAREA"
+					],
+					[
+						"P",
+						"",
+						"ENVIAR PLAN"
 					]
 				]
 			},
 			{
-				"tip": "Reparte la energía como quieras y confirma cada día. Aquí no hay forma de ganarle al invierno.",
+				"tip": "Cada instrumento es un reto distinto: filtros, enfoque, pulso firme, ritmo y presión. Cada lectura puede descartar una hipótesis. Si hay polvo, primero el abrasivo.",
 				"keys": [
 					[
 						"A / D",
 						"",
-						"REPARTIR"
+						"MOVER"
+					],
+					[
+						"1-5",
+						"",
+						"INSTRUMENTO"
+					],
+					[
+						"RATÓN",
+						"",
+						"EN EL RETO"
+					]
+				]
+			},
+			{
+				"tip": "En el ensayo no hay riesgo: busca la secuencia que funciona. Los pasos cortos y retroceder un poco ayudan.",
+				"keys": [
+					[
+						"1-4",
+						"",
+						"DAR ORDEN"
+					],
+					[
+						"CLIC",
+						"",
+						"DAR ORDEN"
+					]
+				]
+			},
+			{
+				"tip": "La rueda arrastrada te desvía a la derecha: corrige con A y D. Para analizar, quédate quieto sobre el suelo claro.",
+				"keys": [
+					[
+						"W / ↑",
+						"thrust",
+						"AVANZAR"
+					],
+					[
+						"A / D",
+						"",
+						"CORREGIR"
+					],
+					[
+						"E",
+						"interact",
+						"ANALIZAR"
+					]
+				]
+			},
+			{
+				"tip": "El frío y la falta de comunicación acaban con Spirit. Mira la previsión antes de enviar el tramo.",
+				"keys": [
+					[
+						"ARRASTRAR",
+						"",
+						"AJUSTAR BARRA"
+					],
+					[
+						"↑ / ↓ · ← / →",
+						"",
+						"AJUSTAR"
 					],
 					[
 						"ENTER",
 						"ui_accept",
-						"CONFIRMAR"
+						"ENVIAR"
 					]
 				]
 			},
 			{
-				"tip": "Esquiva los cráteres para no perder tiempo. Al llegar, empareja cada hallazgo con su significado.",
+				"tip": "El rover avanza solo hacia tus puntos y deja rastro. Evita dunas (frenan) y cráteres (desvían) y no gastes todos los soles.",
 				"keys": [
-					[
-						"A",
-						"rotate_left",
-						"IZQUIERDA"
-					],
-					[
-						"D",
-						"rotate_right",
-						"DERECHA"
-					],
 					[
 						"CLIC",
 						"",
-						"EMPAREJAR"
+						"PUNTO DE RUTA"
+					],
+					[
+						"CLIC DER.",
+						"",
+						"BORRAR PUNTO"
+					],
+					[
+						"RETROCESO",
+						"",
+						"BORRAR ÚLTIMO"
 					]
 				]
 			},
 			{
-				"tip": "Lee el mensaje de radio y pulsa ENTER para avanzar.",
+				"tip": "Fotografía cerca del pico de luz: más calidad y combo. Mantén H para calentar y S para dormir; con batería o temperatura a cero se apaga ese sol.",
 				"keys": [
 					[
 						"ENTER / CLIC",
 						"ui_accept",
-						"AVANZAR"
-					]
-				]
-			},
-			{
-				"tip": "Toma la foto iluminada. Si el polvo llena la barra, vuelves a empezar.",
-				"keys": [
-					[
-						"CLIC",
-						"",
-						"TOMA ILUMINADA"
+						"TOMAR FOTO"
 					],
 					[
-						"ESP / ENTER",
-						"ui_accept",
-						"FOTO"
+						"H",
+						"",
+						"CALENTAR (MANTENER)"
+					],
+					[
+						"S",
+						"",
+						"DORMIR"
 					]
 				]
 			}

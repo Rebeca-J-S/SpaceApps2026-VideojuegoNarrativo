@@ -5,10 +5,10 @@ extends Control
 ## COMBUSTIBLE del motor (y el OXÍGENO en la superficie). Textos y valores en data/dialogos/apolo11.json.
 ## Se lanza desde el selector de destinos y emite chapter_finished al terminar.
 ##
-## Fases:  0 Órbita lunar (cinemática pendiente) -> 1 Descenso (elegir zona + estabilizar el Eagle)
-##         -> 2 Primer paso (cinemática pendiente + 4 acciones con el cursor) -> 3 Recolección de rocas
-##         (vista aérea) -> 4 Despegue (medidor de potencia + corrección de ángulo) -> 5 Acoplamiento
-##         (cinemática pendiente + epílogo).
+## Fases:  0 El viaje (cinemática Tierra-Luna con reloj de vuelo + órbita lunar) -> 1 Descenso (elegir zona
+##         + estabilizar el Eagle con el ritmo de los clics) -> 2 Primer paso (cinemática de la escalera y la
+##         frase + 4 acciones con el cursor) -> 3 Recolección de rocas (vista aérea) -> 4 Despegue (medidor
+##         de potencia + corrección de ángulo) -> 5 Acoplamiento (cinemática + epílogo).
 ## HUD: FECHA arriba a la izquierda, OBJETIVO arriba a la derecha; abajo, diálogo (con traducciones
 ##      pequeñas de las frases en inglés) y panel de telemetría con la barra de COMBUSTIBLE / OXÍGENO.
 ## Debug (solo en builds de depuración): F1-F6 saltan a cada fase.
@@ -17,6 +17,7 @@ signal chapter_finished
 
 const DATA_PATH := "res://data/dialogos/apolo11.json"
 const MISSION_ID := "apolo11"
+const BADGE_ID := "apolo11"           # insignia del cuaderno (data/badges.json)
 const W := 640.0
 const GAME_TOP := 22.0
 const GAME_BOTTOM := 266.0
@@ -48,7 +49,7 @@ var _mm_title: Label
 var _mm_info: Label
 var _toast: Label
 var _hud_draw: Control
-var _pause_panel: PanelContainer
+var _pause_menu: PauseMenu
 var _fade: ColorRect
 
 var _fuel := 100.0
@@ -119,12 +120,44 @@ var _asc_run := false
 var _orbit_ok := false
 var _asc_hint := ""
 
+# Fase 1: estabilización por ritmo de clics
+var _pulse_q := 0
+var _tilt_v := 0.0
+var _tilt_ui := false
+var _pulse_times: Array[float] = []
+
+# Cinemáticas
+const LOI_HOURS := 75.0 + 50.0 / 60.0      # despegue (16 jul 13:32 UT) -> órbita lunar (19 jul 17:22 UT)
+const EARTH_MOON_KM := 384400.0
+const ST_HATCH := Vector2(290, 170)        # puntos de la escalera del Eagle en la cinemática del primer paso
+const ST_PORCH := Vector2(272, 171)
+const ST_FOOT := Vector2(262, 208)
+const ST_SURF := Vector2(244, 209)
+var _ck := 0.0
+var _cshot := ""
+var _ccap := ""
+var _met := 0.0
+var _km := 0.0
+var _hatch := 0.0
+var _neil := Vector2(-99, -99)
+var _buzz := Vector2(-99, -99)
+var _prints: Array[Vector2] = []
+var _quote_a := 0.0
+var _quote_en := ""
+var _quote_es := ""
+var _dock_flash := 0.0
+
+
+var _badge_toast: BadgeToast
+
 
 func _ready() -> void:
 	theme = RetroTheme.build()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	data = GameManager.load_json(DATA_PATH)
 	_build()
+	_badge_toast = BadgeToast.new()
+	add_child(_badge_toast)
 	await get_tree().process_frame
 	_run_chapter()
 
@@ -143,11 +176,25 @@ func _run_chapter() -> void:
 	var first := maxi(start - 1, 0)
 	for i in range(first, scenes.size()):
 		await _run_scene(scenes[i], i, start > 0 and i == first)
+		await _award_badge_piece(i)
 	mission_hud.mark_all_done()
 	chapter_finished.emit()
 	if auto_return:
 		GameManager.mark_completed(MISSION_ID)
 		GameManager.go_to_planet_select()
+
+
+
+## Cuaderno de insignias: cada fase terminada gana una pieza de la insignia de la misión.
+func _award_badge_piece(index: int) -> void:
+	var b := GameManager.find_badge(BADGE_ID)
+	if b.is_empty() or not GameManager.unlock_badge_piece(BADGE_ID, index):
+		return
+	if GameManager.is_badge_complete(BADGE_ID):
+		# Insignia completa: se desbloquea su ficha técnica (aviso grande, espera al jugador).
+		await BadgeUnlockCard.present(self, b)
+	else:
+		_badge_toast.show_piece(b, GameManager.badge_pieces(BADGE_ID), index)
 
 
 func _run_scene(sc: Dictionary, index: int, jumped: bool) -> void:
@@ -160,6 +207,8 @@ func _run_scene(sc: Dictionary, index: int, jumped: bool) -> void:
 	_set_objective(String(sc["objective"]))
 	await _banner(String(sc["title"]))
 	mission_hud.set_phase(index, String(sc["title"]), String(sc["objective"]))
+	# Tarjeta "CÓMO SE JUEGA" antes de cada minijuego (las fases que son solo cinemática no tienen).
+	await TutorialCard.present(self, GameManager.get_tutorial(BADGE_ID, String(sc["id"])), String(sc["title"]))
 	match id:
 		"orbita": await _scene_orbit(sc)
 		"descenso": await _scene_descent(sc)
@@ -276,7 +325,8 @@ func _build() -> void:
 	mission_hud = MissionHUD.new()
 	add_child(mission_hud)
 	mission_hud.badge_pos = Vector2(8, GAME_TOP + 3)
-	mission_hud.buttons_pos = Vector2(W - 6, GAME_TOP + 3)
+	mission_hud.buttons_pos = Vector2(W - 28, GAME_TOP + 3)
+	mission_hud.show_info_buttons = false   # C / O / I van dentro del menú de tres puntos
 	mission_hud.reminder_pos = Vector2(8, GAME_TOP + 54)
 	mission_hud.briefing_auto_seconds = 7.0
 	mission_hud.briefing_area = Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP)
@@ -301,28 +351,14 @@ func _build() -> void:
 	add_child(crt)
 
 
+## Menú de pausa común (botón de tres puntos o ESC): sonido, ayuda de los minijuegos y salir.
 func _build_pause() -> void:
-	_pause_panel = PanelContainer.new()
-	_pause_panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	_pause_panel.position = Vector2(220, 100)
-	_pause_panel.custom_minimum_size = Vector2(200, 0)
-	add_child(_pause_panel)
-	var box := VBoxContainer.new()
-	_pause_panel.add_child(box)
-	var t := Label.new()
-	t.text = data["hud"]["pause_title"]
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	t.add_theme_color_override("font_color", GOLD)
-	box.add_child(t)
-	var cont := Button.new()
-	cont.text = data["hud"]["pause_continue"]
-	cont.pressed.connect(_toggle_pause)
-	box.add_child(cont)
-	var exit := Button.new()
-	exit.text = data["hud"]["pause_exit"]
-	exit.pressed.connect(GameManager.go_to_planet_select)
-	box.add_child(exit)
-	_pause_panel.hide()
+	_pause_menu = PauseMenu.new()
+	_pause_menu.setup(BADGE_ID, data["scenes"])
+	_pause_menu.hud = mission_hud
+	_pause_menu.dots_pos = Vector2(W - 6, GAME_TOP + 3)
+	add_child(_pause_menu)
+	_pause_menu.apply_layout()
 
 
 func _label(pos: Vector2, sz: Vector2, font_size: int, color: Color, parent: Node = null) -> Label:
@@ -418,7 +454,8 @@ func _fmt_clock(secs: float) -> String:
 
 
 func _num(v: float, decimals: int = 1) -> String:
-	return ("%.*f" % [decimals, v]).replace(".", ",")
+	var txt := "%.*f" % [decimals, v]
+	return txt if GameManager.lang == "en" else txt.replace(".", ",")
 
 
 # =========================================================================
@@ -466,7 +503,7 @@ func _draw_data_panel() -> void:
 
 
 # =========================================================================
-# Aviso inicial y pantalla de cinemática pendiente
+# Aviso inicial
 # =========================================================================
 func _disclaimer() -> void:
 	_set_date("")
@@ -488,23 +525,6 @@ func _disclaimer() -> void:
 	await wait_click_or_accept(4.0)
 	panel.queue_free()
 	h.queue_free()
-	l.queue_free()
-
-
-## Marcador de posición para las cinemáticas que todavía no existen: solo un mensaje en pantalla.
-func _cinematic_pending(_tag: String) -> void:
-	var panel := ColorRect.new()
-	panel.color = Color.BLACK
-	panel.position = Vector2(0, GAME_TOP)
-	panel.size = Vector2(W, GAME_BOTTOM - GAME_TOP)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui_layer.add_child(panel)
-	var l := _label(Vector2(0, 100), Vector2(W, 30), 22, GOLD, ui_layer)
-	l.text = String(data["cinematic_pending"])
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	await wait(0.3)
-	await wait_click_or_accept(3.0)
-	panel.queue_free()
 	l.queue_free()
 
 
@@ -558,9 +578,10 @@ func _fill_surface(c: CanvasItem, y_top: float, seed_v: int) -> void:
 
 
 # =========================================================================
-# FASE 0 · Órbita lunar (cinemática pendiente + diálogos)
+# FASE 0 · El viaje (cinemática Tierra-Luna) y la órbita lunar
 # =========================================================================
 func _scene_orbit(sc: Dictionary) -> void:
+	await _cine_journey(sc)
 	_fuel = float(sc["fuel"])
 	_bar_name = String(data["hud"]["fuel"])
 	_bar_show = true
@@ -568,7 +589,7 @@ func _scene_orbit(sc: Dictionary) -> void:
 	_countdown = float(sc["countdown_start"])
 	_count_on = true
 	_tele_fn = func() -> Array:
-		return [["ALTITUD", "%s KM" % _num(14.5)], ["T. HASTA DESCENSO", _fmt_clock(_countdown)]]
+		return [[tr("ALTITUD"), tr("%s KM") % _num(14.5)], [tr("T. HASTA DESCENSO"), _fmt_clock(_countdown)]]
 	_stars()
 	_layer(func(c: DrawNode) -> void:
 		# La Luna abajo y la Columbia orbitando.
@@ -586,7 +607,6 @@ func _scene_orbit(sc: Dictionary) -> void:
 		c.draw_colored_polygon(PackedVector2Array([Vector2(cx + 8, cy - 5), Vector2(cx + 8, cy + 5), Vector2(cx + 20, cy)]), FOIL)   # módulo de comando
 		c.draw_rect(Rect2(cx - 18, cy - 2, 4, 4), GRAY_DIM)
 	)
-	await _cinematic_pending(String(sc.get("cinematic_tag", "")))
 	await say(sc["dialog"])
 	_count_on = false
 
@@ -665,7 +685,7 @@ func _pick_zone(mm: Dictionary) -> Dictionary:
 		if not z.is_empty():
 			txt = "%s · %s" % [z["name"], mm["zone_ok"] if bool(z["safe"]) else mm["zone_bad"]]
 			col = Color("#7aff9a") if bool(z["safe"]) else RED
-		return [["ALTITUD", "1 000 M"], ["VEL. VERT.", "-16 M/S"], ["ZONA", txt, col]]
+		return [[tr("ALTITUD"), "1 000 M"], [tr("VEL. VERT."), "-16 M/S"], [tr("ZONA"), txt, col]]
 	var layer := _layer(_draw_pick)
 	var title := _label(Vector2(0, GAME_TOP + 52), Vector2(W, 16), 12, GOLD, ui_layer)
 	title.text = String(mm["pick_title"])
@@ -732,13 +752,23 @@ func _draw_pick(c: DrawNode) -> void:
 	c.draw_line(_reticle + Vector2(0, -7), _reticle + Vector2(0, 7), vcol, 1.0)
 
 
+## Descenso: el empuje vertical lo controla el piloto automático; el jugador decide la inclinación con el
+## RITMO de los pulsos (clic / ESPACIO / ENTER). La turbulencia inclina el Eagle a la derecha y cada pulso
+## lo endereza hacia la izquierda: clics rápidos = izquierda, lentos = derecha. La inclinación lo desplaza.
 func _fly_descent(mm: Dictionary, zone: Dictionary) -> bool:
 	var g := float(mm["gravity"])
-	var thrust_a := float(mm["thrust"])
+	var lat_a := float(mm["thrust"])
 	var burn := float(mm["burn"])
-	var rcs_burn := float(mm["rcs_burn"])
-	var rot_rate := float(mm["rot_rate"])
-	var dist_amp := float(mm["disturbance"])
+	var rcs_pulse := float(mm["rcs_pulse"])
+	var drift := float(mm["tilt_drift"])
+	var kick := float(mm["tilt_kick"])
+	var damp := float(mm["tilt_damp"])
+	var stiff := float(mm["tilt_stiff"])
+	var gust_amp := float(mm["gust"])
+	var vy_gain := float(mm["vy_gain"])
+	var vy_min := float(mm["vy_min"])
+	var vy_max := float(mm["vy_max"])
+	var drag := float(mm["drag"])
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	_lx = float(zone["x"]) + rng.randf_range(-14.0, 14.0)
@@ -746,6 +776,7 @@ func _fly_descent(mm: Dictionary, zone: Dictionary) -> bool:
 	_lvx = 0.0
 	_lvy = float(mm["start_vy"])
 	_lang = 0.0
+	_tilt_v = 0.0
 	_lthrust = false
 	_lrot = 0.0
 	_ldust = 0.0
@@ -753,39 +784,55 @@ func _fly_descent(mm: Dictionary, zone: Dictionary) -> bool:
 	_ship_hidden = false
 	_fuel_warned = false
 	_low_label = ""
+	_pulse_q = 0
+	_pulse_times.clear()
 	_mm_info.text = String(mm["info"])
 	_tele_fn = func() -> Array:
 		var zs := _zone_safe_at(_lx)
+		var level := absf(_lang) <= float(mm["ang_ok"])
 		return [
-			["ALTITUD", "%d M" % int(maxf(0.0, _lalt))],
-			["VEL. VERT.", "%d M/S" % int(round(_lvy)), RED if _lvy < -float(mm["v_ok"]) - 1.0 and _lalt < 80.0 else GOLD],
-			["ZONA", String(mm["zone_ok"]) if zs else String(mm["zone_bad"]), Color("#7aff9a") if zs else RED],
+			[tr("ALTITUD"), "%d M" % int(maxf(0.0, _lalt))],
+			[tr("INCLIN."), "%+d°" % int(round(rad_to_deg(_lang))), Color("#7aff9a") if level else RED],
+			[tr("ZONA"), String(mm["zone_ok"]) if zs else String(mm["zone_bad"]), Color("#7aff9a") if zs else RED],
 		]
 	var stars := _stars(110)
 	var layer := _layer(_draw_descent)
 	var disturbance := 0.0
 	var result := false
+	_tilt_ui = true
+	_mode = "tilt"
 	while true:
 		await get_tree().process_frame
 		if get_tree().paused:
 			continue
 		var dt := get_process_delta_time()
-		var rot := Input.get_axis("rotate_left", "rotate_right")
-		_lthrust = Input.is_action_pressed("thrust") and _fuel > 0.0
-		_lrot = rot if _fuel > 0.0 else 0.0
-		# Perturbaciones: el módulo tiende a girar solo y hay que corregirlo.
-		disturbance = clampf(disturbance + rng.randf_range(-1.0, 1.0) * dist_amp * dt * 4.0, -dist_amp, dist_amp)
-		_lang += (_lrot * rot_rate + disturbance) * dt
+		# Pulsos de los propulsores de control (RCS): cada uno endereza hacia la izquierda.
+		while _pulse_q > 0:
+			_pulse_q -= 1
+			if _fuel > 0.0:
+				_tilt_v -= kick
+				_fuel = maxf(0.0, _fuel - rcs_pulse)
+				_pulse_times.append(_t)
+				_lrot = -1.0
+		_lrot = move_toward(_lrot, 0.0, dt * 8.0)
+		# Turbulencia: empuja la inclinación hacia la derecha, con rachas.
+		disturbance = clampf(disturbance + rng.randf_range(-1.0, 1.0) * gust_amp * dt * 4.0, -gust_amp, gust_amp)
+		# Con el resorte, el ritmo fija el ángulo: inclinación ≈ (turbulencia − ritmo × pulso) / resorte.
+		_tilt_v += (drift + disturbance - stiff * _lang) * dt
+		_tilt_v -= _tilt_v * damp * dt
+		_lang = clampf(_lang + _tilt_v * dt, -0.8, 0.8)
+		if absf(_lang) >= 0.8:
+			_tilt_v = 0.0
+		# Piloto automático del empuje vertical (de juego): frena según la altitud.
+		_lthrust = _fuel > 0.0
 		if _lthrust:
+			var target := -clampf(_lalt * vy_gain + vy_min, vy_min, vy_max)
+			_lvy = move_toward(_lvy, target, 6.0 * dt)
 			_fuel = maxf(0.0, _fuel - burn * dt)
-		_fuel = maxf(0.0, _fuel - absf(_lrot) * rcs_burn * dt)
-		var ay := -g
-		var ax := 0.0
-		if _lthrust:
-			ay += thrust_a * cos(_lang)
-			ax += thrust_a * sin(_lang)
-		_lvy += ay * dt
-		_lvx += ax * dt
+			_lvx += lat_a * sin(_lang) * dt
+		else:
+			_lvy -= g * dt
+		_lvx -= _lvx * drag * dt
 		_lalt += _lvy * dt
 		_lx = clampf(_lx + _lvx * dt, 8.0, W - 8.0)
 		_bar_val = _fuel
@@ -796,12 +843,12 @@ func _fly_descent(mm: Dictionary, zone: Dictionary) -> bool:
 			_fuel_warned = true
 			dialog.show_hint("CONTROL", String(mm["warn_text"]), 4.0)
 		if _fuel <= float(mm["low_fuel"]):
-			_low_label = "%s: %d S" % [mm["low_label"], int(_fuel / maxf(0.1, burn * g / thrust_a))]
+			_low_label = "%s: %d S" % [mm["low_label"], int(_fuel / maxf(0.1, burn))]
 		else:
 			_low_label = ""
 		# Punto donde caería si no se corrige (visor de predicción).
-		var tf := (_lvy + sqrt(maxf(0.0, _lvy * _lvy + 2.0 * g * maxf(_lalt, 0.0)))) / g
-		_pred_x = _lx + _lvx * maxf(tf, 0.0)
+		var tf := maxf(_lalt, 0.0) / maxf(-_lvy, 0.5)
+		_pred_x = _lx + _lvx * minf(tf, 12.0)
 		if _lalt <= 0.0:
 			_lalt = 0.0
 			var reason := ""
@@ -830,10 +877,40 @@ func _fly_descent(mm: Dictionary, zone: Dictionary) -> bool:
 				await wait(2.4)
 			break
 	_tele_fn = Callable()
+	_tilt_ui = false
+	_mode = ""
 	layer.queue_free()
 	stars.queue_free()
 	_low_label = ""
 	return result
+
+
+## Pulsos por segundo en los últimos 1,5 s.
+func _pulse_rate() -> float:
+	while not _pulse_times.is_empty() and _t - _pulse_times[0] > 1.5:
+		_pulse_times.pop_front()
+	return _pulse_times.size() / 1.5
+
+
+## Indicador de inclinación (semicírculo con franja verde) y ritmo de los clics.
+func _draw_tilt_gauge(c: DrawNode, mm: Dictionary) -> void:
+	var font := ThemeDB.fallback_font
+	var ctr := Vector2(78, 132)
+	var rad := 44.0
+	var span := 0.8
+	var a_of := func(v: float) -> float: return -PI * 0.5 + v / span * (PI * 0.42)
+	c.draw_rect(Rect2(ctr.x - rad - 12, ctr.y - rad - 22, rad * 2 + 24, rad + 50), Color(0.03, 0.03, 0.05, 0.85))
+	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y - rad - 10), tr("INCLINACIÓN"), HORIZONTAL_ALIGNMENT_CENTER, rad * 2 + 16, 9, GRAY)
+	var ok := float(mm["ang_ok"])
+	c.draw_arc(ctr, rad, a_of.call(-span), a_of.call(span), 32, RED, 8.0)
+	c.draw_arc(ctr, rad, a_of.call(-ok), a_of.call(ok), 12, Color("#7aff9a"), 8.0)
+	var an: float = a_of.call(_lang)
+	c.draw_line(ctr, ctr + Vector2.from_angle(an) * (rad - 3.0), Color.WHITE.lerp(GOLD, absf(_lrot)), 2.0)
+	c.draw_circle(ctr, 3.0, Color.WHITE)
+	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y + 12), tr("IZQ"), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, RED)
+	c.draw_string(font, Vector2(ctr.x - rad, ctr.y + 12), tr("DER"), HORIZONTAL_ALIGNMENT_RIGHT, rad * 2 + 8, 8, RED)
+	c.draw_string(font, Vector2(ctr.x - rad, ctr.y + 12), tr("NIVEL"), HORIZONTAL_ALIGNMENT_CENTER, rad * 2, 8, Color("#7aff9a"))
+	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y + 24), tr("RITMO %s CLICS/S") % _num(_pulse_rate()), HORIZONTAL_ALIGNMENT_CENTER, rad * 2 + 16, 8, GOLD)
 
 
 func _alt_to_px(alt: float) -> float:
@@ -882,6 +959,8 @@ func _draw_descent(c: DrawNode) -> void:
 			var d := _boom * 60.0
 			c.draw_circle(_boom_pos + Vector2(cos(a), sin(a) * 0.6) * d, maxf(0.5, 5.0 - _boom * 3.0), Color("#ffb347", maxf(0.0, 1.0 - _boom)))
 	# Combustible crítico: contador que late.
+	if _tilt_ui:
+		_draw_tilt_gauge(c, data["scenes"][1]["minimission"])
 	if _low_label != "":
 		var beat := 0.55 + 0.45 * sin(_t * 9.0)
 		c.draw_string(font, Vector2(0, GAME_TOP + 62), _low_label, HORIZONTAL_ALIGNMENT_CENTER, W, 14, Color(RED, beat))
@@ -901,11 +980,10 @@ func _scene_first_step(sc: Dictionary) -> void:
 	_action_queue.clear()
 	_clock_s = 0.0
 	_tele_fn = func() -> Array:
-		return [["T. EN SUPERFICIE", _fmt_clock(_clock_s)], ["MUESTRAS", "0 KG"], ["EXPERIMENTOS", "%d/1" % _exp_done]]
+		return [[tr("T. EN SUPERFICIE"), _fmt_clock(_clock_s)], [tr("MUESTRAS"), tr("0 KG")], [tr("EXPERIMENTOS"), "%d/1" % _exp_done]]
 	_stars(60)
+	await _cine_first_step(sc)
 	_layer(_draw_surface_scene)
-	await _cinematic_pending(String(sc.get("cinematic_tag", "")))
-	await say(sc["intro"])
 	_mm_title.text = String(ac["title"])
 	_mm_info.text = String(ac["info"])
 	var items: Array = ac["items"]
@@ -1025,7 +1103,7 @@ func _scene_rocks(sc: Dictionary) -> void:
 			if tgt != Vector2.ZERO:
 				var ang := (tgt - _astro).angle()
 				arrow = arrow_chars[int(round(ang / (TAU / 8.0))) & 7]
-			return [["MUESTRAS", "%s / %s KG" % [_num(_kg), _num(goal)]], ["DIST. MÓDULO", "%d M" % int(round(d))], ["FLECHA", arrow]]
+			return [[tr("MUESTRAS"), tr("%s / %s KG") % [_num(_kg), _num(goal)]], [tr("DIST. MÓDULO"), "%d M" % int(round(d))], [tr("FLECHA"), arrow]]
 		var layer := _layer(_draw_rocks)
 		var hint1 := false
 		var hint2 := false
@@ -1196,7 +1274,7 @@ func _scene_ascent(sc: Dictionary) -> void:
 	_asc_ang = 0.0
 	_tele_fn = func() -> Array:
 		var pw := int(round(_pm_val * 100.0)) if _pm_run else 0
-		return [["PROPULSIÓN", "%d%%" % pw], ["ÁNGULO", "%d°" % int(round(_asc_ang))], ["ÓRBITA", String(mm["orbit_ok"]) if _orbit_ok else "—"]]
+		return [[tr("PROPULSIÓN"), "%d%%" % pw], [tr("ÁNGULO"), "%d°" % int(round(_asc_ang))], [tr("ÓRBITA"), String(mm["orbit_ok"]) if _orbit_ok else "—"]]
 	_stars(100)
 	_layer(_draw_ascent)
 	if not _retry:
@@ -1347,7 +1425,7 @@ func _draw_ascent(c: DrawNode) -> void:
 		c.draw_rect(bar, GRAY, false, 1.0)
 		var mx := bar.position.x + bar.size.x * _pm_val
 		c.draw_rect(Rect2(mx - 2, bar.position.y - 6, 4, bar.size.y + 12), GOLD)
-		c.draw_string(font, Vector2(bar.position.x, bar.position.y - 12), "PROPULSIÓN", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, GRAY)
+		c.draw_string(font, Vector2(bar.position.x, bar.position.y - 12), tr("PROPULSIÓN"), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, GRAY)
 		c.draw_string(font, Vector2(bar.end.x - 36, bar.position.y - 12), "%d%%" % int(round(_pm_val * 100.0)), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, GOLD)
 	# Control de ángulo.
 	if _asc_run:
@@ -1362,7 +1440,7 @@ func _draw_ascent(c: DrawNode) -> void:
 		var pb := Rect2(120, 218, 400, 5)
 		c.draw_rect(pb, Color(0, 0, 0, 0.6))
 		c.draw_rect(Rect2(pb.position, Vector2(pb.size.x * _asc_progress, pb.size.y)), GOLD)
-		c.draw_string(font, Vector2(120, 214), "ÓRBITA", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, GRAY)
+		c.draw_string(font, Vector2(120, 214), tr("ÓRBITA"), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, GRAY)
 	if _flash > 0.0:
 		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 0.9, 0.7, _flash * 0.35))
 
@@ -1374,18 +1452,9 @@ func _scene_docking(sc: Dictionary) -> void:
 	_bar_show = false
 	_clock_s = 21.0 * 3600.0 + 36.0 * 60.0
 	_tele_fn = func() -> Array:
-		return [["ACOPLAMIENTO", "CONFIRMADO"], ["T. EN SUPERFICIE", _fmt_clock(_clock_s).substr(0, 5)], ["MUESTRAS", "%s KG" % _num(21.5)]]
+		return [[tr("ACOPLAMIENTO"), tr("CONFIRMADO")], [tr("T. EN SUPERFICIE"), _fmt_clock(_clock_s).substr(0, 5)], [tr("MUESTRAS"), tr("%s KG") % _num(21.5)]]
 	_stars(120)
-	_layer(func(c: DrawNode) -> void:
-		c.draw_circle(Vector2(320, 520), 332.0, Color(0.5, 0.5, 0.56, 0.18))
-		c.draw_circle(Vector2(320, 520), 328.0, Color("#5a5a66"))
-		# La Columbia y el Eagle acoplándose.
-		c.draw_rect(Rect2(250, 120, 70, 24), Color("#c8ccd8"))
-		c.draw_colored_polygon(PackedVector2Array([Vector2(320, 120), Vector2(320, 144), Vector2(344, 132)]), FOIL)
-		_draw_eagle(c, Vector2(400 - 40.0 * clampf(c.t * 0.2, 0.0, 1.0), 138), -PI / 2.0, 1.4, 0.0, false, true)
-	)
-	await _cinematic_pending(String(sc.get("cinematic_tag", "")))
-	await say(sc["dialog"])
+	await _cine_docking(sc)
 	# Epílogo en texto sobre negro.
 	var tw := create_tween()
 	tw.tween_property(_fade, "modulate:a", 1.0, 1.0)
@@ -1420,6 +1489,347 @@ func _scene_docking(sc: Dictionary) -> void:
 
 
 # =========================================================================
+# Cinemáticas (fases 0, 2 y 5). PLACEHOLDERS dibujados por código.
+# =========================================================================
+## Avanza _ck de 0 a 1 en `seconds`; la toma `shot` se dibuja leyendo _ck.
+func _play(shot: String, caption: String, seconds: float, trans := Tween.TRANS_SINE) -> void:
+	_cshot = shot
+	_ccap = caption
+	_ck = 0.0
+	var tw := create_tween()
+	tw.tween_property(self, "_ck", 1.0, seconds).set_trans(trans).set_ease(Tween.EASE_IN_OUT)
+	await tw.finished
+
+
+func _tween_to(prop: String, value: Variant, seconds: float) -> void:
+	var tw := create_tween()
+	tw.tween_property(self, prop, value, seconds)
+	await tw.finished
+
+
+## Mueve a un astronauta (_neil / _buzz) por una lista de puntos a `speed` px/s.
+func _walk(prop: String, points: Array, speed: float) -> void:
+	for pt: Vector2 in points:
+		var from: Vector2 = get(prop)
+		await _tween_to(prop, pt, maxf(from.distance_to(pt) / speed, 0.05))
+
+
+func _fmt_met(hours: float) -> String:
+	var m := int(round(hours * 60.0))
+	return tr("T+ %dd %02dh %02dm") % [m / 1440, (m / 60) % 24, m % 60]
+
+
+func _thousands(v: float) -> String:
+	var n := int(v)
+	var sep := "," if GameManager.lang == "en" else "."
+	return "%d%s%03d" % [n / 1000, sep, n % 1000] if n >= 1000 else str(n)
+
+
+func _draw_cine(c: DrawNode) -> void:
+	match _cshot:
+		"launch": _draw_c_launch(c)
+		"earth_orbit": _draw_c_earth_orbit(c)
+		"transfer": _draw_c_transfer(c)
+		"ladder": _draw_c_ladder(c)
+		"rendezvous": _draw_c_rendezvous(c)
+		"dock": _draw_c_dock(c)
+		"farewell": _draw_c_farewell(c)
+	var font := ThemeDB.fallback_font
+	# Reloj de vuelo grande durante el viaje.
+	if _cshot in ["launch", "earth_orbit", "transfer"]:
+		var r := Rect2(10, GAME_TOP + 54, 186, 40)
+		c.draw_rect(r, Color(0.03, 0.03, 0.05, 0.8))
+		c.draw_rect(r, GRAY_DIM, false, 1.0)
+		c.draw_string(font, r.position + Vector2(8, 13), tr("TIEMPO DE VUELO"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GRAY)
+		c.draw_string(font, r.position + Vector2(8, 32), _fmt_met(_met), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, GOLD)
+	# Frase histórica: inglés grande y traducción pequeña.
+	if _quote_a > 0.0:
+		c.draw_rect(Rect2(0, GAME_TOP + 56, W, 44), Color(0, 0, 0, 0.65 * _quote_a))
+		c.draw_string(font, Vector2(0, GAME_TOP + 75), _quote_en, HORIZONTAL_ALIGNMENT_CENTER, W, 13, Color(1, 1, 1, _quote_a))
+		c.draw_string(font, Vector2(0, GAME_TOP + 92), _quote_es, HORIZONTAL_ALIGNMENT_CENTER, W, 10, Color(GRAY, _quote_a))
+	if _dock_flash > 0.0:
+		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 1, 1, _dock_flash * 0.45))
+	if _ccap != "":
+		c.draw_rect(Rect2(0, GAME_BOTTOM - 18, W, 18), Color(0, 0, 0, 0.75))
+		c.draw_string(font, Vector2(0, GAME_BOTTOM - 6), _ccap, HORIZONTAL_ALIGNMENT_CENTER, W, 10, GOLD)
+
+
+# ---------- Fase 0: de la Tierra a la Luna ----------
+func _cine_journey(sc: Dictionary) -> void:
+	var cin: Dictionary = sc["cinematic"]
+	_bar_show = false
+	_met = 0.0
+	_km = 0.0
+	_tele_fn = func() -> Array:
+		return [[tr("TIEMPO DE VUELO"), _fmt_met(_met)], [tr("DISTANCIA"), tr("%s KM") % _thousands(_km)], [tr("DESTINO"), tr("LA LUNA")]]
+	var st := _stars(150)
+	var cl := _layer(_draw_cine)
+	_tween_to("_met", 0.2, 5.0)
+	await _play("launch", String(cin["cap_launch"]), 5.0, Tween.TRANS_QUAD)
+	await say(cin["lines_launch"])
+	_tween_to("_met", 2.74, 4.5)
+	await _play("earth_orbit", String(cin["cap_orbit"]), 4.5)
+	await say(cin["lines_tli"])
+	var tw := create_tween().set_parallel()
+	tw.tween_property(self, "_met", LOI_HOURS, 7.0).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(self, "_km", EARTH_MOON_KM, 7.0).set_trans(Tween.TRANS_SINE)
+	await _play("transfer", String(cin["cap_transfer"]), 7.0)
+	await toast(String(cin["arrival"]), GOLD, 2.6)
+	await say(cin["lines_arrival"])
+	_tele_fn = Callable()
+	_cshot = ""
+	_ccap = ""
+	cl.queue_free()
+	st.queue_free()
+
+
+func _draw_saturn(c: CanvasItem, base: Vector2, flame: bool) -> void:
+	var w := Color("#eef1f8")
+	var b := Color("#1c1d26")
+	if flame:
+		var fl := 30.0 + randf() * 14.0
+		c.draw_colored_polygon(PackedVector2Array([base + Vector2(-8, 0), base + Vector2(8, 0), base + Vector2(0, fl)]), Color("#ffb347"))
+		c.draw_colored_polygon(PackedVector2Array([base + Vector2(-4, 0), base + Vector2(4, 0), base + Vector2(0, fl * 0.6)]), Color("#fff4c0"))
+	c.draw_colored_polygon(PackedVector2Array([base + Vector2(-7, -10), base + Vector2(-11, 0), base + Vector2(-7, 0)]), b)
+	c.draw_colored_polygon(PackedVector2Array([base + Vector2(7, -10), base + Vector2(11, 0), base + Vector2(7, 0)]), b)
+	c.draw_rect(Rect2(base + Vector2(-7, -60), Vector2(14, 60)), w)        # primera etapa
+	c.draw_rect(Rect2(base + Vector2(-7, -60), Vector2(7, 8)), b)
+	c.draw_rect(Rect2(base + Vector2(0, -20), Vector2(7, 8)), b)
+	c.draw_rect(Rect2(base + Vector2(-6, -88), Vector2(12, 28)), w)        # segunda etapa
+	c.draw_rect(Rect2(base + Vector2(-6, -62), Vector2(12, 2)), b)
+	c.draw_rect(Rect2(base + Vector2(-5, -104), Vector2(10, 16)), w)       # tercera etapa
+	c.draw_rect(Rect2(base + Vector2(-5, -96), Vector2(5, 4)), b)
+	c.draw_colored_polygon(PackedVector2Array([base + Vector2(-5, -104), base + Vector2(5, -104), base + Vector2(2, -114), base + Vector2(-2, -114)]), Color("#c8ccd8"))
+	c.draw_line(base + Vector2(0, -114), base + Vector2(0, -124), Color("#b04030"), 1.0)  # torre de escape
+
+
+func _draw_c_launch(c: DrawNode) -> void:
+	var rise := _ck * _ck * 300.0
+	var cam := maxf(0.0, rise - 100.0)
+	c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(0.32, 0.52, 0.8, 1.0 - clampf(_ck * 1.4, 0.0, 1.0)))
+	var gy := 236.0 + cam
+	if gy < GAME_BOTTOM + 4.0:
+		c.draw_rect(Rect2(0, gy, W, GAME_BOTTOM - gy + 4.0), Color("#3d5a3a"))
+		c.draw_rect(Rect2(0, gy, W, 2), Color("#8aa070"))
+		c.draw_rect(Rect2(420, gy + 6, 220, 30), Color("#2e5d8a"))   # el océano Atlántico
+		for i in 10:
+			c.draw_rect(Rect2(290, gy - 120 + i * 12, 12, 1), Color("#b04030"))
+		c.draw_rect(Rect2(290, gy - 120, 2, 120), Color("#b04030"))
+		c.draw_rect(Rect2(300, gy - 120, 2, 120), Color("#b04030"))
+		for i in 14:
+			var spread := 20.0 + _ck * 150.0
+			var px := 320.0 + (fmod(i * 37.0, 2.0 * spread) - spread)
+			var r := 9.0 + fmod(i * 13.0, 12.0) + _ck * 14.0
+			c.draw_circle(Vector2(px, gy - 5.0 - fmod(i * 7.0, 18.0)), r, Color(0.9, 0.9, 0.92, 0.55 * (1.0 - _ck * 0.6)))
+	_draw_saturn(c, Vector2(320, gy - rise), true)
+
+
+## Nave Apolo: módulo de servicio y de comando (+ el Eagle acoplado en la nariz si `lm`).
+func _draw_csm(c: CanvasItem, pos: Vector2, ang: float, s: float, flame: bool = false, lm: bool = false) -> void:
+	c.draw_set_transform(pos, ang, Vector2(s, s))
+	if flame:
+		c.draw_colored_polygon(PackedVector2Array([Vector2(-18, -2), Vector2(-18, 2), Vector2(-25.0 - randf() * 3.0, 0)]), Color("#bfe6ff"))
+	c.draw_colored_polygon(PackedVector2Array([Vector2(-18, -3), Vector2(-14, -2), Vector2(-14, 2), Vector2(-18, 3)]), GRAY_DIM)
+	c.draw_rect(Rect2(-14, -5, 22, 10), Color("#c8ccd8"))
+	c.draw_rect(Rect2(-14, -5, 22, 2), Color("#e8ecf8"))
+	c.draw_rect(Rect2(-4, -1, 5, 3), GRAY_DIM)
+	c.draw_colored_polygon(PackedVector2Array([Vector2(8, -5), Vector2(8, 5), Vector2(20, 0)]), Color("#d8dce6"))
+	c.draw_line(Vector2(20, 0), Vector2(23, 0), GRAY, 1.0)                 # sonda de acoplamiento
+	if lm:
+		c.draw_rect(Rect2(23, -4, 6, 8), Color("#b0b4c0"))
+		c.draw_rect(Rect2(29, -6, 7, 12), FOIL)
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_c_earth_orbit(c: DrawNode) -> void:
+	var ctr := Vector2(300, 1010)
+	var r := 820.0
+	for i in 5:
+		c.draw_circle(ctr, r + 4.0 + i * 5.0, Color(0.35, 0.7, 1.0, 0.08 - i * 0.012))
+	c.draw_circle(ctr, r, Color("#1d4f9a"))
+	for i in 16:
+		var a := -PI * 0.5 + (i - 8) * 0.05
+		var p := ctr + Vector2(cos(a), sin(a)) * (r - 14.0 - fmod(i * 23.0, 36.0))
+		c.draw_set_transform(p, 0.0, Vector2(1.0, 0.3))
+		c.draw_circle(Vector2.ZERO, 12.0 + fmod(i * 11.0, 16.0), Color("#e8f0ff") if i % 3 == 0 else Color("#3f7a4a"))
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# La tercera etapa vuelve a encenderse con la nave Apolo encima: rumbo a la Luna.
+	var pos := Vector2(150, 176).lerp(Vector2(470, 84), _ck)
+	var ang := -0.55
+	c.draw_set_transform(pos, ang, Vector2(2.2, 2.2))
+	if _ck > 0.45:
+		c.draw_colored_polygon(PackedVector2Array([Vector2(-14, -3), Vector2(-14, 3), Vector2(-22.0 - randf() * 4.0, 0)]), Color("#ffb347"))
+	c.draw_rect(Rect2(-14, -4, 18, 8), Color("#eef1f8"))
+	c.draw_rect(Rect2(-6, -4, 3, 8), Color("#1c1d26"))
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_csm(c, pos + Vector2.from_angle(ang) * 2.2 * 18.0, ang, 1.4)
+
+
+func _bezier(a: Vector2, b: Vector2, d: Vector2, t: float) -> Vector2:
+	return a.lerp(b, t).lerp(b.lerp(d, t), t)
+
+
+func _draw_moon(c: CanvasItem, p: Vector2, r: float) -> void:
+	c.draw_circle(p, r + 2.0, Color(1, 1, 1, 0.08))
+	c.draw_circle(p, r, Color("#b4b4c0"))
+	for m: Vector3 in [Vector3(-0.3, -0.25, 0.28), Vector3(0.15, -0.3, 0.2), Vector3(0.25, 0.05, 0.22), Vector3(-0.1, 0.25, 0.18)]:
+		c.draw_circle(p + Vector2(m.x, m.y) * r, m.z * r, Color("#7c7c8a"))
+
+
+func _draw_earth(c: CanvasItem, p: Vector2, r: float) -> void:
+	c.draw_circle(p, r + 2.0, Color(0.4, 0.7, 1.0, 0.2))
+	c.draw_circle(p, r, Color("#2e6bd1"))
+	c.draw_circle(p + Vector2(-r * 0.3, -r * 0.25), r * 0.4, Color("#3f9a52"))
+	c.draw_circle(p + Vector2(r * 0.35, r * 0.3), r * 0.25, Color("#3f9a52"))
+
+
+func _draw_c_transfer(c: DrawNode) -> void:
+	_draw_earth(c, Vector2(70, 214), 26.0)
+	var moon_r := 10.0 + 20.0 * _ck
+	_draw_moon(c, Vector2(560, 96), moon_r)
+	var a := Vector2(100, 200)
+	var b := Vector2(300, 40)
+	var d := Vector2(560 - moon_r - 10.0, 100)
+	for i in 40:
+		var t := i / 40.0
+		c.draw_rect(Rect2(_bezier(a, b, d, t), Vector2(2, 2)), Color(1, 1, 1, 0.2 if t > _ck else 0.65))
+	var p := _bezier(a, b, d, _ck)
+	var ahead := _bezier(a, b, d, minf(_ck + 0.01, 1.0))
+	_draw_csm(c, p, (ahead - p).angle(), 1.4, false, true)
+
+
+# ---------- Fase 2: la escalera y el primer paso ----------
+func _cine_first_step(sc: Dictionary) -> void:
+	var cin: Dictionary = sc["cinematic"]
+	_hatch = 0.0
+	_neil = Vector2(-99, -99)
+	_buzz = Vector2(-99, -99)
+	_prints.clear()
+	_quote_a = 0.0
+	var cl := _layer(_draw_cine)
+	_cshot = "ladder"
+	_ccap = String(cin["cap_hatch"])
+	await wait(0.8)
+	await _tween_to("_hatch", 1.0, 1.0)
+	_neil = ST_HATCH
+	await _walk("_neil", [ST_PORCH], 14.0)
+	_ccap = String(cin["cap_ladder"])
+	await _walk("_neil", [ST_FOOT], 12.0)
+	await wait(0.6)
+	_ccap = String(cin["cap_step"])
+	await _walk("_neil", [ST_SURF], 8.0)
+	_prints.append(ST_SURF + Vector2(4, 0))
+	var line: Dictionary = sc["intro"][0]
+	_quote_en = "\"%s\"" % String(line["text"])
+	_quote_es = String(line.get("sub", ""))
+	await _tween_to("_quote_a", 1.0, 0.8)
+	await wait(1.4)
+	await say(sc["intro"])
+	await _tween_to("_quote_a", 0.0, 0.6)
+	_ccap = String(cin["cap_aldrin"])
+	await _walk("_neil", [Vector2(200, 209)], 22.0)
+	_buzz = ST_HATCH
+	await _walk("_buzz", [ST_PORCH, ST_FOOT, ST_SURF + Vector2(6, 0)], 16.0)
+	await say(cin["lines_aldrin"])
+	_cshot = ""
+	_ccap = ""
+	cl.queue_free()
+
+
+func _draw_c_ladder(c: DrawNode) -> void:
+	_fill_surface(c, 208.0, 1969)
+	_draw_earth(c, Vector2(560, 64), 10.0)
+	var e := Vector2(300, 173)
+	_draw_eagle(c, e, 0.0, 3.0)
+	# Escotilla (se ilumina al abrirse) y escalera en la pata izquierda.
+	c.draw_rect(Rect2(e.x - 15, e.y - 22, 8, 12), Color("#1a1c28").lerp(Color("#ffe9a8"), _hatch))
+	var top := e + Vector2(-18, 6)
+	var bottom := e + Vector2(-36, 33)
+	c.draw_line(top, bottom, GRAY, 1.0)
+	for i in 8:
+		var p := top.lerp(bottom, i / 7.0)
+		c.draw_line(p + Vector2(-3, 0), p + Vector2(3, 0), GRAY, 1.0)
+	for f in _prints:
+		c.draw_rect(Rect2(f + Vector2(-3, 1), Vector2(4, 2)), REGOLITH_DARK)
+	if _neil.x > 0.0:
+		_draw_astro_side(c, _neil, 1.3)
+	if _buzz.x > 0.0:
+		_draw_astro_side(c, _buzz, 1.3)
+
+
+# ---------- Fase 5: el encuentro y el acoplamiento ----------
+func _cine_docking(sc: Dictionary) -> void:
+	var cin: Dictionary = sc["cinematic"]
+	_dock_flash = 0.0
+	var cl := _layer(_draw_cine)
+	await _play("rendezvous", String(cin["cap_rendezvous"]), 5.0)
+	await say(cin["lines_rendezvous"])
+	await _play("dock", String(cin["cap_dock"]), 5.0, Tween.TRANS_QUAD)
+	_dock_flash = 1.0
+	_tween_to("_dock_flash", 0.0, 0.8)
+	await toast(String(cin["docked"]), GOLD, 1.4)
+	await say(sc["dialog"])
+	await _play("farewell", String(cin["cap_farewell"]), 5.0)
+	await say(cin["lines_farewell"])
+	_cshot = ""
+	_ccap = ""
+	cl.queue_free()
+
+
+func _draw_c_rendezvous(c: DrawNode) -> void:
+	var font := ThemeDB.fallback_font
+	_draw_earth(c, Vector2(580, 62), 10.0)
+	c.draw_circle(Vector2(320, 600), 382.0, Color(0.5, 0.5, 0.56, 0.18))
+	c.draw_circle(Vector2(320, 600), 378.0, Color("#5a5a66"))
+	# La Columbia (con Collins) sigue su órbita; el Eagle sube desde la superficie y la alcanza.
+	var csm := Vector2(lerpf(330.0, 470.0, _ck), 92.0)
+	_draw_csm(c, csm, PI, 1.6)
+	c.draw_string(font, csm + Vector2(-50, -16), tr("COLUMBIA · COLLINS"), HORIZONTAL_ALIGNMENT_CENTER, 100, 8, GRAY)
+	var a := Vector2(110, 226)
+	var b := Vector2(190, 92)
+	var d := csm + Vector2(-23.0 * 1.6 - 14.0, 0)
+	for i in 30:
+		var t := i / 30.0
+		c.draw_rect(Rect2(_bezier(a, b, d, t), Vector2(2, 2)), Color(1, 1, 1, 0.18 if t > _ck else 0.55))
+	var p := _bezier(a, b, d, _ck)
+	var ahead := _bezier(a, b, d, minf(_ck + 0.02, 1.0))
+	var rot := (ahead - p).angle() + PI * 0.5
+	if _ck < 0.8:
+		var back := p - Vector2.from_angle(rot - PI * 0.5) * 10.0
+		c.draw_circle(back, 2.0 + randf() * 1.5, Color("#ffb347"))
+	_draw_eagle(c, p, rot, 1.6, 0.0, false, true)
+	c.draw_string(font, p + Vector2(-40, 22), tr("EAGLE"), HORIZONTAL_ALIGNMENT_CENTER, 80, 8, GOLD)
+
+
+func _draw_c_dock(c: DrawNode) -> void:
+	var font := ThemeDB.fallback_font
+	var s := 3.0
+	var csm := Vector2(200, 146)
+	_draw_csm(c, csm, 0.0, s)
+	var contact := csm.x + 23.0 * s
+	var lm := Vector2(lerpf(540.0, contact + 9.0 * s, _ck), 146.0 + sin(_t * 1.3) * 2.0 * (1.0 - _ck))
+	_draw_eagle(c, lm, -PI * 0.5, s, 0.0, false, true)
+	if _ck < 0.95 and fmod(_t, 0.5) < 0.12:
+		c.draw_circle(lm + Vector2(6.0 * s, -5.0 * s), 3.0, Color(0.85, 0.95, 1.0, 0.8))
+		c.draw_circle(lm + Vector2(6.0 * s, 5.0 * s), 3.0, Color(0.85, 0.95, 1.0, 0.8))
+	var gap := maxf(0.0, lm.x - 9.0 * s - contact)
+	c.draw_string(font, Vector2(14, GAME_TOP + 66), tr("DISTANCIA: %s M") % _num(gap / s * 0.4), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, GOLD)
+	c.draw_string(font, Vector2(14, GAME_TOP + 80), tr("COLUMBIA"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GRAY)
+	c.draw_string(font, Vector2(W - 80, GAME_TOP + 80), tr("EAGLE"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GOLD)
+
+
+func _draw_c_farewell(c: DrawNode) -> void:
+	_draw_earth(c, Vector2(586, 64), 14.0 + 6.0 * _ck)
+	_draw_moon(c, Vector2(40, 390), 210.0)
+	# La Columbia enciende su motor rumbo a la Tierra; el Eagle se queda en órbita lunar.
+	var csm := Vector2(lerpf(300.0, 530.0, _ck), lerpf(150.0, 80.0, _ck))
+	_draw_csm(c, csm, -0.3, lerpf(2.0, 1.0, _ck), _ck > 0.15)
+	var lm := Vector2(lerpf(280.0, 236.0, _ck), lerpf(160.0, 186.0, _ck))
+	_draw_eagle(c, lm, -0.4 - _ck * 0.9, 1.6, 0.0, false, true)
+	c.draw_string(ThemeDB.fallback_font, lm + Vector2(-40, 22), tr("EAGLE"), HORIZONTAL_ALIGNMENT_CENTER, 80, 8, Color(GOLD, 1.0 - _ck * 0.4))
+
+
+# =========================================================================
 # Entrada: elegir zona, detener la barra, pausa y debug
 # =========================================================================
 func _unhandled_input(event: InputEvent) -> void:
@@ -1448,11 +1858,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		"power":
 			if click or event.is_action_pressed("ui_accept"):
 				_pm_stop = true
+		"tilt":
+			if click or event.is_action_pressed("ui_accept") or event.is_action_pressed("thrust"):
+				_pulse_q += 1
 
 
 func _toggle_pause() -> void:
-	var p := not get_tree().paused
-	get_tree().paused = p
-	_pause_panel.visible = p
-	if p:
-		(_pause_panel.get_child(0).get_child(1) as Button).grab_focus()
+	_pause_menu.toggle()

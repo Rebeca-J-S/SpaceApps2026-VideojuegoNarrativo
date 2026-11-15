@@ -10,6 +10,7 @@ enum Kind { MOON, MARS }
 const SHADER := preload("res://assets/shaders/pixel_planet.gdshader")
 const C_SITE := Color("#39ff7a")
 const C_HOVER := Color("#ffb347")
+const C_LOCKED := Color("#c8ccd8")       # sitio bloqueado (aún sin misión)
 
 @export var kind: Kind = Kind.MOON
 ## Resolución del disco: con size 120 y pixels 60, cada píxel del planeta mide 2 px.
@@ -123,10 +124,14 @@ func _draw_markers() -> void:
 		if not _site_visible[i]:
 			continue
 		var p := _site_pos[i]
-		var col := C_HOVER if i == hovered else C_SITE
-		# Punto verde pulsante con onda expansiva.
-		var pulse := fmod(_t * 0.9 + i * 0.37, 1.0)
-		_markers.draw_arc(p, 3.0 + pulse * 8.0, 0.0, TAU, 16, Color(col, 1.0 - pulse), 1.0)
+		var locked := bool(sites[i].get("locked", false))
+		var col := C_HOVER if i == hovered else (C_LOCKED if locked else C_SITE)
+		# Punto verde pulsante con onda expansiva (los bloqueados: punto gris, sin onda).
+		if not locked:
+			var pulse := fmod(_t * 0.9 + i * 0.37, 1.0)
+			_markers.draw_arc(p, 3.0 + pulse * 8.0, 0.0, TAU, 16, Color(col, 1.0 - pulse), 1.0)
+		if locked:
+			_markers.draw_rect(Rect2(p - Vector2(3, 3), Vector2(6, 6)), Color(0.05, 0.05, 0.1, 0.9))
 		_markers.draw_rect(Rect2(p - Vector2(2, 2), Vector2(4, 4)), col)
 		if i == hovered:
 			_markers.draw_rect(Rect2(p - Vector2(6, 6), Vector2(12, 12)), col, false, 1.0)
