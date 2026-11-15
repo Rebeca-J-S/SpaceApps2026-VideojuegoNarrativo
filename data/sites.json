@@ -17,7 +17,7 @@
 					"lat": 0.67,
 					"lon": 23.47,
 					"mission_title": "GUARDIANES DE LA TRANQUILIDAD",
-					"scene": "res://scenes/missions/mision_apolo11.tscn"
+					"scene": "res://scenes/missions/chapter_apolo11.tscn"
 				},
 				{
 					"id": "surveyor3",
