@@ -37,6 +37,7 @@ func _ready() -> void:
 	_radio = RadioDialog.new()
 	add_child(_radio)
 	move_child(_radio, fade.get_index())  # Debajo del fundido y del overlay CRT.
+	add_child(LangButton.new())
 	_play_sequence()
 
 
@@ -94,7 +95,7 @@ func _update_tooltip() -> void:
 		tooltip.hide()
 		return
 	var info := corridor.get_item_info(index)
-	var text := "%s\n%s" % [info["title"], info["info"]]
+	var text := "%s\n%s" % [tr(info["title"]), tr(info["info"])]
 	if tooltip_label.text != text:
 		tooltip_label.text = text
 		tooltip.reset_size()
@@ -136,7 +137,7 @@ func _leave() -> void:
 	tooltip.hide()
 	corridor.highlighted = -1
 	# Parpadeo rápido de confirmación.
-	prompt.text = "> TRANSMISIÓN RECIBIDA <"
+	prompt.text = tr("> TRANSMISIÓN RECIBIDA <")
 	var confirm := create_tween().set_loops(3)
 	confirm.tween_property(prompt, "modulate:a", 1.0, 0.0)
 	confirm.tween_interval(0.06)

@@ -1294,7 +1294,7 @@ func _draw_jupiter(c: DrawNode) -> void:
 		var pulse := 0.5 + 0.5 * sin(c.t * 9.0)
 		c.draw_arc(_visor, tol + 3.0 + pulse * 3.0, 0.0, TAU, 28, Color(ac, 0.35 + 0.3 * pulse), 1.0)
 		if not _scanning:
-			c.draw_string(font, _visor + Vector2(-26, h + 12), "ENFOCADO", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, ac)
+			c.draw_string(font, _visor + Vector2(-26, h + 12), tr("ENFOCADO"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, ac)
 	# Barrido del escaneo dentro del visor.
 	if _scanning:
 		var sy2 := _visor.y - h + (_scan_t / _scan_dur) * h * 2.0
@@ -1306,7 +1306,7 @@ func _draw_jupiter(c: DrawNode) -> void:
 	var pr := Rect2(500, 106, 122, 130)
 	c.draw_rect(pr, Color(0.01, 0.03, 0.04, 0.9))
 	c.draw_rect(pr, Color(RetroTheme.PHOSPHOR, 0.7), false, 1.0)
-	c.draw_string(font, pr.position + Vector2(5, 11), "FOTO", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+	c.draw_string(font, pr.position + Vector2(5, 11), tr("FOTO"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
 	var pc := pr.position + Vector2(61, 70)
 	var mcol := Color(String(m["color"]))
 	_draw_scan_image(c, pc, 46.0, mcol, _scan_lines, _scan_n, float(mi))
@@ -1383,7 +1383,7 @@ func _draw_polaroid(c: CanvasItem) -> void:
 	c.draw_string(font, Vector2(-40, -56), "%d%%" % int(_pol["acc"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, _acc_color(int(_pol["acc"])).darkened(0.25))
 	c.draw_string(font, Vector2(30, -56), String(data["scenes"][2]["minimission"]["stars_label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#6a6a74"))
 	c.draw_multiline_string(font, Vector2(-40, -40), String(m["fact"]), HORIZONTAL_ALIGNMENT_LEFT, 205.0, 10, -1, ink)
-	c.draw_string(font, Vector2(60, 72), "ENTER: SEGUIR", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#8a8a94"))
+	c.draw_string(font, Vector2(60, 72), tr("ENTER: SEGUIR"), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#8a8a94"))
 	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -1645,7 +1645,7 @@ func _scene_silence(sc: Dictionary) -> void:
 		_static = _sil_frac * 0.25 + glitch * _sil_frac * 0.35
 		while shown < events.size() and float(events[shown]["year"]) <= _sil_year:
 			_sil_log.append(events[shown])
-			_mm_info.text = "ENLACE: %s" % String(events[shown]["link"])
+			_mm_info.text = tr("ENLACE: %s") % String(events[shown]["link"])
 			shown += 1
 	_static = 0.0
 	_set_year("2003")
@@ -1788,7 +1788,7 @@ func _plate_action(pos: Vector2) -> void:
 	var i := _pick_pulsar(pos)
 	if i >= 0:
 		if _decoded[i]:
-			toast("PÚLSAR %s YA SINCRONIZADO" % _pulsars[i]["id"], RetroTheme.WHITE, 0.8)
+			toast(tr("PÚLSAR %s YA SINCRONIZADO") % _pulsars[i]["id"], RetroTheme.WHITE, 0.8)
 		else:
 			_begin_tune(i)
 		return
@@ -1997,9 +1997,9 @@ func _draw_plate(c: DrawNode) -> void:
 		if _tune_flash > 0.0:
 			c.draw_circle(tp, 5.0 + 10.0 * _tune_flash, Color(1, 1, 1, 0.45 * _tune_flash))
 		if nb <= 2:
-			c.draw_string(font, tp + Vector2(-20, -16), "ESCUCHA", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.8))
+			c.draw_string(font, tp + Vector2(-20, -16), tr("ESCUCHA"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.8))
 		else:
-			c.draw_string(font, tp + Vector2(-8, -16), "¡YA!" if prog > 0.82 else "...", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
+			c.draw_string(font, tp + Vector2(-8, -16), tr("¡YA!") if prog > 0.82 else "...", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
 	# Revelado: la onda de cada púlsar viaja hasta el Sol y luego se desvanece.
 	var travel := float(mm.get("reveal_travel", 0.55))
 	for ring in _rev_rings:
@@ -2059,7 +2059,7 @@ func _draw_plate(c: DrawNode) -> void:
 		var sn := int(mm["streak_needed"])
 		for k in sn:
 			c.draw_circle(Vector2(560 + k * 14, 229), 4.0, YELLOW if k < _tune_hits else Color(1, 1, 1, 0.2))
-		c.draw_string(font, Vector2(398, 248), "Fallos: %d/3" % _tune_miss, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#ff9a7a") if _tune_miss > 0 else Color(1, 1, 1, 0.6))
+		c.draw_string(font, Vector2(398, 248), tr("Fallos: %d/3") % _tune_miss, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#ff9a7a") if _tune_miss > 0 else Color(1, 1, 1, 0.6))
 	else:
 		c.draw_string(font, Vector2(398, 232), "%s: %d/%d" % [mm["sync_label"], n_dec, needed], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW)
 		for k in needed:

@@ -124,8 +124,7 @@
 				"cap_step": "02:56 UT · EL PRIMER PASO EN LA LUNA",
 				"cap_aldrin": "UNOS 19 MINUTOS DESPUÉS · BAJA ALDRIN",
 				"lines_aldrin": [
-					{"speaker": "CONTROL", "text": "Unos diecinueve minutos después, Buzz Aldrin baja por la misma escalera y también pisa la Luna."},
-					{"speaker": "ALDRIN", "text": "Magnificent desolation.", "sub": "Magnífica desolación."}
+					{"speaker": "CONTROL", "text": "Unos diecinueve minutos después, Buzz Aldrin baja por la misma escalera y también pisa la Luna."}
 				],
 				"verificar": "Escotilla 02:39 UT, primer paso 02:56:15 UT, Aldrin unos 19 minutos después (NSSDCA)."
 			},

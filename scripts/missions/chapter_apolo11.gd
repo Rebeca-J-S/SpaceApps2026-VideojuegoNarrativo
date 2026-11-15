@@ -445,7 +445,8 @@ func _fmt_clock(secs: float) -> String:
 
 
 func _num(v: float, decimals: int = 1) -> String:
-	return ("%.*f" % [decimals, v]).replace(".", ",")
+	var txt := "%.*f" % [decimals, v]
+	return txt if GameManager.lang == "en" else txt.replace(".", ",")
 
 
 # =========================================================================
@@ -579,7 +580,7 @@ func _scene_orbit(sc: Dictionary) -> void:
 	_countdown = float(sc["countdown_start"])
 	_count_on = true
 	_tele_fn = func() -> Array:
-		return [["ALTITUD", "%s KM" % _num(14.5)], ["T. HASTA DESCENSO", _fmt_clock(_countdown)]]
+		return [[tr("ALTITUD"), tr("%s KM") % _num(14.5)], [tr("T. HASTA DESCENSO"), _fmt_clock(_countdown)]]
 	_stars()
 	_layer(func(c: DrawNode) -> void:
 		# La Luna abajo y la Columbia orbitando.
@@ -675,7 +676,7 @@ func _pick_zone(mm: Dictionary) -> Dictionary:
 		if not z.is_empty():
 			txt = "%s · %s" % [z["name"], mm["zone_ok"] if bool(z["safe"]) else mm["zone_bad"]]
 			col = Color("#7aff9a") if bool(z["safe"]) else RED
-		return [["ALTITUD", "1 000 M"], ["VEL. VERT.", "-16 M/S"], ["ZONA", txt, col]]
+		return [[tr("ALTITUD"), "1 000 M"], [tr("VEL. VERT."), "-16 M/S"], [tr("ZONA"), txt, col]]
 	var layer := _layer(_draw_pick)
 	var title := _label(Vector2(0, GAME_TOP + 52), Vector2(W, 16), 12, GOLD, ui_layer)
 	title.text = String(mm["pick_title"])
@@ -781,9 +782,9 @@ func _fly_descent(mm: Dictionary, zone: Dictionary) -> bool:
 		var zs := _zone_safe_at(_lx)
 		var level := absf(_lang) <= float(mm["ang_ok"])
 		return [
-			["ALTITUD", "%d M" % int(maxf(0.0, _lalt))],
-			["INCLIN.", "%+d°" % int(round(rad_to_deg(_lang))), Color("#7aff9a") if level else RED],
-			["ZONA", String(mm["zone_ok"]) if zs else String(mm["zone_bad"]), Color("#7aff9a") if zs else RED],
+			[tr("ALTITUD"), "%d M" % int(maxf(0.0, _lalt))],
+			[tr("INCLIN."), "%+d°" % int(round(rad_to_deg(_lang))), Color("#7aff9a") if level else RED],
+			[tr("ZONA"), String(mm["zone_ok"]) if zs else String(mm["zone_bad"]), Color("#7aff9a") if zs else RED],
 		]
 	var stars := _stars(110)
 	var layer := _layer(_draw_descent)
@@ -890,17 +891,17 @@ func _draw_tilt_gauge(c: DrawNode, mm: Dictionary) -> void:
 	var span := 0.8
 	var a_of := func(v: float) -> float: return -PI * 0.5 + v / span * (PI * 0.42)
 	c.draw_rect(Rect2(ctr.x - rad - 12, ctr.y - rad - 22, rad * 2 + 24, rad + 50), Color(0.03, 0.03, 0.05, 0.85))
-	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y - rad - 10), "INCLINACIÓN", HORIZONTAL_ALIGNMENT_CENTER, rad * 2 + 16, 9, GRAY)
+	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y - rad - 10), tr("INCLINACIÓN"), HORIZONTAL_ALIGNMENT_CENTER, rad * 2 + 16, 9, GRAY)
 	var ok := float(mm["ang_ok"])
 	c.draw_arc(ctr, rad, a_of.call(-span), a_of.call(span), 32, RED, 8.0)
 	c.draw_arc(ctr, rad, a_of.call(-ok), a_of.call(ok), 12, Color("#7aff9a"), 8.0)
 	var an: float = a_of.call(_lang)
 	c.draw_line(ctr, ctr + Vector2.from_angle(an) * (rad - 3.0), Color.WHITE.lerp(GOLD, absf(_lrot)), 2.0)
 	c.draw_circle(ctr, 3.0, Color.WHITE)
-	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y + 12), "IZQ", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, RED)
-	c.draw_string(font, Vector2(ctr.x - rad, ctr.y + 12), "DER", HORIZONTAL_ALIGNMENT_RIGHT, rad * 2 + 8, 8, RED)
-	c.draw_string(font, Vector2(ctr.x - rad, ctr.y + 12), "NIVEL", HORIZONTAL_ALIGNMENT_CENTER, rad * 2, 8, Color("#7aff9a"))
-	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y + 24), "RITMO %s CLICS/S" % _num(_pulse_rate()), HORIZONTAL_ALIGNMENT_CENTER, rad * 2 + 16, 8, GOLD)
+	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y + 12), tr("IZQ"), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, RED)
+	c.draw_string(font, Vector2(ctr.x - rad, ctr.y + 12), tr("DER"), HORIZONTAL_ALIGNMENT_RIGHT, rad * 2 + 8, 8, RED)
+	c.draw_string(font, Vector2(ctr.x - rad, ctr.y + 12), tr("NIVEL"), HORIZONTAL_ALIGNMENT_CENTER, rad * 2, 8, Color("#7aff9a"))
+	c.draw_string(font, Vector2(ctr.x - rad - 8, ctr.y + 24), tr("RITMO %s CLICS/S") % _num(_pulse_rate()), HORIZONTAL_ALIGNMENT_CENTER, rad * 2 + 16, 8, GOLD)
 
 
 func _alt_to_px(alt: float) -> float:
@@ -970,7 +971,7 @@ func _scene_first_step(sc: Dictionary) -> void:
 	_action_queue.clear()
 	_clock_s = 0.0
 	_tele_fn = func() -> Array:
-		return [["T. EN SUPERFICIE", _fmt_clock(_clock_s)], ["MUESTRAS", "0 KG"], ["EXPERIMENTOS", "%d/1" % _exp_done]]
+		return [[tr("T. EN SUPERFICIE"), _fmt_clock(_clock_s)], [tr("MUESTRAS"), tr("0 KG")], [tr("EXPERIMENTOS"), "%d/1" % _exp_done]]
 	_stars(60)
 	await _cine_first_step(sc)
 	_layer(_draw_surface_scene)
@@ -1093,7 +1094,7 @@ func _scene_rocks(sc: Dictionary) -> void:
 			if tgt != Vector2.ZERO:
 				var ang := (tgt - _astro).angle()
 				arrow = arrow_chars[int(round(ang / (TAU / 8.0))) & 7]
-			return [["MUESTRAS", "%s / %s KG" % [_num(_kg), _num(goal)]], ["DIST. MÓDULO", "%d M" % int(round(d))], ["FLECHA", arrow]]
+			return [[tr("MUESTRAS"), tr("%s / %s KG") % [_num(_kg), _num(goal)]], [tr("DIST. MÓDULO"), "%d M" % int(round(d))], [tr("FLECHA"), arrow]]
 		var layer := _layer(_draw_rocks)
 		var hint1 := false
 		var hint2 := false
@@ -1264,7 +1265,7 @@ func _scene_ascent(sc: Dictionary) -> void:
 	_asc_ang = 0.0
 	_tele_fn = func() -> Array:
 		var pw := int(round(_pm_val * 100.0)) if _pm_run else 0
-		return [["PROPULSIÓN", "%d%%" % pw], ["ÁNGULO", "%d°" % int(round(_asc_ang))], ["ÓRBITA", String(mm["orbit_ok"]) if _orbit_ok else "—"]]
+		return [[tr("PROPULSIÓN"), "%d%%" % pw], [tr("ÁNGULO"), "%d°" % int(round(_asc_ang))], [tr("ÓRBITA"), String(mm["orbit_ok"]) if _orbit_ok else "—"]]
 	_stars(100)
 	_layer(_draw_ascent)
 	if not _retry:
@@ -1415,7 +1416,7 @@ func _draw_ascent(c: DrawNode) -> void:
 		c.draw_rect(bar, GRAY, false, 1.0)
 		var mx := bar.position.x + bar.size.x * _pm_val
 		c.draw_rect(Rect2(mx - 2, bar.position.y - 6, 4, bar.size.y + 12), GOLD)
-		c.draw_string(font, Vector2(bar.position.x, bar.position.y - 12), "PROPULSIÓN", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, GRAY)
+		c.draw_string(font, Vector2(bar.position.x, bar.position.y - 12), tr("PROPULSIÓN"), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, GRAY)
 		c.draw_string(font, Vector2(bar.end.x - 36, bar.position.y - 12), "%d%%" % int(round(_pm_val * 100.0)), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, GOLD)
 	# Control de ángulo.
 	if _asc_run:
@@ -1430,7 +1431,7 @@ func _draw_ascent(c: DrawNode) -> void:
 		var pb := Rect2(120, 218, 400, 5)
 		c.draw_rect(pb, Color(0, 0, 0, 0.6))
 		c.draw_rect(Rect2(pb.position, Vector2(pb.size.x * _asc_progress, pb.size.y)), GOLD)
-		c.draw_string(font, Vector2(120, 214), "ÓRBITA", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, GRAY)
+		c.draw_string(font, Vector2(120, 214), tr("ÓRBITA"), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, GRAY)
 	if _flash > 0.0:
 		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 0.9, 0.7, _flash * 0.35))
 
@@ -1442,7 +1443,7 @@ func _scene_docking(sc: Dictionary) -> void:
 	_bar_show = false
 	_clock_s = 21.0 * 3600.0 + 36.0 * 60.0
 	_tele_fn = func() -> Array:
-		return [["ACOPLAMIENTO", "CONFIRMADO"], ["T. EN SUPERFICIE", _fmt_clock(_clock_s).substr(0, 5)], ["MUESTRAS", "%s KG" % _num(21.5)]]
+		return [[tr("ACOPLAMIENTO"), tr("CONFIRMADO")], [tr("T. EN SUPERFICIE"), _fmt_clock(_clock_s).substr(0, 5)], [tr("MUESTRAS"), tr("%s KG") % _num(21.5)]]
 	_stars(120)
 	await _cine_docking(sc)
 	# Epílogo en texto sobre negro.
@@ -1506,12 +1507,13 @@ func _walk(prop: String, points: Array, speed: float) -> void:
 
 func _fmt_met(hours: float) -> String:
 	var m := int(round(hours * 60.0))
-	return "T+ %dd %02dh %02dm" % [m / 1440, (m / 60) % 24, m % 60]
+	return tr("T+ %dd %02dh %02dm") % [m / 1440, (m / 60) % 24, m % 60]
 
 
 func _thousands(v: float) -> String:
 	var n := int(v)
-	return "%d.%03d" % [n / 1000, n % 1000] if n >= 1000 else str(n)
+	var sep := "," if GameManager.lang == "en" else "."
+	return "%d%s%03d" % [n / 1000, sep, n % 1000] if n >= 1000 else str(n)
 
 
 func _draw_cine(c: DrawNode) -> void:
@@ -1529,7 +1531,7 @@ func _draw_cine(c: DrawNode) -> void:
 		var r := Rect2(10, GAME_TOP + 54, 186, 40)
 		c.draw_rect(r, Color(0.03, 0.03, 0.05, 0.8))
 		c.draw_rect(r, GRAY_DIM, false, 1.0)
-		c.draw_string(font, r.position + Vector2(8, 13), "TIEMPO DE VUELO", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GRAY)
+		c.draw_string(font, r.position + Vector2(8, 13), tr("TIEMPO DE VUELO"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GRAY)
 		c.draw_string(font, r.position + Vector2(8, 32), _fmt_met(_met), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, GOLD)
 	# Frase histórica: inglés grande y traducción pequeña.
 	if _quote_a > 0.0:
@@ -1550,7 +1552,7 @@ func _cine_journey(sc: Dictionary) -> void:
 	_met = 0.0
 	_km = 0.0
 	_tele_fn = func() -> Array:
-		return [["TIEMPO DE VUELO", _fmt_met(_met)], ["DISTANCIA", "%s KM" % _thousands(_km)], ["DESTINO", "LA LUNA"]]
+		return [[tr("TIEMPO DE VUELO"), _fmt_met(_met)], [tr("DISTANCIA"), tr("%s KM") % _thousands(_km)], [tr("DESTINO"), tr("LA LUNA")]]
 	var st := _stars(150)
 	var cl := _layer(_draw_cine)
 	_tween_to("_met", 0.2, 5.0)
@@ -1773,7 +1775,7 @@ func _draw_c_rendezvous(c: DrawNode) -> void:
 	# La Columbia (con Collins) sigue su órbita; el Eagle sube desde la superficie y la alcanza.
 	var csm := Vector2(lerpf(330.0, 470.0, _ck), 92.0)
 	_draw_csm(c, csm, PI, 1.6)
-	c.draw_string(font, csm + Vector2(-50, -16), "COLUMBIA · COLLINS", HORIZONTAL_ALIGNMENT_CENTER, 100, 8, GRAY)
+	c.draw_string(font, csm + Vector2(-50, -16), tr("COLUMBIA · COLLINS"), HORIZONTAL_ALIGNMENT_CENTER, 100, 8, GRAY)
 	var a := Vector2(110, 226)
 	var b := Vector2(190, 92)
 	var d := csm + Vector2(-23.0 * 1.6 - 14.0, 0)
@@ -1787,7 +1789,7 @@ func _draw_c_rendezvous(c: DrawNode) -> void:
 		var back := p - Vector2.from_angle(rot - PI * 0.5) * 10.0
 		c.draw_circle(back, 2.0 + randf() * 1.5, Color("#ffb347"))
 	_draw_eagle(c, p, rot, 1.6, 0.0, false, true)
-	c.draw_string(font, p + Vector2(-40, 22), "EAGLE", HORIZONTAL_ALIGNMENT_CENTER, 80, 8, GOLD)
+	c.draw_string(font, p + Vector2(-40, 22), tr("EAGLE"), HORIZONTAL_ALIGNMENT_CENTER, 80, 8, GOLD)
 
 
 func _draw_c_dock(c: DrawNode) -> void:
@@ -1802,9 +1804,9 @@ func _draw_c_dock(c: DrawNode) -> void:
 		c.draw_circle(lm + Vector2(6.0 * s, -5.0 * s), 3.0, Color(0.85, 0.95, 1.0, 0.8))
 		c.draw_circle(lm + Vector2(6.0 * s, 5.0 * s), 3.0, Color(0.85, 0.95, 1.0, 0.8))
 	var gap := maxf(0.0, lm.x - 9.0 * s - contact)
-	c.draw_string(font, Vector2(14, GAME_TOP + 66), "DISTANCIA: %s M" % _num(gap / s * 0.4), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, GOLD)
-	c.draw_string(font, Vector2(14, GAME_TOP + 80), "COLUMBIA", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GRAY)
-	c.draw_string(font, Vector2(W - 80, GAME_TOP + 80), "EAGLE", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GOLD)
+	c.draw_string(font, Vector2(14, GAME_TOP + 66), tr("DISTANCIA: %s M") % _num(gap / s * 0.4), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, GOLD)
+	c.draw_string(font, Vector2(14, GAME_TOP + 80), tr("COLUMBIA"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GRAY)
+	c.draw_string(font, Vector2(W - 80, GAME_TOP + 80), tr("EAGLE"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, GOLD)
 
 
 func _draw_c_farewell(c: DrawNode) -> void:
@@ -1815,7 +1817,7 @@ func _draw_c_farewell(c: DrawNode) -> void:
 	_draw_csm(c, csm, -0.3, lerpf(2.0, 1.0, _ck), _ck > 0.15)
 	var lm := Vector2(lerpf(280.0, 236.0, _ck), lerpf(160.0, 186.0, _ck))
 	_draw_eagle(c, lm, -0.4 - _ck * 0.9, 1.6, 0.0, false, true)
-	c.draw_string(ThemeDB.fallback_font, lm + Vector2(-40, 22), "EAGLE", HORIZONTAL_ALIGNMENT_CENTER, 80, 8, Color(GOLD, 1.0 - _ck * 0.4))
+	c.draw_string(ThemeDB.fallback_font, lm + Vector2(-40, 22), tr("EAGLE"), HORIZONTAL_ALIGNMENT_CENTER, 80, 8, Color(GOLD, 1.0 - _ck * 0.4))
 
 
 # =========================================================================
