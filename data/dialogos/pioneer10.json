@@ -30,6 +30,7 @@
 			"energy": 100,
 			"show_progress": false,
 			"countdown": ["T-5", "T-4", "T-3", "T-2", "T-1", "¡DESPEGUE!"],
+			"cheer": "El equipo celebra el despegue",
 			"intro": [
 				{"speaker": "CONTROLADORA", "text": "Centro de seguimiento de Goldstone, California. 2 de marzo de 1972: despega la Pioneer 10, rumbo a Júpiter."}
 			],
@@ -56,13 +57,26 @@
 			],
 			"minimission": {
 				"title": "MINIJUEGO: ESQUIVA LOS ASTEROIDES",
-				"instruction": "Sube y baja (W / S o flechas) para pasar por los huecos",
+				"instruction": "Muévete en cualquier dirección (WASD o flechas) y esquiva los asteroides",
 				"counter": "LUZ ZODIACAL",
 				"hit": "¡IMPACTO!",
 				"shield_out": "ESCUDO AGOTADO: PIERDES TIEMPO DE VUELO Y ENERGÍA",
 				"seconds": 40.0,
 				"energy_per_second": 0.2,
-				"shield_max": 5
+				"shield_max": 5,
+				"ship_speed": 135.0,
+				"spawn_interval": [0.32, 0.7],
+				"pair_chance": 0.25,
+				"fast_chance": 0.3,
+				"speed_slow": [65, 105],
+				"speed_fast": [140, 210],
+				"radius_range": [8.0, 27.0],
+				"bg_interval": [0.22, 0.5],
+				"bg_speed": [26, 58],
+				"bg_radius": [6.0, 20.0],
+				"bg_alpha": [0.07, 0.17],
+				"bg_color": "#5a6684",
+				"asteroid_colors": ["#6e5f52", "#7a6a5a", "#5a5048", "#8a7a6a", "#4a4a54", "#6a5a60", "#847466"]
 			},
 			"reward": "Primera nave en atravesar el cinturón de asteroides.",
 			"outro": [
@@ -233,7 +247,7 @@
 		],
 		"phases": [
 			{"tip": "Fíjate en el año, el objetivo y la energía: los usarás en todas las fases.", "keys": [["ENTER / CLIC", "ui_accept", "AVANZAR"]]},
-			{"tip": "Sube y baja para pasar por los huecos. Cada impacto gasta un segmento del escudo.", "keys": [["W / ↑", "thrust", "SUBIR"], ["S / ↓", "move_down", "BAJAR"]]},
+			{"tip": "Muévete en cualquier dirección. Los asteroides con estela son más rápidos y cada impacto gasta un segmento del escudo.", "keys": [["WASD / FLECHAS", "", "MOVERTE EN 8 DIRECCIONES"]]},
 			{"tip": "Dispara cuando la luna esté en el centro del visor. Las lunas pequeñas toleran menos error.", "keys": [["WASD / FLECHAS", "", "MOVER VISOR"], ["ENTER / CLIC", "ui_accept", "DISPARAR"]]},
 			{"tip": "Observa la secuencia. Luego sigue la historia.", "keys": [["ENTER / CLIC", "ui_accept", "CONTINUAR"]]},
 			{"tip": "Observa cómo baja la energía y se debilita la señal.", "keys": [["ENTER / CLIC", "ui_accept", "ADELANTAR"]]},

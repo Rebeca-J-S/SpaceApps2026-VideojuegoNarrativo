@@ -56,21 +56,29 @@ var _static := 0.0
 var _static_decay := 0.0
 var _t := 0.0
 var _shake := 0.0
+var _glitch := 0.0           # interferencia al recibir daño (0-1)
 var _flash := 0.0
 var _mode := ""
 var _hl_rect := Rect2()
 
 # Lanzamiento
-var _rk_y := 215.0
+var _alt := 0.0              # altura ganada por el cohete (unidades del mundo del lanzamiento)
+var _cheer := 0.0            # 0 = el público espera, 1 = salta de alegría
+var _rumble := 0.0           # segundos de temblor tras el encendido
+var _launch_stars: Starfield
 var _rk_state := 0           # 0 en la plataforma, 1 ascendiendo, 2 separada
 var _stage_y := 0.0
 var _probe_show := 0.0
+var _cruise := 0.0           # segundos de crucero tras la separación: la sonda nunca se detiene
+var _recede := 0.0           # el planeta se va alejando hacia abajo
 # Cinturón
 var _ship := Vector2(110, 144)
-var _asteroids: Array[Vector3] = []
+var _asteroids: Array = []        # cada asteroide es un Dictionary (posición, radio, velocidad, color...)
 var _shield := 5
 var _shield_max := 5
 var _invuln := 0.0
+var _belt_coast := false     # tras cruzar el cinturón la nave sigue su viaje y los asteroides siguen pasando
+var _coast_speed := 0.0
 # Júpiter
 var _moons: Array = []
 var _moon_i := 0
@@ -362,6 +370,7 @@ func _clear() -> void:
 	_hl_rect = Rect2()
 	_shake = 0.0
 	_fade_text.hide()
+	_belt_coast = false
 	world.position = Vector2.ZERO
 	for n in world.get_children():
 		world.remove_child(n)
@@ -377,11 +386,12 @@ func _layer(fn: Callable) -> DrawNode:
 	return d
 
 
-func _stars(drift: Vector2 = Vector2.ZERO, count: int = 130) -> void:
+func _stars(drift: Vector2 = Vector2.ZERO, count: int = 130) -> Starfield:
 	var s := Starfield.new()
 	s.star_count = count
 	s.drift = drift
 	world.add_child(s)
+	return s
 
 
 func _banner(text: String) -> void:
@@ -413,6 +423,13 @@ func toast(text: String, color: Color = YELLOW, seconds: float = 0.9) -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_flash = maxf(0.0, _flash - delta * 3.0)
+	_glitch = maxf(0.0, _glitch - delta * 3.5)
+	if _rk_state == 2:
+		_cruise += delta
+		_recede = _cruise * 4.0
+	if _rumble > 0.0:
+		_rumble -= delta
+		_shake = maxf(_shake, 2.2 + _rumble)
 	if _static_decay > 0.0:
 		_static = maxf(0.0, _static - _static_decay * delta)
 	if _shake > 0.0:
@@ -420,7 +437,17 @@ func _process(delta: float) -> void:
 		world.position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake
 	elif world.position != Vector2.ZERO:
 		world.position = Vector2.ZERO
+	if _belt_coast:
+		_coast_step(delta)
 	_hud_draw.queue_redraw()
+
+
+## Después del cinturón: la nave acelera hacia la derecha y los asteroides restantes siguen pasando (sin dañar).
+func _coast_step(dt: float) -> void:
+	_coast_speed = minf(150.0, _coast_speed + 22.0 * dt)
+	_ship.x += _coast_speed * dt
+	_ship.y = lerpf(_ship.y, 144.0, minf(1.0, dt * 1.2))
+	_move_asteroids(dt, false, {})
 
 
 func _draw_data_panel() -> void:
@@ -449,6 +476,14 @@ func _draw_data_panel() -> void:
 
 
 func _draw_static(c: DrawNode) -> void:
+	if _glitch > 0.0:
+		# Bandas de interferencia desplazadas, con borde cian: se ven en toda la pantalla.
+		for i in 8:
+			var yy := floorf(randf() * 350.0)
+			var hh := randf_range(2.0, 12.0)
+			var off := randf_range(-22.0, 22.0) * _glitch
+			c.draw_rect(Rect2(off, yy, W, hh), Color(1, 1, 1, 0.12 * _glitch))
+			c.draw_rect(Rect2(off + 5.0, yy, W, 2.0), Color(0.4, 1.0, 1.0, 0.3 * _glitch))
 	if _static <= 0.0:
 		return
 	var n := int(5000 * _static)
@@ -517,50 +552,42 @@ func _cinematic_pending(tag: String) -> void:
 # FASE 0 · Lanzamiento (tutorial)
 # =========================================================================
 func _scene_launch(sc: Dictionary) -> void:
-	_rk_y = 218.0
+	_alt = 0.0
+	_cheer = 0.0
+	_rumble = 0.0
+	_cruise = 0.0
+	_recede = 0.0
 	_rk_state = 0
 	_stage_y = 0.0
 	_probe_show = 0.0
-	_stars()
-	_layer(func(c: DrawNode) -> void:
-		# Suelo y torre.
-		c.draw_rect(Rect2(0, 236, W, 40), Color("#1a1a24"))
-		c.draw_rect(Rect2(0, 236, W, 2), Color("#33364a"))
-		c.draw_rect(Rect2(350, 150, 6, 90), Color("#4a4c60"))
-		for k in 5:
-			c.draw_rect(Rect2(345, 160 + k * 16, 16, 2), Color("#4a4c60"))
-		var x := 320.0
-		if _rk_state < 2:
-			# Cohete Atlas-Centaur: etapa inferior, etapa superior y cofia.
-			c.draw_rect(Rect2(x - 8, _rk_y - 58, 16, 58), Color("#d8d8e0"))
-			c.draw_rect(Rect2(x - 8, _rk_y - 38, 16, 4), Color("#c0532a"))
-			c.draw_rect(Rect2(x - 6, _rk_y - 88, 12, 30), Color("#e8e8f0"))
-			c.draw_colored_polygon(PackedVector2Array([Vector2(x - 6, _rk_y - 88), Vector2(x + 6, _rk_y - 88), Vector2(x, _rk_y - 102)]), Color("#c0532a"))
-			if _rk_state == 1:
-				var fl := 14.0 + 8.0 * sin(c.t * 40.0)
-				c.draw_colored_polygon(PackedVector2Array([Vector2(x - 7, _rk_y), Vector2(x + 7, _rk_y), Vector2(x, _rk_y + fl + 14)]), Color("#ffb347"))
-				c.draw_colored_polygon(PackedVector2Array([Vector2(x - 4, _rk_y), Vector2(x + 4, _rk_y), Vector2(x, _rk_y + fl)]), Color("#fff4c0"))
-		else:
-			# Separación: la etapa baja cae y la sonda sigue sola.
-			c.draw_rect(Rect2(x - 8, _stage_y, 16, 58), Color("#8a8ea6"))
-			PioneerArt.draw_pioneer(c, Vector2(x + 40.0 * _probe_show, 110.0 - 30.0 * _probe_show), -0.5, 1.6)
-		if _flash > 0.0:
-			c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 0.9, 0.7, _flash * 0.3))
-	)
+	_launch_stars = _stars()
+	_layer(_draw_launch)
 	if not _retry:
 		await say(sc["intro"])
-	for label in sc["countdown"]:
+	var countdown: Array = sc["countdown"]
+	for i in countdown.size():
 		_flash = 0.4
-		await toast(String(label), YELLOW, 0.85)
+		if i == 2:
+			create_tween().tween_property(self, "_cheer", 0.4, 1.0)   # el público se emociona
+		await toast(String(countdown[i]), YELLOW, 0.85)
+	# Despegue: el cohete sube, el mundo se aleja y el planeta se curva.
 	_rk_state = 1
+	_rumble = 2.4
+	_flash = 0.8
+	create_tween().tween_property(self, "_cheer", 1.0, 0.5)
+	_mm_info.text = String(sc["cheer"])
 	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw.tween_property(self, "_rk_y", 150.0, 3.2)
+	tw.tween_property(self, "_alt", 760.0, 7.0)
+	create_tween().tween_property(_launch_stars, "drift:y", 38.0, 6.0)   # las estrellas bajan: la nave sube
 	await tw.finished
+	_mm_info.text = ""
+	# Separación en el espacio, con la Tierra abajo.
 	_rk_state = 2
-	_stage_y = 100.0
+	_stage_y = 175.0
 	var tw2 := create_tween().set_parallel()
-	tw2.tween_property(self, "_stage_y", 300.0, 1.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw2.tween_property(self, "_probe_show", 1.0, 2.0)
+	tw2.tween_property(self, "_stage_y", 330.0, 2.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw2.tween_property(self, "_probe_show", 1.0, 2.2)
+	create_tween().tween_property(_launch_stars, "drift", Vector2(-18.0, 3.0), 2.5)
 	await tw2.finished
 	await say(sc["separation"])
 	# Tutorial del HUD: se resalta cada elemento mientras se explica.
@@ -572,6 +599,144 @@ func _scene_launch(sc: Dictionary) -> void:
 		await say([step])
 	_hl_rect = Rect2()
 	await toast(String(sc["closing_text"]), RetroTheme.WHITE, 3.4)
+
+
+## Zoom de la cámara: se aleja del suelo a medida que el cohete gana altura.
+func _zoom_s() -> float:
+	return 1.0 if _alt <= 43.0 else 91.0 / (48.0 + _alt)
+
+
+func _rocket_base_y() -> float:
+	return 218.0 - _alt if _alt <= 43.0 else 175.0
+
+
+## Arco superior de un planeta de radio r con su "techo" en y_top (la curva que se ve).
+func _planet_arc(y_top: float, r: float, step: float = 10.0) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var cy := y_top + r
+	var x := -40.0
+	while x <= 680.0:
+		pts.append(Vector2(x, cy - sqrt(maxf(0.0, r * r - (x - 320.0) * (x - 320.0)))))
+		x += step
+	return pts
+
+
+## Relleno del planeta en columnas (evita polígonos enormes que Godot no logra triangular).
+func _fill_planet(c: CanvasItem, y_top: float, r: float, col: Color) -> void:
+	var cy := y_top + r
+	var x := -40.0
+	while x < 680.0:
+		var y := cy - sqrt(maxf(0.0, r * r - (x + 2.0 - 320.0) * (x + 2.0 - 320.0)))
+		c.draw_rect(Rect2(x, y, 4.0, 400.0 - y), col)
+		x += 4.0
+
+
+func _draw_launch(c: DrawNode) -> void:
+	var s := _zoom_s()
+	var piv := Vector2(320, 266)
+	var y_h := piv.y - (piv.y - 236.0) * s + _recede
+	var r_scr := lerpf(520.0, 12000.0, pow(s, 3.0))
+	# Halo de la atmósfera sobre el borde del planeta (más visible cuanto más lejos).
+	var halo := lerpf(1.0, 0.25, s)
+	for k in 4:
+		c.draw_polyline(_planet_arc(y_h - (k + 1) * 2.5, r_scr + (k + 1) * 2.5), Color(0.3, 0.55, 1.0, halo * 0.12), 3.0)
+	# El suelo del lanzamiento se convierte en el planeta visto desde arriba.
+	_fill_planet(c, y_h, r_scr, Color("#0d1712").lerp(Color("#0a1830"), 1.0 - s))
+	c.draw_polyline(_planet_arc(y_h, r_scr), Color(0.45, 0.7, 1.0, halo * 0.75), 2.0)
+	# --- Mundo del lanzamiento (se escala hacia el pie de la pantalla) ---
+	c.draw_set_transform(piv - piv * s + Vector2(0.0, _recede), 0.0, Vector2(s, s))
+	if _rk_state == 1 and _alt < 220.0:
+		# Resplandor del motor sobre la plataforma.
+		var g := 1.0 - _alt / 220.0
+		for k in 4:
+			c.draw_circle(Vector2(320, 236), 40.0 + k * 34.0, Color(1.0, 0.6, 0.2, 0.05 * g))
+	# Plataforma, torre y reflectores.
+	c.draw_rect(Rect2(296, 232, 48, 6), Color("#3a3c4c"))
+	c.draw_rect(Rect2(312, 218, 16, 14), Color("#2a2c3a"))
+	c.draw_rect(Rect2(350, 150, 6, 88), Color("#4a4c60"))
+	for k in 5:
+		c.draw_rect(Rect2(345, 160 + k * 16, 16, 2), Color("#4a4c60"))
+	for lx in [250.0, 430.0]:
+		c.draw_rect(Rect2(lx, 206, 2, 32), Color("#3a3c4c"))
+		c.draw_circle(Vector2(lx + 1, 205), 3.0, Color("#ffe9a0"))
+		c.draw_circle(Vector2(lx + 1, 205), 9.0, Color(1, 0.9, 0.6, 0.12))
+	# Estela de humo: una columna de nubes desde la plataforma hasta el cohete.
+	if _rk_state >= 1:
+		var n := int(_alt / 8.0)
+		for k in n:
+			var age := _alt - k * 8.0
+			var wy := 218.0 - k * 8.0
+			var wx := 320.0 + sin(k * 1.3) * (2.0 + age * 0.03)
+			var rad := 4.0 + age * 0.045
+			var warm := clampf(1.0 - age / 160.0, 0.0, 1.0)
+			c.draw_circle(Vector2(wx, wy), rad, Color(0.62 + 0.3 * warm, 0.6 + 0.12 * warm, 0.62, 0.30 - 0.18 * (age / maxf(_alt, 1.0))))
+	# Público festejando.
+	for i in 18:
+		var left := i < 10
+		var px := (70.0 + i * 17.0) if left else (440.0 + (i - 10) * 21.0)
+		_draw_person(c, px, 241.0 + (i % 3) * 3.0, i)
+	# Confeti.
+	if _cheer > 0.7:
+		for k in 46:
+			var cx := 60.0 + fmod(k * 53.0, 520.0)
+			var cy2 := 150.0 + fmod(c.t * (24.0 + k % 5 * 6.0) + k * 17.0, 90.0)
+			var confetti: Array = [Color("#ff5a4a"), Color("#ffd24a"), Color("#80f2ff"), Color("#7aff9a"), Color("#ffffff")]
+			var col: Color = confetti[k % 5]
+			c.draw_rect(Rect2(cx + sin(c.t * 3.0 + k) * 6.0, cy2, 2, 2), Color(col, 0.9))
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# --- Cohete (en pantalla, sin escalar) ---
+	var x := 320.0
+	var by := _rocket_base_y()
+	if _rk_state < 2:
+		c.draw_rect(Rect2(x - 8, by - 58, 16, 58), Color("#d8d8e0"))
+		c.draw_rect(Rect2(x - 8, by - 38, 16, 4), Color("#c0532a"))
+		c.draw_rect(Rect2(x - 6, by - 88, 12, 30), Color("#e8e8f0"))
+		c.draw_colored_polygon(PackedVector2Array([Vector2(x - 6, by - 88), Vector2(x + 6, by - 88), Vector2(x, by - 102)]), Color("#c0532a"))
+		if _rk_state == 1:
+			var fl := 16.0 + 8.0 * sin(c.t * 40.0) + minf(_alt, 300.0) * 0.06
+			c.draw_colored_polygon(PackedVector2Array([Vector2(x - 8, by), Vector2(x + 8, by), Vector2(x, by + fl + 16)]), Color("#ffb347"))
+			c.draw_colored_polygon(PackedVector2Array([Vector2(x - 4, by), Vector2(x + 4, by), Vector2(x, by + fl)]), Color("#fff4c0"))
+			c.draw_circle(Vector2(x, by + 6), 14.0, Color(1.0, 0.7, 0.3, 0.12))
+	else:
+		# Separación: la etapa inferior cae y la sonda sigue sola.
+		c.draw_rect(Rect2(x - 8, _stage_y, 16, 58), Color("#8a8ea6"))
+		var pp := Vector2(x + 90.0 * _probe_show + _cruise * 9.0, 150.0 - 45.0 * _probe_show - _cruise * 1.5)
+		PioneerArt.draw_pioneer(c, pp, -0.5 + sin(c.t * 0.8) * 0.04, 1.6)
+	if _flash > 0.0:
+		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 0.9, 0.7, _flash * 0.3))
+
+
+## Una persona del público: salta y levanta los brazos según `_cheer`; algunas llevan bandera.
+func _draw_person(c: CanvasItem, x: float, y: float, i: int) -> void:
+	var cheer := _cheer
+	var ph := i * 1.7
+	var hop := absf(sin(_t * 7.0 + ph)) * 7.0 * cheer
+	var sway := sin(_t * 1.6 + ph) * 0.6 * (1.0 - cheer)
+	var by := y - hop
+	var shirt: Color = [Color("#e8e8f0"), Color("#ff9a7a"), Color("#80b4ff"), Color("#ffd24a"), Color("#7aff9a"), Color("#d0a0ff")][i % 6]
+	var skin: Color = [Color("#f0c8a0"), Color("#c89870"), Color("#8a5a3a")][i % 3]
+	var pants := Color("#2a2c44")
+	c.draw_rect(Rect2(x - 2 + sway, by - 5, 1.6, 5), pants)
+	c.draw_rect(Rect2(x + 0.6 + sway, by - 5, 1.6, 5), pants)
+	c.draw_rect(Rect2(x - 2.6 + sway, by - 11, 5.2, 6), shirt)
+	c.draw_circle(Vector2(x + sway, by - 13.6), 2.3, skin)
+	# Brazos: abajo mientras esperan, arriba (y ondeando) cuando festejan.
+	var up := lerpf(2.0, -7.5, cheer)
+	var wave := sin(_t * 9.0 + ph) * 1.8 * cheer
+	c.draw_line(Vector2(x - 2.6 + sway, by - 10), Vector2(x - 5.0 + sway - wave, by - 10 + up), shirt, 1.4)
+	c.draw_line(Vector2(x + 2.6 + sway, by - 10), Vector2(x + 5.0 + sway + wave, by - 10 + up), shirt, 1.4)
+	if i % 5 == 0:
+		# Bandera.
+		var fx := x + 5.0 + sway + wave
+		var ft := by - 10 + up
+		c.draw_line(Vector2(fx, ft), Vector2(fx, ft - 10), Color("#c8ccd8"), 1.0)
+		# Bandera de Estados Unidos: franjas rojas y blancas y cantón azul con estrellas.
+		for k in 7:
+			c.draw_rect(Rect2(fx + 0.5, ft - 10 + k, 8, 1), Color("#d8342a") if k % 2 == 0 else Color("#ffffff"))
+		c.draw_rect(Rect2(fx + 0.5, ft - 10, 3.5, 4), Color("#2a3f9a"))
+		c.draw_rect(Rect2(fx + 1.0, ft - 9.5, 1, 1), Color("#ffffff"))
+		c.draw_rect(Rect2(fx + 2.5, ft - 8.0, 1, 1), Color("#ffffff"))
+		c.draw_rect(Rect2(fx + 1.0, ft - 7.0, 1, 1), Color("#ffffff"))
 
 
 # =========================================================================
@@ -589,12 +754,11 @@ func _scene_belt(sc: Dictionary) -> void:
 		# Luz zodiacal: resplandor tenue que crece con el avance.
 		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1.0, 0.85, 0.5, 0.025 + 0.05 * _progress))
 		for a in _asteroids:
-			var pts := PackedVector2Array()
-			for k in 8:
-				var ang := k * TAU / 8.0
-				pts.append(Vector2(a.x, a.y) + Vector2(cos(ang), sin(ang)) * a.z * (0.78 + 0.22 * sin(k * 2.1 + a.y)))
-			c.draw_colored_polygon(pts, Color("#6e5f52"))
-			c.draw_rect(Rect2(a.x - a.z * 0.4, a.y - a.z * 0.5, 3, 2), Color("#9a8a78"))
+			if bool(a["bg"]):
+				_draw_asteroid(c, a)
+		for a in _asteroids:
+			if not bool(a["bg"]):
+				_draw_asteroid(c, a)
 		var blink := _invuln > 0.0 and int(c.t * 14.0) % 2 == 0
 		if not blink:
 			PioneerArt.draw_pioneer(c, _ship, PI, 1.5)
@@ -615,52 +779,136 @@ func _scene_belt(sc: Dictionary) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1972
 	var secs := float(mm["seconds"])
-	var gap_c := 144.0
-	var spawn := 0.4
+	var speed := float(mm["ship_speed"])
+	var spawn := 0.8
+	var bg_spawn := 0.2
+	var last_y := 144.0
+	_belt_coast = false
+	_coast_speed = 30.0
 	while _progress < 1.0 and not _depleted:
 		await get_tree().process_frame
 		if get_tree().paused:
 			continue
 		var dt := get_process_delta_time()
 		_invuln = maxf(0.0, _invuln - dt)
-		var dir := Input.get_axis("thrust", "move_down")
-		_ship.y = clampf(_ship.y + dir * 125.0 * dt, GAME_TOP + 20.0, GAME_BOTTOM - 20.0)
+		# Movimiento en 8 direcciones (WASD o flechas); en diagonal no va más rápido.
+		var mv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
+		if mv.length() > 1.0:
+			mv = mv.normalized()
+		_ship = (_ship + mv * speed * dt).clamp(Vector2(50, GAME_TOP + 20), Vector2(400, GAME_BOTTOM - 20))
 		_progress = minf(1.0, _progress + dt / secs)
 		_drain(float(mm["energy_per_second"]) * dt)
 		spawn -= dt
-		if spawn <= 0.0 and _progress < 0.93:
-			spawn = rng.randf_range(1.7, 2.3)
-			gap_c = clampf(gap_c + rng.randf_range(-75.0, 75.0), GAME_TOP + 62.0, GAME_BOTTOM - 62.0)
-			_spawn_wall(rng, gap_c)
-		var keep: Array[Vector3] = []
-		for a in _asteroids:
-			var v := Vector3(a.x - 95.0 * dt, a.y, a.z)
-			if _invuln <= 0.0 and Vector2(v.x, v.y).distance_to(_ship) < v.z + 8.0:
-				_on_belt_hit(mm)
-			if v.x > -30.0:
-				keep.append(v)
-		_asteroids = keep
+		if spawn <= 0.0 and _progress < 0.88:
+			var iv: Array = mm["spawn_interval"]
+			spawn = rng.randf_range(float(iv[0]), float(iv[1]))
+			last_y = _spawn_asteroids(rng, mm, last_y)
+		# Asteroides de fondo: muy tenues y lejanos, no chocan (dan profundidad).
+		bg_spawn -= dt
+		if bg_spawn <= 0.0 and _progress < 0.9:
+			var bi: Array = mm["bg_interval"]
+			bg_spawn = rng.randf_range(float(bi[0]), float(bi[1]))
+			_spawn_background(rng, mm)
+		_move_asteroids(dt, true, mm)
 		_mm_info.text = "%s · %s: %d" % [mm["instruction"], mm["counter"], int(_progress * 12.0)]
 	_mode = ""
 	if _depleted:
 		return
+	# La nave no se detiene: sigue su viaje fuera del cinturón mientras se cuenta el logro.
+	_belt_coast = true
+	_mm_info.text = ""
 	await toast(String(sc["reward"]), YELLOW, 2.6)
 	await say(sc["outro"])
+	var guard := 0.0
+	while _ship.x < W + 40.0 and guard < 4.0:
+		await get_tree().process_frame
+		guard += get_process_delta_time()
+	_belt_coast = false
 
 
-## Una columna de asteroides con una "ventana" (hueco) por la que pasar.
-func _spawn_wall(rng: RandomNumberGenerator, gap_c: float) -> void:
-	var half := 50.0
-	var y := gap_c - half
-	while y > GAME_TOP - 4.0:
-		var r := rng.randf_range(11.0, 15.0)
-		_asteroids.append(Vector3(670.0 + rng.randf_range(-8.0, 8.0), y - r, r))
-		y -= r * 1.8
-	y = gap_c + half
-	while y < GAME_BOTTOM + 4.0:
-		var r := rng.randf_range(11.0, 15.0)
-		_asteroids.append(Vector3(670.0 + rng.randf_range(-8.0, 8.0), y + r, r))
-		y += r * 1.8
+## Mueve los asteroides; los sólidos (no de fondo) dañan a la nave si `collide` es true.
+func _move_asteroids(dt: float, collide: bool, mm: Dictionary) -> void:
+	var keep: Array = []
+	for a in _asteroids:
+		a["x"] = float(a["x"]) + float(a["vx"]) * dt
+		a["y"] = float(a["y"]) + float(a["vy"]) * dt
+		a["rot"] = float(a["rot"]) + float(a["spin"]) * dt
+		var ap := Vector2(float(a["x"]), float(a["y"]))
+		if collide and not bool(a["bg"]) and _invuln <= 0.0 and ap.distance_to(_ship) < float(a["r"]) * 0.88 + 7.0:
+			_on_belt_hit(mm)
+		if ap.x > -50.0 and ap.y > GAME_TOP - 50.0 and ap.y < GAME_BOTTOM + 50.0:
+			keep.append(a)
+	_asteroids = keep
+
+
+## Un asteroide lejano: pequeño, lento, casi transparente y sin colisión.
+func _spawn_background(rng: RandomNumberGenerator, mm: Dictionary) -> void:
+	var rr: Array = mm["bg_radius"]
+	var sp: Array = mm["bg_speed"]
+	var al: Array = mm["bg_alpha"]
+	var r := rng.randf_range(float(rr[0]), float(rr[1]))
+	var col := Color(String(mm["bg_color"]))
+	col.a = rng.randf_range(float(al[0]), float(al[1]))
+	_asteroids.append({
+		"x": W + 30.0 + r, "y": rng.randf_range(GAME_TOP + 6.0, GAME_BOTTOM - 6.0), "r": r,
+		"vx": -rng.randf_range(float(sp[0]), float(sp[1])), "vy": 0.0,
+		"rot": rng.randf() * TAU, "spin": rng.randf_range(-0.6, 0.6),
+		"seed": rng.randf() * 10.0, "col": col, "fast": false, "bg": true,
+	})
+
+
+## Crea uno o dos asteroides dispersos: tamaños, velocidades y colores variados. Devuelve la última Y.
+func _spawn_asteroids(rng: RandomNumberGenerator, mm: Dictionary, last_y: float) -> float:
+	var n := 2 if rng.randf() < float(mm["pair_chance"]) else 1
+	var palette: Array = mm["asteroid_colors"]
+	var rr: Array = mm["radius_range"]
+	var y := last_y
+	var first_y := -1000.0
+	for k in n:
+		# Lejos del asteroide anterior, para que queden esparcidos y haya por dónde pasar.
+		for tries in 8:
+			y = rng.randf_range(GAME_TOP + 14.0, GAME_BOTTOM - 14.0)
+			if absf(y - last_y) > 48.0 and absf(y - first_y) > 80.0:
+				break
+		first_y = y
+		var r := lerpf(float(rr[0]), float(rr[1]), pow(rng.randf(), 1.7))   # pocos grandes, más pequeños
+		var fast := rng.randf() < float(mm["fast_chance"])
+		var sp: Array = mm["speed_fast"] if fast else mm["speed_slow"]
+		var base := Color(String(palette[rng.randi() % palette.size()]))
+		if fast:
+			base = base.lightened(0.18)
+		base.a = rng.randf_range(0.82, 1.0)   # los que dañan se ven siempre sólidos
+		_asteroids.append({
+			"x": W + 30.0 + r, "y": y, "r": r,
+			"vx": -rng.randf_range(float(sp[0]), float(sp[1])),
+			"vy": rng.randf_range(-24.0, 24.0) if rng.randf() < 0.45 else 0.0,
+			"rot": rng.randf() * TAU, "spin": rng.randf_range(-1.5, 1.5),
+			"seed": rng.randf() * 10.0, "col": base, "fast": fast, "bg": false,
+		})
+		last_y = y
+	return last_y
+
+
+func _draw_asteroid(c: CanvasItem, a: Dictionary) -> void:
+	var p := Vector2(float(a["x"]), float(a["y"]))
+	var r := float(a["r"])
+	var col: Color = a["col"]
+	if bool(a["fast"]):
+		# Estela: se nota a simple vista cuáles vienen más rápido.
+		c.draw_line(p + Vector2(r * 0.6, 0), p + Vector2(r * 0.6 + 26.0 + r, 0), Color(col, 0.28), maxf(2.0, r * 0.6))
+	var pts := PackedVector2Array()
+	for k in 9:
+		var ang := float(a["rot"]) + k * TAU / 9.0
+		pts.append(p + Vector2(cos(ang), sin(ang)) * r * (0.76 + 0.24 * sin(k * 2.3 + float(a["seed"]))))
+	c.draw_colored_polygon(pts, col)
+	if bool(a["bg"]):
+		return
+	# Borde claro: los asteroides sólidos (los que dañan) se leen bien.
+	var rim := pts.duplicate()
+	rim.append(pts[0])
+	c.draw_polyline(rim, Color(1, 1, 1, 0.22), 1.0)
+	c.draw_circle(p + Vector2(-r * 0.3, -r * 0.3), maxf(1.5, r * 0.18), Color(1, 1, 1, 0.16 * col.a))
+	c.draw_circle(p + Vector2(r * 0.25, r * 0.3), maxf(1.2, r * 0.13), Color(0, 0, 0, 0.22))
 
 
 func _on_belt_hit(mm: Dictionary) -> void:
@@ -668,6 +916,10 @@ func _on_belt_hit(mm: Dictionary) -> void:
 	_invuln = 1.3
 	_shake = 6.0
 	_flash = 1.0
+	# Interferencia breve en toda la pantalla.
+	_glitch = 1.0
+	_static = 0.6
+	_static_decay = 2.6
 	if _shield <= 0:
 		# Sin escudo: se pierde tiempo de vuelo y energía, pero no hay "muerte".
 		_progress = maxf(0.0, _progress - 0.15)
