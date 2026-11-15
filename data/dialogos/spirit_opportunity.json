@@ -298,7 +298,7 @@
 			],
 			"minimission": {
 				"title": "MINIJUEGO: DETECTIVE DEL AGUA",
-				"info": "Elige un objetivo y usa los instrumentos (clic, o teclas 1-4). A veces el orden importa",
+				"info": "Elige una muestra, usa un instrumento (clic o 1-4) y lee el resultado. Hacen falta 2 pistas",
 				"energy": 60,
 				"cost": 10,
 				"no_energy": "SIN ENERGÍA: SE REINICIA LA JORNADA",
@@ -407,7 +407,12 @@
 			],
 			"minimission": {
 				"title": "MINIJUEGO: ENSAYA Y ESCAPA",
-				"info_test": "ENSAYO EN LA TIERRA: prueba comandos sin riesgo. 1-4 añaden, ← borra, ENTER envía",
+				"info_test": "ENSAYO EN LA TIERRA: sin riesgo. Da órdenes con 1-4 o con clic. Cada 4 órdenes pasa un sol",
+				"coach_start": "Mira PATINAJE y HUNDIMIENTO: si las ruedas patinan, retrocede un poco.",
+				"coach_ok": "Buen ritmo: los pasos cortos patinan menos.",
+				"coach_slip": "Las ruedas giran en falso: prueba un paso corto o retrocede.",
+				"coach_sink": "El rover se hunde: retrocede para soltar las ruedas.",
+				"coach_stop": "El slip check te detuvo: retrocede antes de volver a avanzar.",
 				"info_real": "EN MARTE: la arena real es un poco más blanda y tienes pocos soles",
 				"slip_stop": "SLIP CHECK: EL ROVER SE DETIENE PORQUE LAS RUEDAS PATINAN",
 				"test_ok": "ENSAYO LOGRADO: YA SABES QUÉ FUNCIONA",
@@ -424,25 +429,33 @@
 						"step": 0.12,
 						"slip0": 0.3,
 						"sink": 0.2,
-						"relief": 0.0
+						"relief": 0.0,
+						"name": "AVANZAR LARGO",
+						"desc": "Mucho avance, pero patina y se hunde"
 					},
 					"fs": {
 						"step": 0.07,
 						"slip0": 0.1,
 						"sink": 0.05,
-						"relief": 0.0
+						"relief": 0.0,
+						"name": "AVANZAR CORTO",
+						"desc": "Poco avance, patina poco"
 					},
 					"bs": {
 						"step": -0.03,
 						"slip0": 0.0,
 						"sink": 0.0,
-						"relief": 0.1
+						"relief": 0.1,
+						"name": "RETROCEDER CORTO",
+						"desc": "Pierde poco y suelta algo la arena"
 					},
 					"bl": {
 						"step": -0.06,
 						"slip0": 0.0,
 						"sink": 0.0,
-						"relief": 0.22
+						"relief": 0.22,
+						"name": "RETROCEDER LARGO",
+						"desc": "Pierde más, pero libera las ruedas"
 					}
 				}
 			},
@@ -576,7 +589,7 @@
 			],
 			"minimission": {
 				"title": "MINIJUEGO: REPARTE LA ENERGÍA",
-				"info": "Reparte la energía de cada tramo (↑/↓ elige, ←/→ cambia) y envía con ENTER. Mira la previsión",
+				"info": "Arrastra las barras (o ↑/↓ y ←/→) para repartir la energía. ENTER envía el tramo",
 				"turns": 12,
 				"income": [
 					62,
@@ -640,7 +653,10 @@
 			],
 			"minimission": {
 				"title": "MINIJUEGO: TRAZA LA RUTA",
-				"info": "Clic para poner puntos de ruta (o flechas y ENTER). [G] inicia, [←] borra el último",
+				"info": "Clic: poner un punto (el rover se mueve y deja rastro). Clic derecho: borrar un punto",
+				"speed": 30.0,
+				"msg_wait": "EL ROVER ESPERA: PON OTRO PUNTO",
+				"msg_full": "YA HAY 5 PUNTOS: ESPERA O BORRA UNO",
 				"budget": 46,
 				"px_per_sol": 13.0,
 				"max_wps": 5,
@@ -707,7 +723,7 @@
 						30
 					]
 				],
-				"msg_over": "TE PASAS DE SOLES: BUSCA UNA RUTA MÁS CORTA",
+				"msg_over": "SE ACABARON LOS SOLES: EL ROVER VUELVE AL INICIO (EL RASTRO QUEDA DE GUÍA)",
 				"msg_dune": "DUNA: EL ROVER PATINA Y PIERDE SOLES",
 				"msg_crater": "AUTONAV: DESVÍO POR UN CRÁTER",
 				"msg_arrive": "¡OPPORTUNITY LLEGA A ENDEAVOUR!",
@@ -889,14 +905,19 @@
 				"tip": "Cada instrumento responde una pregunta distinta. Si hay polvo, primero el abrasivo.",
 				"keys": [
 					[
+						"CLIC",
+						"",
+						"ELEGIR / USAR"
+					],
+					[
 						"1-4",
 						"",
 						"INSTRUMENTO"
 					],
 					[
-						"CLIC",
+						"↑ / ↓",
 						"",
-						"ELEGIR"
+						"MUESTRA"
 					]
 				]
 			},
@@ -906,17 +927,12 @@
 					[
 						"1-4",
 						"",
-						"AÑADIR COMANDO"
+						"DAR ORDEN"
 					],
 					[
-						"RETROCESO",
+						"CLIC",
 						"",
-						"BORRAR"
-					],
-					[
-						"ENTER",
-						"ui_accept",
-						"ENVIAR"
+						"DAR ORDEN"
 					]
 				]
 			},
@@ -944,14 +960,14 @@
 				"tip": "El frío y la falta de comunicación acaban con Spirit. Mira la previsión antes de enviar el tramo.",
 				"keys": [
 					[
-						"↑ / ↓",
+						"ARRASTRAR",
 						"",
-						"ELEGIR REPARTO"
+						"AJUSTAR BARRA"
 					],
 					[
-						"← / →",
+						"↑ / ↓ · ← / →",
 						"",
-						"CAMBIAR"
+						"AJUSTAR"
 					],
 					[
 						"ENTER",
@@ -961,7 +977,7 @@
 				]
 			},
 			{
-				"tip": "Evita las dunas (patinan) y los cráteres (desvían). Una ruta corta ahorra soles.",
+				"tip": "El rover avanza solo hacia tus puntos y deja rastro. Evita dunas (frenan) y cráteres (desvían) y no gastes todos los soles.",
 				"keys": [
 					[
 						"CLIC",
@@ -969,14 +985,14 @@
 						"PUNTO DE RUTA"
 					],
 					[
-						"G",
+						"CLIC DER.",
 						"",
-						"INICIAR"
+						"BORRAR PUNTO"
 					],
 					[
 						"RETROCESO",
 						"",
-						"BORRAR"
+						"BORRAR ÚLTIMO"
 					]
 				]
 			},

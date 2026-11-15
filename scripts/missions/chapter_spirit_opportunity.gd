@@ -87,6 +87,7 @@ var _pl_play := -1.0
 var _pl_ok := false
 var _pl_idx := 0
 var _pl_n := 1
+var _pl_hover := -1
 # Fase 1: agua
 var _wd_cfg: Dictionary = {}
 var _wd_energy := 0.0
@@ -115,6 +116,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	data = GameManager.load_json(DATA_PATH)
 	_build()
+	_sfx_init()
 	_badge_toast = BadgeToast.new()
 	add_child(_badge_toast)
 	await get_tree().process_frame
@@ -190,6 +192,7 @@ func _add_evidence(ev: Dictionary) -> void:
 		if String((e as Dictionary)["id"]) == String(ev["id"]):
 			return
 	_evidence.append(ev)
+	sfx("ping2")
 	toast(String(data["hud"]["new_evidence"]) % String(ev["title"]), CYAN, 1.3)
 
 
@@ -427,6 +430,7 @@ func _layer(fn: Callable) -> DrawNode:
 
 
 func _banner(text: String) -> void:
+	sfx("whoosh", 1.0, -14.0)
 	_toast.text = text
 	_toast.add_theme_color_override("font_color", GOLD)
 	_toast.modulate.a = 0.0
@@ -465,6 +469,94 @@ func _axis_keys(neg_a: Key, neg_b: Key, pos_a: Key, pos_b: Key) -> float:
 func _num(v: float, decimals: int = 1) -> String:
 	var txt := "%.*f" % [decimals, v]
 	return txt if GameManager.lang == "en" else txt.replace(".", ",")
+
+
+# =========================================================================
+# Efectos de sonido (sintetizados en código: no hacen falta archivos)
+# =========================================================================
+const SFX_RATE := 22050
+## Cada sonido es una lista de tramos: [frecuencia inicial, final, segundos, forma, volumen].
+const SFX := {
+	"click": [[900.0, 700.0, 0.04, "sq", 0.45]],
+	"select": [[500.0, 800.0, 0.06, "tri", 0.6]],
+	"hover": [[1300.0, 1300.0, 0.025, "sine", 0.25]],
+	"place": [[200.0, 90.0, 0.10, "sine", 1.0], [1000.0, 700.0, 0.03, "sq", 0.3]],
+	"remove": [[600.0, 200.0, 0.12, "tri", 0.6]],
+	"error": [[160.0, 150.0, 0.12, "sq", 0.5], [0.0, 0.0, 0.03, "gap", 0.0], [120.0, 110.0, 0.18, "sq", 0.5]],
+	"ok": [[660.0, 660.0, 0.07, "sq", 0.4], [880.0, 880.0, 0.12, "sq", 0.4]],
+	"win": [[523.0, 523.0, 0.10, "sq", 0.4], [659.0, 659.0, 0.10, "sq", 0.4], [784.0, 784.0, 0.10, "sq", 0.4], [1047.0, 1047.0, 0.28, "sq", 0.45]],
+	"lose": [[400.0, 380.0, 0.14, "sq", 0.45], [300.0, 280.0, 0.14, "sq", 0.45], [200.0, 100.0, 0.35, "sq", 0.5]],
+	"send": [[800.0, 1200.0, 0.06, "sq", 0.35], [1000.0, 1500.0, 0.06, "sq", 0.35], [1300.0, 2000.0, 0.10, "sq", 0.35]],
+	"tick": [[1600.0, 1600.0, 0.012, "sq", 0.3]],
+	"motor": [[55.0, 70.0, 0.22, "sq", 0.4]],
+	"grind": [[0.0, 0.0, 0.25, "noise", 0.45]],
+	"servo": [[300.0, 520.0, 0.14, "sq", 0.3], [520.0, 300.0, 0.14, "sq", 0.3]],
+	"shutter": [[0.0, 0.0, 0.025, "noise", 0.9], [0.0, 0.0, 0.04, "gap", 0.0], [0.0, 0.0, 0.05, "noise", 0.7]],
+	"chirp": [[1800.0, 1800.0, 0.03, "sq", 0.3], [1200.0, 1200.0, 0.03, "sq", 0.3], [2000.0, 2000.0, 0.03, "sq", 0.3], [1400.0, 1400.0, 0.03, "sq", 0.3], [1900.0, 1900.0, 0.04, "sq", 0.3]],
+	"hum": [[110.0, 110.0, 0.35, "sine", 0.8]],
+	"scan": [[400.0, 1600.0, 0.35, "sine", 0.6]],
+	"ping": [[1320.0, 1320.0, 0.18, "sine", 0.7]],
+	"ping2": [[880.0, 880.0, 0.08, "sine", 0.6], [1320.0, 1320.0, 0.20, "sine", 0.6]],
+	"static": [[0.0, 0.0, 0.30, "noise", 0.35]],
+	"warn": [[440.0, 440.0, 0.10, "sq", 0.4], [0.0, 0.0, 0.05, "gap", 0.0], [440.0, 440.0, 0.10, "sq", 0.4]],
+	"whoosh": [[0.0, 0.0, 0.30, "noise", 0.3]],
+}
+var _sfx_cache: Dictionary = {}
+var _sfx_pool: Array = []
+var _sfx_next := 0
+
+
+func _sfx_init() -> void:
+	for i in 8:
+		var p := AudioStreamPlayer.new()
+		p.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(p)
+		_sfx_pool.append(p)
+
+
+func sfx(sound: String, pitch: float = 1.0, vol_db: float = -9.0) -> void:
+	if _sfx_pool.is_empty() or not SFX.has(sound):
+		return
+	if not _sfx_cache.has(sound):
+		_sfx_cache[sound] = _synth(SFX[sound])
+	var p: AudioStreamPlayer = _sfx_pool[_sfx_next]
+	_sfx_next = (_sfx_next + 1) % _sfx_pool.size()
+	p.stream = _sfx_cache[sound]
+	p.pitch_scale = pitch
+	p.volume_db = vol_db
+	p.play()
+
+
+func _synth(segs: Array) -> AudioStreamWAV:
+	var data := PackedByteArray()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var phase := 0.0
+	for seg in segs:
+		var f0: float = seg[0]
+		var f1: float = seg[1]
+		var shape: String = seg[3]
+		var vol: float = seg[4]
+		var n := int(float(SFX_RATE) * float(seg[2]))
+		for i in n:
+			var f := float(i) / float(n)
+			phase += lerpf(f0, f1, f) / float(SFX_RATE)
+			var env := minf(1.0, float(i) / (float(SFX_RATE) * 0.004)) * (1.0 - f)
+			var v := 0.0
+			match shape:
+				"sq": v = 1.0 if fposmod(phase, 1.0) < 0.5 else -1.0
+				"sine": v = sin(phase * TAU)
+				"tri": v = absf(fposmod(phase, 1.0) * 4.0 - 2.0) - 1.0
+				"noise": v = rng.randf_range(-1.0, 1.0)
+			var s := int(clampf(v * env * vol, -1.0, 1.0) * 12000.0)
+			data.append(s & 0xFF)
+			data.append((s >> 8) & 0xFF)
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = SFX_RATE
+	wav.stereo = false
+	wav.data = data
+	return wav
 
 
 # =========================================================================
@@ -658,11 +750,20 @@ func _plan_day(day: Dictionary, di: int) -> void:
 		await get_tree().process_frame
 	_input_cb = Callable()
 	_pl_play = 0.0
+	var last_col := -1
 	while _pl_play < float(int(_pl_cfg["cols"])):
 		await get_tree().process_frame
 		if not get_tree().paused:
 			_pl_play += get_process_delta_time() * 7.0
+		var col_now := int(_pl_play)
+		if col_now != last_col:
+			last_col = col_now
+			sfx("tick", 1.0, -16.0)
+			for b in _pl_blocks:
+				if int(b["col"]) == col_now:
+					sfx(String({"conducir": "motor", "mi": "ping", "brazo": "servo", "pano": "shutter", "calent": "hum", "enviar": "chirp", "mastil": "servo", "antena": "servo"}.get(String(b["id"]), "click")))
 	_pl_play = -1.0
+	sfx("win")
 	await toast(String(_pl_cfg["msg_ok"]), GREEN, 1.4)
 
 
@@ -712,13 +813,16 @@ func _pl_place(col: int) -> void:
 	var b: Dictionary = _pl_blocks[_pl_sel]
 	if int(b["col"]) >= 0:
 		b["col"] = -1
+		sfx("remove")
 		return
 	var c := clampi(col, 0, int(_pl_cfg["cols"]) - int(b["dur"]))
 	var why := _pl_valid(_pl_sel, c)
 	if why != "":
 		_say_msg(why, RED)
+		sfx("error")
 		return
 	b["col"] = c
+	sfx("place")
 
 
 func _pl_send() -> void:
@@ -726,13 +830,17 @@ func _pl_send() -> void:
 	var miss: Array = tot["miss"]
 	if not miss.is_empty():
 		_say_msg(String(_pl_cfg["msg_missing"]) + " · " + tr("Falta: %s") % ", ".join(PackedStringArray(miss)), RED, 3.2)
+		sfx("error")
 		return
 	if int(tot["e"]) > int(_pl_day["budget"]):
 		_say_msg(String(_pl_cfg["msg_energy"]), RED)
+		sfx("warn")
 		return
 	if int(tot["s"]) < int(_pl_day["sci_target"]):
 		_say_msg(String(_pl_cfg["msg_science"]), RED)
+		sfx("error")
 		return
+	sfx("send")
 	_pl_ok = true
 
 
@@ -750,8 +858,18 @@ func _plan_input(event: InputEvent, click: bool) -> void:
 	var lane := Rect2(PL_X0, PL_Y, PL_CW * 24.0, PL_H)
 	if event is InputEventMouseMotion:
 		var p := get_local_mouse_position()
+		var h := -1
+		for i in _pl_blocks.size():
+			if _pl_tray_rect(i).has_point(p):
+				h = i
+		if h != _pl_hover and h >= 0:
+			sfx("hover")
+		_pl_hover = h
 		if lane.has_point(p):
-			_pl_cur = clampi(int((p.x - PL_X0) / PL_CW), 0, 23)
+			var nc := clampi(int((p.x - PL_X0) / PL_CW), 0, 23)
+			if nc != _pl_cur:
+				_pl_cur = nc
+				sfx("tick", 1.0, -18.0)
 	elif click:
 		var p := get_local_mouse_position()
 		for i in _pl_blocks.size():
@@ -759,6 +877,9 @@ func _plan_input(event: InputEvent, click: bool) -> void:
 				_pl_sel = i
 				if int((_pl_blocks[i] as Dictionary)["col"]) >= 0:
 					(_pl_blocks[i] as Dictionary)["col"] = -1
+					sfx("remove")
+				else:
+					sfx("select")
 				return
 		if lane.has_point(p):
 			_pl_cur = clampi(int((p.x - PL_X0) / PL_CW), 0, 23)
@@ -768,16 +889,25 @@ func _plan_input(event: InputEvent, click: bool) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo:
 		var n := _pl_blocks.size()
 		match int(event.physical_keycode):
-			KEY_Q: _pl_sel = (_pl_sel + n - 1) % n
-			KEY_E: _pl_sel = (_pl_sel + 1) % n
-			KEY_A, KEY_LEFT: _pl_cur = maxi(0, _pl_cur - 1)
-			KEY_D, KEY_RIGHT: _pl_cur = mini(23, _pl_cur + 1)
+			KEY_Q:
+				_pl_sel = (_pl_sel + n - 1) % n
+				sfx("select")
+			KEY_E:
+				_pl_sel = (_pl_sel + 1) % n
+				sfx("select")
+			KEY_A, KEY_LEFT:
+				_pl_cur = maxi(0, _pl_cur - 1)
+				sfx("tick", 1.0, -14.0)
+			KEY_D, KEY_RIGHT:
+				_pl_cur = mini(23, _pl_cur + 1)
+				sfx("tick", 1.0, -14.0)
 			KEY_P: _pl_send()
 			KEY_ENTER, KEY_KP_ENTER, KEY_SPACE: _pl_place(_pl_cur)
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6:
 				var k: int = int(event.physical_keycode) - KEY_1
 				if k < n:
 					_pl_sel = k
+					sfx("select")
 
 
 func _draw_plan(c: DrawNode) -> void:
@@ -828,7 +958,7 @@ func _draw_plan(c: DrawNode) -> void:
 		var b: Dictionary = _pl_blocks[i]
 		var r := _pl_tray_rect(i)
 		var placed := int(b["col"]) >= 0
-		var border := GOLD if i == _pl_sel else (GREEN if placed else GRAY_DIM)
+		var border := GOLD if i == _pl_sel else (Color.WHITE if i == _pl_hover else (GREEN if placed else GRAY_DIM))
 		c.draw_rect(r, Color("#2a1c16") if not placed else Color("#16281a"))
 		c.draw_rect(r, border, false, 2.0 if i == _pl_sel else 1.0)
 		c.draw_rect(Rect2(r.position.x + 3, r.position.y + 3, 14, 24), _pl_color(b))
@@ -858,6 +988,10 @@ func _pl_color(b: Dictionary) -> Color:
 # =========================================================================
 # FASE 1 · Detective del agua
 # =========================================================================
+var _wd_hover := -1
+var _wd_focus := 0
+
+
 func _act_water(sc: Dictionary) -> void:
 	await say(sc["intro"])
 	_wd_cfg = sc["minimission"]
@@ -869,6 +1003,8 @@ func _act_water(sc: Dictionary) -> void:
 	_wd_solved = {}
 	_wd_log = ""
 	_wd_stage = "pick"
+	_wd_hover = -1
+	_wd_focus = 0
 	_bar_name = tr("ENERGÍA")
 	_bar_show = true
 	_tele_fn = func() -> Array:
@@ -883,46 +1019,79 @@ func _act_water(sc: Dictionary) -> void:
 
 
 func _wd_card_rect(i: int) -> Rect2:
-	return Rect2(12, 84.0 + float(i) * 70.0, 300, 64)
+	return Rect2(12, 92.0 + float(i) * 66.0, 300, 60)
 
 
 func _wd_tool_rect(j: int) -> Rect2:
-	return Rect2(326, 84.0 + float(j) * 32.0, 302, 29)
+	return Rect2(326, 92.0 + float(j) * 31.0, 302, 28)
 
 
 func _wd_opt_rect(j: int) -> Rect2:
-	return Rect2(326, 100.0 + float(j) * 34.0, 302, 30)
+	return Rect2(326, 104.0 + float(j) * 34.0, 302, 30)
+
+
+## Qué hay bajo el puntero: 0.. tarjetas, 100.. instrumentos, 200.. respuestas.
+func _wd_hit(p: Vector2) -> int:
+	if _wd_stage == "pick":
+		for i in (_wd_cfg["targets"] as Array).size():
+			if _wd_card_rect(i).has_point(p):
+				return i
+		for j in (_wd_cfg["tools"] as Array).size():
+			if _wd_tool_rect(j).has_point(p):
+				return 100 + j
+	elif _wd_stage == "quiz":
+		for j in (_wd_cfg["options"] as Array).size():
+			if _wd_opt_rect(j).has_point(p):
+				return 200 + j
+	return -1
 
 
 func _water_input(event: InputEvent, click: bool) -> void:
 	var targets: Array = _wd_cfg["targets"]
+	if event is InputEventMouseMotion:
+		var h := _wd_hit(get_local_mouse_position())
+		if h != _wd_hover and h >= 0:
+			sfx("hover")
+		_wd_hover = h
+		if h >= 200:
+			_wd_focus = h - 200
+		return
 	if _wd_stage == "pick":
 		if click:
-			var p := get_local_mouse_position()
-			for i in targets.size():
-				if _wd_card_rect(i).has_point(p):
-					_wd_sel = i
-			for j in (_wd_cfg["tools"] as Array).size():
-				if _wd_tool_rect(j).has_point(p):
-					_water_use(j)
+			var h := _wd_hit(get_local_mouse_position())
+			if h >= 100:
+				_water_use(h - 100)
+			elif h >= 0:
+				_wd_sel = h
+				sfx("select")
 		elif event is InputEventKey and event.pressed and not event.echo:
 			var k := int(event.physical_keycode)
 			if k >= KEY_1 and k <= KEY_4:
 				_water_use(k - KEY_1)
 			elif k == KEY_UP or k == KEY_W:
 				_wd_sel = (_wd_sel + targets.size() - 1) % targets.size()
+				sfx("select")
 			elif k == KEY_DOWN or k == KEY_S:
 				_wd_sel = (_wd_sel + 1) % targets.size()
+				sfx("select")
 	elif _wd_stage == "quiz":
+		var n := (_wd_cfg["options"] as Array).size()
 		if click:
-			var p := get_local_mouse_position()
-			for j in (_wd_cfg["options"] as Array).size():
-				if _wd_opt_rect(j).has_point(p):
-					_water_answer(j)
+			var h := _wd_hit(get_local_mouse_position())
+			if h >= 200:
+				_water_answer(h - 200)
 		elif event is InputEventKey and event.pressed and not event.echo:
 			var k := int(event.physical_keycode)
 			if k >= KEY_1 and k <= KEY_3:
 				_water_answer(k - KEY_1)
+			elif k == KEY_UP or k == KEY_W:
+				_wd_focus = (_wd_focus + n - 1) % n
+				sfx("hover")
+			elif k == KEY_DOWN or k == KEY_S:
+				_wd_focus = (_wd_focus + 1) % n
+				sfx("hover")
+			elif k == KEY_ENTER or k == KEY_KP_ENTER or k == KEY_SPACE:
+				_water_answer(_wd_focus)
 
 
 func _water_use(j: int) -> void:
@@ -935,14 +1104,19 @@ func _water_use(j: int) -> void:
 	var tool_id := String((tools[j] as Dictionary)["id"])
 	var used: Array = _wd_used.get(tid, [])
 	if used.has(tool_id):
+		_wd_log = tr("Ya usaste ese instrumento en esta muestra.")
+		_wd_log_col = GRAY_DIM
+		sfx("error")
 		return
 	if _wd_energy < float(_wd_cfg["cost"]):
 		_wd_energy = float(_wd_cfg["energy"])
 		_wd_used = {}
 		_wd_log = ""
 		_say_msg(String(_wd_cfg["no_energy"]), RED, 2.8)
+		sfx("lose")
 		return
 	_wd_energy -= float(_wd_cfg["cost"])
+	sfx({"mi": "scan", "moss": "scan", "apxs": "chirp", "rat": "grind"}.get(tool_id, "click"))
 	var needs: Array = tg["needs"]
 	var useful := needs.has(tool_id)
 	var text := String((tg["results"] as Dictionary)[tool_id])
@@ -951,35 +1125,51 @@ func _water_use(j: int) -> void:
 		useful = false
 	_wd_log = text
 	_wd_log_col = GREEN if useful else GRAY_DIM
-	if useful:
-		used.append(tool_id)
-		_wd_used[tid] = used
-		var done := true
-		for n in needs:
-			if not used.has(n):
-				done = false
-		if done:
-			_wd_solved[tid] = true
-			_add_evidence(tg["evidence"])
-			_wd_log = String(_wd_cfg["done_target"]) + " · " + String((tg["evidence"] as Dictionary)["text"])
-			_wd_log_col = YEL
-			for i in targets.size():
-				if not _wd_solved.has(String((targets[i] as Dictionary)["id"])):
-					_wd_sel = i
-			if _wd_solved.size() == targets.size():
-				_wd_stage = "quiz"
-				_wd_log = ""
-	else:
-		_wd_log = text
+	if not useful:
+		await wait(0.35)
+		sfx("error")
+		return
+	used.append(tool_id)
+	_wd_used[tid] = used
+	var done := true
+	for n in needs:
+		if not used.has(n):
+			done = false
+	await wait(0.35)
+	sfx("ok")
+	if done:
+		_wd_solved[tid] = true
+		_add_evidence(tg["evidence"])
+		sfx("win")
+		_wd_log = String(_wd_cfg["done_target"]) + " · " + String((tg["evidence"] as Dictionary)["text"])
+		_wd_log_col = YEL
+		for i in targets.size():
+			if not _wd_solved.has(String((targets[i] as Dictionary)["id"])):
+				_wd_sel = i
+		if _wd_solved.size() == targets.size():
+			_wd_stage = "quiz"
+			_wd_log = ""
 
 
 func _water_answer(j: int) -> void:
 	if j == int(_wd_cfg["correct"]):
 		_say_msg(String(_wd_cfg["right"]), GREEN, 2.5)
 		_wd_stage = "done"
+		sfx("win")
 		await toast(String(_wd_cfg["right"]), GREEN, 1.6)
 	else:
 		_say_msg(String(_wd_cfg["wrong"]), RED, 2.8)
+		sfx("error")
+
+
+## Opción de respuesta resaltada si el ratón o las flechas están sobre ella.
+func _draw_option(c: CanvasItem, r: Rect2, number: int, text: String, focused: bool, size: int = 9) -> void:
+	c.draw_rect(r, Color("#4a3020") if focused else Color("#2a1c16"))
+	c.draw_rect(r, Color.WHITE if focused else GOLD, false, 2.0 if focused else 1.0)
+	if focused:
+		c.draw_colored_polygon(PackedVector2Array([Vector2(r.position.x - 7, r.position.y + r.size.y * 0.5 - 4), Vector2(r.position.x - 2, r.position.y + r.size.y * 0.5), Vector2(r.position.x - 7, r.position.y + r.size.y * 0.5 + 4)]), GOLD)
+	_txt(c, Vector2(r.position.x + 6, r.position.y + r.size.y * 0.5 + 4), "%d" % number, 11, GOLD)
+	c.draw_multiline_string(ThemeDB.fallback_font, Vector2(r.position.x + 22, r.position.y + 12), text, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 28, size, 2, Color.WHITE)
 
 
 func _draw_water(c: DrawNode) -> void:
@@ -988,57 +1178,73 @@ func _draw_water(c: DrawNode) -> void:
 	c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), PANEL)
 	var targets: Array = _wd_cfg["targets"]
 	var tools: Array = _wd_cfg["tools"]
+	var cur: Dictionary = targets[_wd_sel]
+	var cur_used: Array = _wd_used.get(String(cur["id"]), [])
 	if _wd_stage == "quiz" or _wd_stage == "done":
-		_txt(c, Vector2(326, 80), String(_wd_cfg["question"]), 10, YEL, 302)
+		_txt(c, Vector2(326, 86), String(_wd_cfg["question"]), 10, YEL, 302)
 		var opts: Array = _wd_cfg["options"]
 		for j in opts.size():
-			var r := _wd_opt_rect(j)
-			_box(c, r, Color("#2a1c16"), GOLD, "", 9)
-			_txt(c, Vector2(r.position.x + 6, r.position.y + 12), "%d" % (j + 1), 11, GOLD)
-			c.draw_multiline_string(ThemeDB.fallback_font, Vector2(r.position.x + 22, r.position.y + 12), String(opts[j]), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 28, 9, 2, Color.WHITE)
+			_draw_option(c, _wd_opt_rect(j), j + 1, String(opts[j]), _wd_stage == "quiz" and j == _wd_focus)
 	else:
+		_txt(c, Vector2(12, 86), tr("1 · ELIGE UNA MUESTRA"), 9, GOLD)
+		_txt(c, Vector2(326, 86), tr("2 · USA UN INSTRUMENTO"), 9, GOLD)
 		for j in tools.size():
 			var t: Dictionary = tools[j]
 			var r := _wd_tool_rect(j)
-			_box(c, r, Color("#2a1c16"), GRAY_DIM)
-			_txt(c, Vector2(r.position.x + 6, r.position.y + 12), String(t["name"]), 10, GOLD, r.size.x - 8)
-			_txt(c, Vector2(r.position.x + 6, r.position.y + 24), String(t["q"]), 8, GRAY, r.size.x - 8)
+			var was_used := cur_used.has(String(t["id"]))
+			var hov := _wd_hover == 100 + j
+			c.draw_rect(r, Color("#4a3020") if hov else (Color("#1a1210") if was_used else Color("#2a1c16")))
+			c.draw_rect(r, Color.WHITE if hov else (GRAY_DIM if was_used else GOLD), false, 2.0 if hov else 1.0)
+			_txt(c, Vector2(r.position.x + 6, r.position.y + 11), String(t["name"]), 10, GRAY_DIM if was_used else GOLD, r.size.x - 70)
+			_txt(c, Vector2(r.position.x + 6, r.position.y + 23), String(t["q"]), 8, GRAY, r.size.x - 8)
+			_txt(c, Vector2(r.position.x, r.position.y + 11), tr("YA USADO") if was_used else "-%d" % int(_wd_cfg["cost"]), 8, GREEN if was_used else GRAY_DIM, r.size.x - 6, HORIZONTAL_ALIGNMENT_RIGHT)
 	for i in targets.size():
 		var tg: Dictionary = targets[i]
 		var r := _wd_card_rect(i)
 		var tid := String(tg["id"])
 		var solved := _wd_solved.has(tid)
-		c.draw_rect(r, Color("#16281a") if solved else Color("#2a1c16"))
-		c.draw_rect(r, GREEN if solved else (GOLD if i == _wd_sel else GRAY_DIM), false, 2.0 if i == _wd_sel else 1.0)
-		# Muestra: esferas o capas.
+		var sel := i == _wd_sel
+		var hov := _wd_hover == i
+		c.draw_rect(r, Color("#16281a") if solved else (Color("#4a3020") if (hov or sel) else Color("#2a1c16")))
+		c.draw_rect(r, GREEN if solved else (GOLD if sel else (Color.WHITE if hov else GRAY_DIM)), false, 2.0 if sel else 1.0)
+		if sel and _wd_stage == "pick":
+			c.draw_colored_polygon(PackedVector2Array([Vector2(r.position.x - 9, r.position.y + 26), Vector2(r.position.x - 3, r.position.y + 30), Vector2(r.position.x - 9, r.position.y + 34)]), GOLD)
 		if tid == "esferas":
 			for k in 7:
 				c.draw_circle(Vector2(r.position.x + 22 + float(k % 4) * 8.0, r.position.y + 22 + float(k / 4) * 10.0), 3.0, Color("#7a8ac8") if not solved else CYAN)
 		else:
 			for k in 5:
-				c.draw_rect(Rect2(r.position.x + 8, r.position.y + 10 + float(k) * 8.0, 34.0, 5), MARS_DARK.lerp(MARS_LIGHT, float(k) / 5.0))
-		_txt(c, Vector2(r.position.x + 52, r.position.y + 15), String(tg["name"]), 10, Color.WHITE, r.size.x - 56)
-		c.draw_multiline_string(ThemeDB.fallback_font, Vector2(r.position.x + 52, r.position.y + 28), String(tg["desc"]), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 56, 8, 2, GRAY)
+				c.draw_rect(Rect2(r.position.x + 8, r.position.y + 8 + float(k) * 8.0, 34.0, 5), MARS_DARK.lerp(MARS_LIGHT, float(k) / 5.0))
+		_txt(c, Vector2(r.position.x + 52, r.position.y + 14), String(tg["name"]), 10, Color.WHITE, r.size.x - 56)
+		c.draw_multiline_string(ThemeDB.fallback_font, Vector2(r.position.x + 52, r.position.y + 26), String(tg["desc"]), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 56, 8, 2, GRAY)
+		# Pistas: cada "?" se convierte en el nombre del instrumento cuando se consigue.
 		var used: Array = _wd_used.get(tid, [])
 		var needs: Array = tg["needs"]
-		var xx := r.position.x + 52
+		_txt(c, Vector2(r.position.x + 52, r.position.y + 55), tr("PISTAS"), 8, GRAY_DIM)
+		var xx := r.position.x + 92
 		for n in needs:
 			var done := used.has(n)
-			_box(c, Rect2(xx, r.position.y + 48, 44, 12), Color("#1a3a1c") if done else Color("#1a1210"), GREEN if done else GRAY_DIM, String(n).to_upper(), 8, GREEN if done else GRAY_DIM)
+			_box(c, Rect2(xx, r.position.y + 46, 44, 12), Color("#1a3a1c") if done else Color("#1a1210"), GREEN if done else GRAY_DIM, String(n).to_upper() if done else "?", 8, GREEN if done else GRAY_DIM)
 			xx += 48.0
-	# Registro de lectura.
-	var lr := Rect2(12, 226, 616, 36)
+	# Resultado de la lectura.
+	var lr := Rect2(12, 220, 616, 28)
 	c.draw_rect(lr, Color("#120c0a"))
 	c.draw_rect(lr, GRAY_DIM, false, 1.0)
-	_txt(c, Vector2(18, 237), tr("LECTURA"), 8, GRAY_DIM)
+	_txt(c, Vector2(18, 231), tr("3 · LEE EL RESULTADO"), 8, GRAY_DIM, 120)
 	var shown := _wd_log if _wd_log != "" else tr("SIN LECTURA TODAVÍA")
-	c.draw_multiline_string(ThemeDB.fallback_font, Vector2(70, 237), shown, HORIZONTAL_ALIGNMENT_LEFT, 552, 10, 2, _wd_log_col if _wd_log != "" else GRAY_DIM)
-	_draw_msg(c, 206)
+	c.draw_multiline_string(ThemeDB.fallback_font, Vector2(140, 231), shown, HORIZONTAL_ALIGNMENT_LEFT, 482, 10, 2, _wd_log_col if _wd_log != "" else GRAY_DIM)
+	_draw_msg(c, 200)
 
 
 # =========================================================================
 # FASE 2 · Atrapada en Purgatory (ensayo en la Tierra + escape real)
 # =========================================================================
+var _sd_cnt := 0
+var _sd_hover := -1
+var _sd_coach := ""
+const SD_KEYS := ["fl", "fs", "bs", "bl"]
+
+
 func _act_sand(sc: Dictionary) -> void:
 	await _cinematic_pending(String(sc["cinematic_tag"]))
 	await say(sc["intro"])
@@ -1053,11 +1259,12 @@ func _act_sand(sc: Dictionary) -> void:
 	_tele_fn = func() -> Array:
 		_bar_val = _sd_sink * 100.0
 		_bar_alert = _sd_sink > 0.7
-		var sols := tr("ENSAYO") if _sd_test else "%d / %d" % [_sd_sol, int(_sd_cfg["sols_real"])]
+		_bar_red_low = false
+		var sols := tr("ENSAYO") if _sd_test else "%d / %d" % [_sd_cnt / 4, int(_sd_cfg["sols_real"])]
 		return [
 			[tr("PROGRESO"), "%d%%" % int(_sd_prog * 100.0)],
 			[tr("PATINAJE"), "%d%%" % int(_sd_slip * 100.0), RED if _sd_slip > 0.6 else GOLD],
-			[tr("SOLES"), sols, CYAN if _sd_test else GOLD],
+			[tr("SOLES"), "%s · %d/4" % [sols, _sd_cnt % 4], CYAN if _sd_test else GOLD],
 		]
 	_layer(_draw_sand)
 	_input_cb = _sand_input
@@ -1071,106 +1278,100 @@ func _sd_reset() -> void:
 	_sd_prog = 0.0
 	_sd_sink = float(_sd_cfg["start_sink"])
 	_sd_slip = 0.0
-	_sd_queue = []
-	_sd_sol = 0
+	_sd_cnt = 0
 	_sd_x = 0.0
 	_sd_busy = false
+	_sd_coach = String(_sd_cfg["coach_start"])
 
 
 func _sd_info() -> void:
 	_mm_info.text = String(_sd_cfg["info_test"]) if _sd_test else String(_sd_cfg["info_real"])
 
 
-func _sd_slot_rect(i: int) -> Rect2:
-	return Rect2(16.0 + float(i) * 54.0, 176, 50, 22)
-
-
-func _sd_send_rect() -> Rect2:
-	return Rect2(240, 176, 130, 22)
-
-
 func _sd_cmd_rect(i: int) -> Rect2:
-	return Rect2(10.0 + float(i) * 156.0, 208, 150, 26)
-
-
-const SD_KEYS := ["fl", "fs", "bs", "bl"]
+	return Rect2(10.0 + float(i) * 156.0, 202, 150, 40)
 
 
 func _sand_input(event: InputEvent, click: bool) -> void:
+	if event is InputEventMouseMotion:
+		var h := -1
+		for i in 4:
+			if _sd_cmd_rect(i).has_point(get_local_mouse_position()):
+				h = i
+		if h != _sd_hover and h >= 0:
+			sfx("hover")
+		_sd_hover = h
+		return
 	if _sd_busy:
 		return
 	if click:
-		var p := get_local_mouse_position()
 		for i in 4:
-			if _sd_cmd_rect(i).has_point(p):
-				_sd_add(i)
-		if _sd_send_rect().has_point(p):
-			_sd_send()
-		for i in _sd_queue.size():
-			if _sd_slot_rect(i).has_point(p):
-				_sd_queue.remove_at(i)
-				return
+			if _sd_cmd_rect(i).has_point(get_local_mouse_position()):
+				_sd_exec(i)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		var k := int(event.physical_keycode)
 		if k >= KEY_1 and k <= KEY_4:
-			_sd_add(k - KEY_1)
-		elif k == KEY_BACKSPACE and not _sd_queue.is_empty():
-			_sd_queue.pop_back()
-		elif k == KEY_ENTER or k == KEY_KP_ENTER:
-			_sd_send()
+			_sd_exec(k - KEY_1)
 
 
-func _sd_add(i: int) -> void:
-	if _sd_queue.size() < 4:
-		_sd_queue.append(SD_KEYS[i])
-
-
-func _sd_send() -> void:
-	if _sd_queue.is_empty() or _sd_busy:
+func _sd_exec(i: int) -> void:
+	if _sd_busy:
 		return
-	_sd_run()
-
-
-func _sd_run() -> void:
 	_sd_busy = true
+	var cd: Dictionary = (_sd_cfg["cmds"] as Dictionary)[SD_KEYS[i]]
 	var k: float = float(_sd_cfg["k_test"]) if _sd_test else float(_sd_cfg["k_real"])
-	var cmds: Dictionary = _sd_cfg["cmds"]
-	var batch: Array = _sd_queue.duplicate()
-	for cmd in batch:
-		var cd: Dictionary = cmds[String(cmd)]
-		var step: float = float(cd["step"])
-		await wait(0.6)
-		if step > 0.0:
-			var slip := clampf(float(cd["slip0"]) * k + 0.9 * _sd_sink * k, 0.0, 1.0)
-			_sd_slip = slip
-			if slip > float(_sd_cfg["slip_limit"]):
-				_say_msg(String(_sd_cfg["slip_stop"]), RED, 2.4)
-				_sd_spin += 3.0
-				continue
+	var step: float = float(cd["step"])
+	sfx("motor" if step > 0.0 else "servo")
+	await wait(0.6)
+	var stopped := false
+	if step > 0.0:
+		var slip := clampf(float(cd["slip0"]) * k + 0.9 * _sd_sink * k, 0.0, 1.0)
+		_sd_slip = slip
+		if slip > float(_sd_cfg["slip_limit"]):
+			stopped = true
+			_say_msg(String(_sd_cfg["slip_stop"]), RED, 2.4)
+			sfx("warn")
+			_sd_spin += 3.0
+		else:
 			_sd_prog += step * (1.0 - slip)
 			_sd_sink = minf(1.0, _sd_sink + float(cd["sink"]) * slip * k)
-		else:
-			_sd_slip = 0.0
-			_sd_prog += step * 0.5
-			_sd_sink = maxf(0.0, _sd_sink - float(cd["relief"]))
-		_sd_prog = maxf(0.0, _sd_prog)
-		if _sd_prog >= 1.0:
-			break
-	_sd_queue = []
-	_sd_sol += 1
-	_sd_busy = false
+			if slip > 0.5:
+				sfx("grind")
+	else:
+		_sd_slip = 0.0
+		_sd_prog += step * 0.5
+		_sd_sink = maxf(0.0, _sd_sink - float(cd["relief"]))
+		sfx("ok")
+	_sd_prog = maxf(0.0, _sd_prog)
+	_sd_cnt += 1
+	if stopped:
+		_sd_coach = String(_sd_cfg["coach_stop"])
+	elif _sd_sink > 0.6:
+		_sd_coach = String(_sd_cfg["coach_sink"])
+	elif _sd_slip > 0.5:
+		_sd_coach = String(_sd_cfg["coach_slip"])
+	else:
+		_sd_coach = String(_sd_cfg["coach_ok"])
+	if _sd_cnt % 4 == 0:
+		sfx("tick")
 	if _sd_prog >= 1.0:
 		if _sd_test:
+			sfx("win")
 			await toast(String(_sd_cfg["test_ok"]), GREEN, 1.8)
 			_sd_test = false
 			_sd_reset()
 			_sd_info()
 		else:
+			sfx("win")
 			await toast(String(_sd_cfg["freed"]), GREEN, 1.8)
 			_sd_free = true
-	elif not _sd_test and _sd_sol >= int(_sd_cfg["sols_real"]):
+		return
+	if not _sd_test and _sd_cnt >= int(_sd_cfg["sols_real"]) * 4:
+		sfx("lose")
 		await toast(String(_sd_cfg["fail_real"]), RED, 1.8)
 		_sd_reset()
+		return
+	_sd_busy = false
 
 
 func _draw_sand(c: DrawNode) -> void:
@@ -1178,12 +1379,10 @@ func _draw_sand(c: DrawNode) -> void:
 		return
 	_mars_sky(c, GAME_TOP, 150.0)
 	_mars_ground(c, 150.0, 21)
-	# Duna: más oscura donde la arena es blanda.
-	c.draw_rect(Rect2(0, 150, W, 56), Color(MARS_LIGHT, 0.35))
+	c.draw_rect(Rect2(0, 150, W, 40), Color(MARS_LIGHT, 0.35))
 	for i in 12:
 		c.draw_line(Vector2(float(i) * 60.0, 160), Vector2(float(i) * 60.0 + 40.0, 160 + sin(float(i)) * 5.0), Color(MARS_DARK, 0.6), 1.0)
 	_txt(c, Vector2(0, 142), "PURGATORY", 9, GRAY_DIM, W, HORIZONTAL_ALIGNMENT_CENTER)
-	# Rover.
 	_sd_x = lerpf(_sd_x, _sd_prog, 0.1)
 	if _sd_busy:
 		_sd_spin += 0.35
@@ -1193,29 +1392,28 @@ func _draw_sand(c: DrawNode) -> void:
 	if _sd_busy and _sd_slip > 0.3:
 		for i in 8:
 			c.draw_rect(Rect2(rx - 30.0 + randf() * 14.0, ry + 4.0 + randf() * 8.0, 2, 2), MARS_LIGHT)
-	# Meta.
-	c.draw_line(Vector2(70.0 + 470.0, 126), Vector2(70.0 + 470.0, 156), GREEN, 1.0)
+	c.draw_line(Vector2(540, 126), Vector2(540, 156), GREEN, 1.0)
 	_txt(c, Vector2(480, 120), ">", 12, GREEN, 120, HORIZONTAL_ALIGNMENT_CENTER)
-	# Cola de comandos.
+	# Barra de patinaje con su límite (slip check).
+	var lim := float(_sd_cfg["slip_limit"])
+	var bar := Rect2(170, 172, 300, 6)
+	c.draw_rect(bar, Color(0, 0, 0, 0.6))
+	c.draw_rect(Rect2(bar.position, Vector2(bar.size.x * _sd_slip, 6)), RED if _sd_slip > lim else (YEL if _sd_slip > 0.5 else GREEN))
+	c.draw_rect(bar, GRAY_DIM, false, 1.0)
+	c.draw_line(Vector2(bar.position.x + bar.size.x * lim, 169), Vector2(bar.position.x + bar.size.x * lim, 181), Color.WHITE, 2.0)
+	_txt(c, Vector2(20, 178), tr("PATINAJE"), 8, GRAY, 146, HORIZONTAL_ALIGNMENT_RIGHT)
+	_txt(c, Vector2(0, 194), _sd_coach, 9, YEL, W, HORIZONTAL_ALIGNMENT_CENTER)
+	# Órdenes.
 	for i in 4:
-		var r := _sd_slot_rect(i)
-		var has := i < _sd_queue.size()
-		_box(c, r, Color("#2a1c16") if has else Color("#120c0a"), GOLD if has else GRAY_DIM, _sd_short(String(_sd_queue[i])) if has else "", 9, Color.WHITE)
-	_box(c, _sd_send_rect(), Color("#2a3a1c") if not _sd_busy else Color("#1a1210"), GREEN if not _sd_busy else GRAY_DIM, tr("ENVIAR [ENTER]"), 10, GREEN if not _sd_busy else GRAY_DIM)
-	var names := [tr("1 AVANZAR LARGO"), tr("2 AVANZAR CORTO"), tr("3 RETROCEDER CORTO"), tr("4 RETROCEDER LARGO")]
-	for i in 4:
-		_box(c, _sd_cmd_rect(i), Color("#2a1c16"), GRAY_DIM, String(names[i]), 9, GOLD)
-	_txt(c, Vector2(400, 192), tr("ENSAYO") if _sd_test else tr("MARTE"), 11, CYAN if _sd_test else GOLD, 220, HORIZONTAL_ALIGNMENT_RIGHT)
-	_draw_msg(c, 118)
-
-
-func _sd_short(cmd: String) -> String:
-	match cmd:
-		"fl": return ">>"
-		"fs": return ">"
-		"bs": return "<"
-		"bl": return "<<"
-	return cmd
+		var r := _sd_cmd_rect(i)
+		var cd: Dictionary = (_sd_cfg["cmds"] as Dictionary)[SD_KEYS[i]]
+		var hov := _sd_hover == i and not _sd_busy
+		c.draw_rect(r, Color("#4a3020") if hov else (Color("#1a1210") if _sd_busy else Color("#2a1c16")))
+		c.draw_rect(r, Color.WHITE if hov else (GRAY_DIM if _sd_busy else GOLD), false, 2.0 if hov else 1.0)
+		_txt(c, Vector2(r.position.x + 5, r.position.y + 13), "%d  %s" % [i + 1, String(cd["name"])], 9, GRAY_DIM if _sd_busy else GOLD, r.size.x - 8)
+		c.draw_multiline_string(ThemeDB.fallback_font, Vector2(r.position.x + 5, r.position.y + 25), String(cd["desc"]), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 8, 8, 2, GRAY)
+	_txt(c, Vector2(400, 84), tr("ENSAYO") if _sd_test else tr("MARTE"), 11, CYAN if _sd_test else GOLD, 220, HORIZONTAL_ALIGNMENT_RIGHT)
+	_draw_msg(c, 112)
 
 
 # =========================================================================
@@ -1232,6 +1430,8 @@ var _wh_an := 0.0
 var _wh_done := false
 var _wh_moving := false
 var _wh_hint_t := 0.0
+var _wh_snd := 0.0
+var _wh_beep := 0.0
 
 
 func _act_wheel(sc: Dictionary) -> void:
@@ -1282,6 +1482,11 @@ func _wheel_step(delta: float) -> void:
 	var steer := _axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT)
 	_wh_moving = thr and _wh_energy > 0.0
 	if _wh_moving:
+		_wh_snd -= delta
+		if _wh_snd <= 0.0:
+			_wh_snd = 0.3
+			sfx("motor", 1.0, -17.0)
+	if _wh_moving:
 		# La rueda arrastrada tira del rover hacia la derecha: hay que corregir con A / D.
 		_wh_ang += (steer * 1.9 + float(_wh_cfg["bias"])) * delta
 		var np := _wh_pos + Vector2.from_angle(_wh_ang) * float(_wh_cfg["speed"]) * delta
@@ -1305,6 +1510,7 @@ func _wheel_step(delta: float) -> void:
 				if (tp as Vector2).distance_to(p["pos"]) < 12.0:
 					p["found"] = true
 					_say_msg(String(_wh_cfg["found"]), YEL, 2.0)
+					sfx("ping")
 					break
 	# Analizar: quieto, cerca de un parche descubierto, manteniendo E o ENTER.
 	var holding := (Input.is_action_pressed("interact") or Input.is_action_pressed("ui_accept")) and not thr
@@ -1315,6 +1521,10 @@ func _wheel_step(delta: float) -> void:
 			target = i
 	if holding and target >= 0:
 		_wh_an += delta / float(_wh_cfg["analyze_s"])
+		_wh_beep -= delta
+		if _wh_beep <= 0.0:
+			_wh_beep = 0.22
+			sfx("tick", 0.8 + _wh_an, -10.0)
 		if _wh_an >= 1.0:
 			_wh_an = 0.0
 			var p: Dictionary = _wh_patches[target]
@@ -1322,14 +1532,17 @@ func _wheel_step(delta: float) -> void:
 			if String(p["kind"]) == "silice":
 				_wh_found += 1
 				_say_msg(String(_wh_cfg["silica"]), GREEN, 2.4)
+				sfx("win")
 			else:
 				_say_msg(String(_wh_cfg["decoy"]), GRAY, 2.4)
+				sfx("error")
 			if _wh_found >= int(_wh_cfg["need"]):
 				_wh_done = true
 	else:
 		_wh_an = maxf(0.0, _wh_an - delta * 2.0)
 	if _wh_energy <= 0.0:
 		_say_msg(String(_wh_cfg["no_energy"]), RED, 2.6)
+		sfx("lose")
 		_wh_reset_run()
 
 
@@ -1468,24 +1681,59 @@ func _wi_send_rect() -> Rect2:
 	return Rect2(492, 232, 136, 24)
 
 
+var _wi_drag := -1
+var _wi_hover := -1
+
+
+func _wi_bar_rect(i: int) -> Rect2:
+	var r := _wi_row_rect(i)
+	return Rect2(r.position.x + 6.0, r.position.y + 14.0, 270, 18)
+
+
 func _winter_input(event: InputEvent, click: bool) -> void:
+	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_wi_drag = -1
+		return
+	if event is InputEventMouseMotion:
+		var p := get_local_mouse_position()
+		var h := -1
+		for i in 3:
+			if _wi_row_rect(i).has_point(p):
+				h = i
+		if h != _wi_hover and h >= 0 and _wi_drag < 0:
+			sfx("hover")
+		_wi_hover = h
+		if _wi_drag >= 0:
+			_wi_set_x(_wi_drag, p.x)
+		return
 	if _wi_busy:
 		return
 	if click:
 		var p := get_local_mouse_position()
 		for i in 3:
-			if _wi_row_rect(i).has_point(p):
-				_wi_row = i
 			if _wi_btn_rect(i, false).has_point(p):
+				_wi_row = i
 				_wi_change(i, -1.0)
-			if _wi_btn_rect(i, true).has_point(p):
+			elif _wi_btn_rect(i, true).has_point(p):
+				_wi_row = i
 				_wi_change(i, 1.0)
+			elif _wi_bar_rect(i).has_point(p):
+				_wi_row = i
+				_wi_drag = i
+				_wi_set_x(i, p.x)
+			elif _wi_row_rect(i).has_point(p):
+				_wi_row = i
+				sfx("select")
 		if _wi_send_rect().has_point(p):
 			_winter_send()
 	elif event is InputEventKey and event.pressed:
 		match int(event.physical_keycode):
-			KEY_UP, KEY_W: _wi_row = (_wi_row + 2) % 3
-			KEY_DOWN, KEY_S: _wi_row = (_wi_row + 1) % 3
+			KEY_UP, KEY_W:
+				_wi_row = (_wi_row + 2) % 3
+				sfx("select")
+			KEY_DOWN, KEY_S:
+				_wi_row = (_wi_row + 1) % 3
+				sfx("select")
 			KEY_LEFT, KEY_A: _wi_change(_wi_row, -1.0)
 			KEY_RIGHT, KEY_D: _wi_change(_wi_row, 1.0)
 			KEY_ENTER, KEY_KP_ENTER:
@@ -1493,13 +1741,29 @@ func _winter_input(event: InputEvent, click: bool) -> void:
 					_winter_send()
 
 
+## Arrastrar la barra con el ratón: el valor sigue al puntero sin pasarse de la energía disponible.
+func _wi_set_x(row: int, x: float) -> void:
+	var bx := _wi_bar_rect(row).position.x
+	var stepv := float(_wi_cfg["step"])
+	var v := roundf(clampf((x - bx) / 270.0 * 100.0, 0.0, 100.0) / stepv) * stepv
+	var cap := float(_wi_alloc[row]) + (_wi_avail() - _wi_total())
+	if v > cap:
+		v = floorf(cap / stepv) * stepv
+	if v != float(_wi_alloc[row]):
+		_wi_alloc[row] = v
+		sfx("tick", 0.7 + v / 100.0 * 1.3, -13.0)
+
+
 func _wi_change(row: int, dir: float) -> void:
 	var step := float(_wi_cfg["step"]) * dir
 	var nv := maxf(0.0, float(_wi_alloc[row]) + step)
 	if dir > 0.0 and _wi_total() + step > _wi_avail() + 0.01:
 		_say_msg(String(_wi_cfg["over"]), RED, 1.4)
+		sfx("error")
 		return
-	_wi_alloc[row] = nv
+	if nv != float(_wi_alloc[row]):
+		_wi_alloc[row] = nv
+		sfx("tick", 0.7 + nv / 100.0 * 1.3, -13.0)
 
 
 func _wi_predict() -> Dictionary:
@@ -1511,6 +1775,7 @@ func _wi_predict() -> Dictionary:
 
 func _winter_send() -> void:
 	_wi_busy = true
+	sfx("send")
 	var pr := _wi_predict()
 	var comm_ok := float(_wi_alloc[1]) >= float(_wi_cfg["comm_need"])
 	_wi_temp = float(pr["temp"])
@@ -1526,19 +1791,23 @@ func _winter_send() -> void:
 		fail = String(_wi_cfg["msg_silent"])
 	if fail != "":
 		_wi_busy = true
+		sfx("lose")
 		await toast(fail, RED, 2.0)
 		await toast(String(_wi_cfg["msg_retry"]), GOLD, 1.0)
 		_wi_reset()
 		return
 	if _wi_turn >= int(_wi_cfg["turns"]):
 		if _wi_sci >= float(_wi_cfg["sci_goal"]):
+			sfx("win")
 			_wi_won = true
 		else:
 			_wi_busy = true
+			sfx("lose")
 			await toast(String(_wi_cfg["msg_end"]) % int(_wi_sci), GOLD, 2.0)
 			await toast(String(_wi_cfg["msg_low_sci"]), RED, 2.0)
 			_wi_reset()
 		return
+	sfx("ok" if comm_ok else "warn")
 	_wi_fit()
 
 
@@ -1601,14 +1870,16 @@ func _draw_winter(c: DrawNode) -> void:
 	var cols := [Color("#ff8a50"), CYAN, GREEN]
 	for i in 3:
 		var r := _wi_row_rect(i)
-		c.draw_rect(r, Color("#2a1c16") if i == _wi_row else Color("#1a1210"))
-		c.draw_rect(r, GOLD if i == _wi_row else GRAY_DIM, false, 1.0)
+		c.draw_rect(r, Color("#3a2820") if (i == _wi_drag or i == _wi_hover) else (Color("#2a1c16") if i == _wi_row else Color("#1a1210")))
+		c.draw_rect(r, GOLD if i == _wi_row else (Color.WHITE if i == _wi_hover else GRAY_DIM), false, 2.0 if i == _wi_row else 1.0)
 		_txt(c, Vector2(r.position.x + 6, r.position.y + 12), String(rows[i]), 10, cols[i])
 		var bx := r.position.x + 6.0
 		var by := r.position.y + 18.0
 		c.draw_rect(Rect2(bx, by, 270, 10), Color(0, 0, 0, 0.6))
 		c.draw_rect(Rect2(bx, by, 270.0 * float(_wi_alloc[i]) / 100.0, 10), cols[i])
 		c.draw_rect(Rect2(bx, by, 270, 10), GRAY_DIM, false, 1.0)
+		var kx := bx + 270.0 * float(_wi_alloc[i]) / 100.0
+		c.draw_rect(Rect2(kx - 2, by - 4, 4, 18), Color.WHITE if (i == _wi_drag or i == _wi_hover) else GRAY)
 		var mark := _wi_need() if i == 0 else (float(_wi_cfg["comm_need"]) if i == 1 else -1.0)
 		if mark >= 0.0:
 			c.draw_line(Vector2(bx + 270.0 * mark / 100.0, by - 3), Vector2(bx + 270.0 * mark / 100.0, by + 13), Color.WHITE, 2.0)
@@ -1622,21 +1893,28 @@ func _draw_winter(c: DrawNode) -> void:
 	_txt(c, Vector2(262, 222), tr("PREVISIÓN") + ":  " + tr("TEMPERATURA") + " %d  ·  " % int(pr["temp"]) + tr("BATERÍA") + " %d" % int(pr["batt"]), 10, tcol, 366)
 	var comm_ok := float(_wi_alloc[1]) >= float(_wi_cfg["comm_need"])
 	var cl := tr("ENLACE") + (" OK" if comm_ok else " " + tr("ENLACE PERDIDO"))
+	_txt(c, Vector2(262, 252), tr("ARRASTRA PARA REPARTIR"), 8, GRAY_DIM, 220)
 	_txt(c, Vector2(262, 240), cl + ("   [" + str(_wi_miss) + "]" if _wi_miss > 0 else ""), 10, GREEN if comm_ok else RED, 220)
 	_box(c, _wi_send_rect(), Color("#2a3a1c"), GREEN, tr("ENVIAR TRAMO [ENTER]"), 9, GREEN)
 	_draw_msg(c, 64)
 
 
 # =========================================================================
-# FASE 5 · Rumbo a Endeavour (trazar la ruta)
+# FASE 5 · Rumbo a Endeavour (el rover avanza en vivo hacia tus puntos y deja rastro)
 # =========================================================================
 var _rt_cfg: Dictionary = {}
 var _rt_wps: Array = []
 var _rt_cursor := Vector2(320, 160)
-var _rt_run := false
-var _rt_prog := 0.0
-var _rt_done := false
+var _rt_rover := Vector2.ZERO
+var _rt_ang := 0.0
+var _rt_used := 0.0
+var _rt_trail: Array = []
+var _rt_ghosts: Array = []
 var _rt_seen: Dictionary = {}
+var _rt_started := false
+var _rt_done := false
+var _rt_in_dune := false
+var _rt_step_t := 0.0
 
 
 func _act_route(sc: Dictionary) -> void:
@@ -1644,30 +1922,26 @@ func _act_route(sc: Dictionary) -> void:
 	_rt_cfg = sc["minimission"]
 	_mm_title.text = String(_rt_cfg["title"])
 	_mm_info.text = String(_rt_cfg["info"])
-	_rt_wps = []
-	_rt_run = false
+	_rt_ghosts = []
 	_rt_done = false
-	_rt_prog = 0.0
-	_rt_seen = {}
+	_rt_attempt_reset(false)
 	_bar_name = tr("SOLES")
 	_bar_show = true
-	_bar_red_low = false
 	_tele_fn = func() -> Array:
-		var est := _rt_cost(_rt_wps)
 		var budget := float(_rt_cfg["budget"])
-		_bar_val = clampf((budget - est) / budget * 100.0, 0.0, 100.0)
-		_bar_alert = est > budget
+		_bar_val = clampf((budget - _rt_used) / budget * 100.0, 0.0, 100.0)
 		return [
-			[tr("PUNTOS"), "%d / %d" % [_rt_wps.size(), int(_rt_cfg["max_wps"])]],
-			[tr("ESTIMADO"), "%s / %d" % [_num(est), int(budget)], RED if est > budget else GREEN],
+			[tr("USADOS"), "%s / %d" % [_num(_rt_used), int(budget)], RED if _rt_used > budget * 0.85 else GREEN],
+			[tr("PUNTOS PENDIENTES"), "%d / %d" % [_rt_wps.size(), int(_rt_cfg["max_wps"])]],
 		]
 	_layer(_draw_route)
 	_input_cb = _route_input
 	while not _rt_done:
 		await get_tree().process_frame
-		if _rt_run and not get_tree().paused:
+		if not get_tree().paused:
 			_route_drive(get_process_delta_time())
 	_input_cb = Callable()
+	sfx("win")
 	await toast(String(_rt_cfg["msg_arrive"]), GREEN, 1.6)
 	dialog.show_hint("INGENIERIA", String(_rt_cfg["reverse_note"]), 6.0)
 	await toast(String(_rt_cfg["milestone_a"]), YEL, 2.2)
@@ -1677,12 +1951,30 @@ func _act_route(sc: Dictionary) -> void:
 		await _add_evidence(ev)
 
 
-func _rt_points(wps: Array) -> Array:
-	var pts: Array = [Vector2(float((_rt_cfg["start"] as Array)[0]), float((_rt_cfg["start"] as Array)[1]))]
-	for w in wps:
-		pts.append(w)
-	pts.append(Vector2(float((_rt_cfg["end"] as Array)[0]), float((_rt_cfg["end"] as Array)[1])))
-	return pts
+func _rt_start() -> Vector2:
+	var a: Array = _rt_cfg["start"]
+	return Vector2(float(a[0]), float(a[1]))
+
+
+func _rt_end() -> Vector2:
+	var a: Array = _rt_cfg["end"]
+	return Vector2(float(a[0]), float(a[1]))
+
+
+## Nuevo intento: el rover vuelve al inicio. El rastro anterior queda como guía (fantasma).
+func _rt_attempt_reset(keep_ghost: bool) -> void:
+	if keep_ghost and _rt_trail.size() > 2:
+		_rt_ghosts.append(_rt_trail.duplicate())
+		if _rt_ghosts.size() > 3:
+			_rt_ghosts.pop_front()
+	_rt_trail = []
+	_rt_wps = []
+	_rt_used = 0.0
+	_rt_seen = {}
+	_rt_started = false
+	_rt_rover = _rt_start()
+	_rt_ang = (_rt_end() - _rt_start()).angle()
+	_rt_in_dune = false
 
 
 func _rt_seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
@@ -1692,40 +1984,21 @@ func _rt_seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 	return p.distance_to(a + ab * t)
 
 
-func _rt_in_dune(p: Vector2, d: Array) -> bool:
+func _rt_dune_at(p: Vector2, d: Array) -> bool:
 	var dx := (p.x - float(d[0])) / (float(d[2]) * 0.5)
 	var dy := (p.y - float(d[1])) / (float(d[3]) * 0.5)
 	return dx * dx + dy * dy <= 1.0
 
 
-## Soles estimados de una ruta: distancia + desvíos por cráteres + patinaje en dunas.
-func _rt_cost(wps: Array) -> float:
-	var pts := _rt_points(wps)
-	var cost := 0.0
-	var pps := float(_rt_cfg["px_per_sol"])
-	for i in pts.size() - 1:
-		var a: Vector2 = pts[i]
-		var b: Vector2 = pts[i + 1]
-		cost += a.distance_to(b) / pps
-		for cr in _rt_cfg["craters"]:
-			if _rt_seg_dist(Vector2(float(cr[0]), float(cr[1])), a, b) < float(cr[2]):
-				cost += 2.0 * float(cr[2]) * float(_rt_cfg["crater_detour"]) / pps
-		for d in _rt_cfg["dunes"]:
-			for k in 41:
-				if _rt_in_dune(a.lerp(b, float(k) / 40.0), d):
-					cost += float(_rt_cfg["dune_cost"])
-					break
-	return cost
-
-
 func _route_input(event: InputEvent, click: bool) -> void:
-	if _rt_run:
-		return
 	var area := Rect2(8, 76, 624, 182)
 	if event is InputEventMouseMotion:
 		var p := get_local_mouse_position()
 		if area.has_point(p):
 			_rt_cursor = p
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		if area.has_point(get_local_mouse_position()):
+			_route_remove(get_local_mouse_position())
 	elif click:
 		var p := get_local_mouse_position()
 		if area.has_point(p):
@@ -1742,63 +2015,96 @@ func _route_input(event: InputEvent, click: bool) -> void:
 				if not event.echo:
 					_route_add()
 			KEY_BACKSPACE:
-				if not _rt_wps.is_empty():
+				if not event.echo and not _rt_wps.is_empty():
 					_rt_wps.pop_back()
-			KEY_G:
-				if not event.echo:
-					_route_go()
+					sfx("remove")
 
 
 func _route_add() -> void:
-	if _rt_wps.size() < int(_rt_cfg["max_wps"]):
-		_rt_wps.append(_rt_cursor)
-
-
-func _route_go() -> void:
-	if _rt_cost(_rt_wps) > float(_rt_cfg["budget"]):
-		_say_msg(String(_rt_cfg["msg_over"]), RED, 2.6)
+	if _rt_wps.size() >= int(_rt_cfg["max_wps"]):
+		_say_msg(String(_rt_cfg["msg_full"]), RED, 1.6)
+		sfx("error")
 		return
-	_rt_run = true
-	_rt_prog = 0.0
-	_rt_seen = {}
+	var p := _rt_cursor
+	if p.distance_to(_rt_end()) < 18.0:
+		p = _rt_end()
+	_rt_wps.append(p)
+	sfx("place")
+	if not _rt_started:
+		_rt_started = true
+		sfx("motor")
 
 
-func _rt_path_len(pts: Array) -> float:
-	var l := 0.0
-	for i in pts.size() - 1:
-		l += (pts[i] as Vector2).distance_to(pts[i + 1])
-	return l
-
-
-func _rt_at(pts: Array, dist: float) -> Vector2:
-	var d := dist
-	for i in pts.size() - 1:
-		var a: Vector2 = pts[i]
-		var b: Vector2 = pts[i + 1]
-		var sl := a.distance_to(b)
-		if d <= sl:
-			return a.lerp(b, d / maxf(sl, 0.001))
-		d -= sl
-	return pts[pts.size() - 1]
+## Clic derecho: borra el punto más cercano al puntero (o, si no hay ninguno cerca, el último).
+func _route_remove(at: Vector2) -> void:
+	if _rt_wps.is_empty():
+		return
+	var best := -1
+	var bd := 18.0
+	for i in _rt_wps.size():
+		var d := (_rt_wps[i] as Vector2).distance_to(at)
+		if d < bd:
+			bd = d
+			best = i
+	if best < 0:
+		best = _rt_wps.size() - 1
+	_rt_wps.remove_at(best)
+	sfx("remove")
 
 
 func _route_drive(delta: float) -> void:
-	var pts := _rt_points(_rt_wps)
-	var total := _rt_path_len(pts)
-	_rt_prog += delta * 120.0
-	var p := _rt_at(pts, _rt_prog)
+	if not _rt_started:
+		return
+	var budget := float(_rt_cfg["budget"])
+	var pps := float(_rt_cfg["px_per_sol"])
+	if _rt_wps.is_empty():
+		if _rt_rover.distance_to(_rt_end()) < 14.0:
+			_rt_done = true
+		elif _msg_t <= 0.0:
+			_say_msg(String(_rt_cfg["msg_wait"]), CYAN, 1.8)
+		return
+	var target: Vector2 = _rt_wps[0]
+	var to := target - _rt_rover
+	var dist := to.length()
+	var in_dune := false
+	for d in _rt_cfg["dunes"]:
+		if _rt_dune_at(_rt_rover, d):
+			in_dune = true
+	var spd := float(_rt_cfg["speed"]) * (0.5 if in_dune else 1.0)
+	var mv := minf(spd * delta, dist)
+	if dist > 0.01:
+		_rt_ang = lerp_angle(_rt_ang, to.angle(), 0.2)
+		_rt_rover += to / dist * mv
+	_rt_used += mv / pps
+	_rt_step_t -= delta
+	if _rt_step_t <= 0.0:
+		_rt_step_t = 0.35 if not in_dune else 0.6
+		sfx("motor", 1.0, -16.0)
+	if _rt_trail.is_empty() or (_rt_trail[_rt_trail.size() - 1] as Vector2).distance_to(_rt_rover) > 3.0:
+		_rt_trail.append(_rt_rover)
 	for i in (_rt_cfg["dunes"] as Array).size():
-		if not _rt_seen.has("d%d" % i) and _rt_in_dune(p, (_rt_cfg["dunes"] as Array)[i]):
+		if not _rt_seen.has("d%d" % i) and _rt_dune_at(_rt_rover, (_rt_cfg["dunes"] as Array)[i]):
 			_rt_seen["d%d" % i] = true
+			_rt_used += float(_rt_cfg["dune_cost"])
 			_say_msg(String(_rt_cfg["msg_dune"]), RED, 2.0)
+			sfx("grind")
 	for i in (_rt_cfg["craters"] as Array).size():
 		var cr: Array = (_rt_cfg["craters"] as Array)[i]
-		if not _rt_seen.has("c%d" % i) and p.distance_to(Vector2(float(cr[0]), float(cr[1]))) < float(cr[2]) + 8.0:
+		if not _rt_seen.has("c%d" % i) and _rt_rover.distance_to(Vector2(float(cr[0]), float(cr[1]))) < float(cr[2]):
 			_rt_seen["c%d" % i] = true
+			_rt_used += 2.0 * float(cr[2]) * float(_rt_cfg["crater_detour"]) / pps
 			_say_msg(String(_rt_cfg["msg_crater"]), CYAN, 2.0)
-	if _rt_prog >= total:
-		_rt_run = false
-		_rt_done = true
+			sfx("warn")
+	if dist <= 3.0:
+		_rt_wps.pop_front()
+		sfx("tick")
+		if _rt_rover.distance_to(_rt_end()) < 14.0:
+			_rt_done = true
+			return
+	if _rt_used > budget:
+		sfx("lose")
+		_say_msg(String(_rt_cfg["msg_over"]), RED, 3.2)
+		_rt_attempt_reset(true)
 
 
 func _draw_route(c: DrawNode) -> void:
@@ -1811,7 +2117,6 @@ func _draw_route(c: DrawNode) -> void:
 	rng.seed = 57
 	for i in 200:
 		c.draw_rect(Rect2(area.position.x + floorf(rng.randf() * area.size.x), area.position.y + floorf(rng.randf() * area.size.y), 2, 1), MARS_DARK if i % 2 == 0 else MARS_LIGHT)
-	# Dunas (claras) y cráteres (anillos oscuros).
 	for d in _rt_cfg["dunes"]:
 		_ellipse(c, Vector2(float(d[0]), float(d[1])), float(d[2]) * 0.5, float(d[3]) * 0.5, Color(0.95, 0.75, 0.5, 0.55))
 	for cr in _rt_cfg["craters"]:
@@ -1820,26 +2125,29 @@ func _draw_route(c: DrawNode) -> void:
 		c.draw_circle(cc + Vector2(2, 2), float(cr[2]) - 4.0, Color("#3a1e14"))
 		c.draw_arc(cc, float(cr[2]), 0, TAU, 28, MARS_LIGHT, 1.0)
 	_txt(c, Vector2(560, 90), "ENDEAVOUR", 9, GOLD, 60, HORIZONTAL_ALIGNMENT_CENTER)
-	var pts := _rt_points(_rt_wps)
-	var over := _rt_cost(_rt_wps) > float(_rt_cfg["budget"])
-	var lcol := RED if over else GREEN
-	for i in pts.size() - 1:
-		c.draw_line(pts[i], pts[i + 1], lcol, 2.0)
-	if not _rt_run and _rt_wps.size() < int(_rt_cfg["max_wps"]):
-		c.draw_line(pts[pts.size() - 2], _rt_cursor, Color(1, 1, 1, 0.35), 1.0)
+	# Rastros de intentos anteriores (guía) y del intento actual.
+	for g in _rt_ghosts:
+		var gt: Array = g
+		for i in range(0, gt.size(), 2):
+			c.draw_rect(Rect2((gt[i] as Vector2) - Vector2(1, 1), Vector2(2, 2)), Color(1, 1, 1, 0.4))
+	for tp in _rt_trail:
+		c.draw_rect(Rect2((tp as Vector2) - Vector2(1.5, 1.5), Vector2(3, 3)), Color(GREEN, 0.9))
+	# Ruta pendiente.
+	var prev := _rt_rover
+	for i in _rt_wps.size():
+		c.draw_line(prev, _rt_wps[i], Color(YEL, 0.6), 1.0)
+		prev = _rt_wps[i]
+	var area_has := area.has_point(_rt_cursor)
+	if area_has and _rt_wps.size() < int(_rt_cfg["max_wps"]):
+		c.draw_line(prev, _rt_cursor, Color(1, 1, 1, 0.3), 1.0)
 		c.draw_circle(_rt_cursor, 4.0, Color(1, 1, 1, 0.5))
 	for i in _rt_wps.size():
 		c.draw_circle(_rt_wps[i], 6.0, Color("#1a1210"))
 		c.draw_arc(_rt_wps[i], 6.0, 0, TAU, 14, YEL, 1.5)
 		_txt(c, (_rt_wps[i] as Vector2) + Vector2(-6, 4), str(i + 1), 9, YEL, 12, HORIZONTAL_ALIGNMENT_CENTER)
-	var s: Vector2 = pts[0]
-	c.draw_circle(s, 5.0, GREEN)
-	var e: Vector2 = pts[pts.size() - 1]
-	c.draw_circle(e, 6.0, GOLD)
-	if _rt_run:
-		var p := _rt_at(pts, _rt_prog)
-		var ahead := _rt_at(pts, _rt_prog + 4.0)
-		_draw_rover_top(c, p, (ahead - p).angle() + PI, 1.3, false)
+	c.draw_circle(_rt_start(), 4.0, GREEN)
+	c.draw_circle(_rt_end(), 6.0, GOLD)
+	_draw_rover_top(c, _rt_rover, _rt_ang, 1.3, false)
 	_draw_msg(c, 232)
 
 
@@ -1863,6 +2171,8 @@ var _st_done := false
 var _st_tex: ImageTexture
 var _st_reveal := 0.0
 var _st_cut := false
+var _st_was_on := false
+var _cl_focus := 0
 var _cl_screen := 0
 var _cl_t0 := 0.0
 var _cl_cfg: Dictionary = {}
@@ -1893,6 +2203,7 @@ func _act_storm(sc: Dictionary) -> void:
 			continue
 		_storm_step(get_process_delta_time())
 	_input_cb = Callable()
+	sfx("win")
 	await toast(String(_st_cfg["done"]), GREEN, 1.8)
 	await _last_message(sc)
 	await say(sc["outro"])
@@ -1921,25 +2232,34 @@ func _storm_photo() -> void:
 	if _st_cool > 0.0:
 		return
 	_st_cool = float(_st_cfg.get("cooldown", 3.0))
+	sfx("shutter")
 	_st_batt = maxf(0.0, _st_batt - float(_st_cfg["photo_cost"]))
 	if _st_light(_st_t) >= float(_st_cfg["threshold"]):
 		_st_frames += 1
 		_say_msg(String(_st_cfg["good"]), GREEN, 1.4)
+		sfx("ok")
 	else:
 		_say_msg(String(_st_cfg["dark"]), RED, 1.6)
+		sfx("error")
 
 
 func _storm_step(delta: float) -> void:
 	_st_t += delta
 	_st_cool = maxf(0.0, _st_cool - delta)
+	var on := _st_light(_st_t) >= float(_st_cfg["threshold"])
+	if on and not _st_was_on:
+		sfx("ping", 1.0, -13.0)
+	_st_was_on = on
 	_st_batt = clampf(_st_batt + (float(_st_cfg["gain"]) * _st_light(_st_t) - float(_st_cfg["drain"])) * delta, 0.0, 100.0)
 	if _st_frames >= int(_st_cfg["frames_goal"]):
 		_st_done = true
 	elif _st_batt <= 0.0:
 		_say_msg(String(_st_cfg["no_energy"]), RED, 2.6)
+		sfx("lose")
 		_st_restart()
 	elif _st_t >= float(_st_cfg["seconds"]):
 		_say_msg(String(_st_cfg["retry"]), RED, 2.6)
+		sfx("lose")
 		_st_restart()
 
 
@@ -2020,11 +2340,18 @@ func _last_message(sc: Dictionary) -> void:
 			_txt(c, Vector2(0, 254), String(lm["cut"]), 10, RED, W, HORIZONTAL_ALIGNMENT_CENTER))
 	lm_layer.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	await wait(0.8)
+	var last_row := -1
 	while _st_reveal < cut_row:
 		await get_tree().process_frame
 		if not get_tree().paused:
 			_st_reveal += get_process_delta_time() * 9.0
+		if int(_st_reveal) != last_row:
+			last_row = int(_st_reveal)
+			if last_row % 2 == 0:
+				sfx("tick", 0.6 + randf() * 0.8, -15.0)
 	_st_cut = true
+	sfx("static")
+	sfx("lose")
 	await wait_click_or_accept(7.0)
 
 
@@ -2037,11 +2364,14 @@ func _closing(sc: Dictionary) -> void:
 	_cl_screen = 0
 	_cl_t0 = _t
 	_cl_quiz_ok = false
+	_cl_focus = 0
+	sfx("scan")
 	_layer(_draw_closing)
 	await wait(0.5)
 	await wait_click_or_accept(0.0)
 	_cl_screen = 1
 	_cl_t0 = _t
+	sfx("select")
 	_mm_info.text = String(_cl_cfg["quiz_title"])
 	_input_cb = _closing_input
 	while not _cl_quiz_ok:
@@ -2051,6 +2381,7 @@ func _closing(sc: Dictionary) -> void:
 	await wait_click_or_accept(0.0)
 	_cl_screen = 2
 	_cl_t0 = _t
+	sfx("ping2")
 	_mm_info.text = ""
 	await wait(0.6)
 	await wait_click_or_accept(0.0)
@@ -2063,22 +2394,38 @@ func _cl_opt_rect(j: int) -> Rect2:
 func _closing_input(event: InputEvent, click: bool) -> void:
 	if _cl_quiz_ok:
 		return
+	if event is InputEventMouseMotion:
+		for j in 3:
+			if _cl_opt_rect(j).has_point(get_local_mouse_position()) and j != _cl_focus:
+				_cl_focus = j
+				sfx("hover")
+		return
 	var pick := -1
 	if click:
-		var p := get_local_mouse_position()
 		for j in 3:
-			if _cl_opt_rect(j).has_point(p):
+			if _cl_opt_rect(j).has_point(get_local_mouse_position()):
 				pick = j
 	elif event is InputEventKey and event.pressed and not event.echo:
 		var k := int(event.physical_keycode)
 		if k >= KEY_1 and k <= KEY_3:
 			pick = k - KEY_1
+		elif k == KEY_UP or k == KEY_W:
+			_cl_focus = (_cl_focus + 2) % 3
+			sfx("hover")
+		elif k == KEY_DOWN or k == KEY_S:
+			_cl_focus = (_cl_focus + 1) % 3
+			sfx("hover")
+		elif k == KEY_ENTER or k == KEY_KP_ENTER or k == KEY_SPACE:
+			pick = _cl_focus
 	if pick < 0:
 		return
+	_cl_focus = pick
 	if pick == int(_cl_cfg["quiz_correct"]):
 		_cl_quiz_ok = true
+		sfx("win")
 		_say_msg(String(_cl_cfg["quiz_right"]), GREEN, 999.0)
 	else:
+		sfx("error")
 		_say_msg(String(_cl_cfg["quiz_wrong"]), RED, 3.0)
 
 
@@ -2132,10 +2479,7 @@ func _draw_closing(c: DrawNode) -> void:
 			_txt(c, Vector2(326, 100), String(_cl_cfg["quiz_q"]), 10, YEL, 302)
 			var opts: Array = _cl_cfg["quiz_options"]
 			for j in opts.size():
-				var r := _cl_opt_rect(j)
-				_box(c, r, Color("#2a1c16"), GOLD)
-				_txt(c, Vector2(r.position.x + 6, r.position.y + 13), "%d" % (j + 1), 11, GOLD)
-				c.draw_multiline_string(ThemeDB.fallback_font, Vector2(r.position.x + 22, r.position.y + 13), String(opts[j]), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 28, 9, 2, Color.WHITE)
+				_draw_option(c, _cl_opt_rect(j), j + 1, String(opts[j]), (not _cl_quiz_ok) and j == _cl_focus)
 			if _msg_t > 0.0:
 				c.draw_multiline_string(ThemeDB.fallback_font, Vector2(326, 226), _msg, HORIZONTAL_ALIGNMENT_LEFT, 302, 9, 3, _msg_col)
 			if _cl_quiz_ok:
