@@ -22,7 +22,7 @@ const GLITCH_SYMBOLS := "#$%&*@!?/<>=+~^:;01"
 const INPUT_GRACE := 0.25
 
 var speakers: Dictionary = {}
-var transit_text := "SEÑAL EN TRÁNSITO"
+var transit_text := tr("SEÑAL EN TRÁNSITO")
 
 var _lines: Array = []
 var _index := -1
@@ -140,7 +140,7 @@ func _build() -> void:
 	_text.size = Vector2(_box.size.x - 16, 50)
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint = _label(Vector2(_box.size.x - 70, 68), 9, RetroTheme.PHOSPHOR_DIM)
-	_hint.text = "ENTER >>"
+	_hint.text = tr("ENTER >>")
 	_sub = _label(Vector2(8, 52), 9, Color("#a8b0c0"))
 	_sub.size = Vector2(_box.size.x - 80, 14)
 	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -183,7 +183,7 @@ func _idle() -> void:
 	_phase = 0
 	_name.text = ""
 	_tag.text = ""
-	_text.text = "— CANAL ABIERTO —"
+	_text.text = tr("— CANAL ABIERTO —")
 	_text.visible_characters = -1
 	_text.add_theme_color_override("font_color", RetroTheme.PHOSPHOR_DIM)
 	_transit.text = ""

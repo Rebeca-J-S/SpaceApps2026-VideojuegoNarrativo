@@ -126,7 +126,7 @@ func _build() -> void:
 	var top := HBoxContainer.new()
 	col.add_child(top)
 	_header = Label.new()
-	_header.text = "((·)) TRANSMISIÓN ENTRANTE"
+	_header.text = tr("((·)) TRANSMISIÓN ENTRANTE")
 	_header.add_theme_font_size_override("font_size", 10)
 	_header.add_theme_color_override("font_color", Color("#ff5a4a"))
 	top.add_child(_header)
@@ -145,7 +145,7 @@ func _build() -> void:
 	col.add_child(_text)
 
 	_hint = Label.new()
-	_hint.text = "ENTER / CLIC >>"
+	_hint.text = tr("ENTER / CLIC >>")
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hint.add_theme_font_size_override("font_size", 10)
 	_hint.add_theme_color_override("font_color", RetroTheme.PHOSPHOR_DIM)

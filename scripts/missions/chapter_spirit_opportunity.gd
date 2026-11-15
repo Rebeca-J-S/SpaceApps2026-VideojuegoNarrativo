@@ -354,7 +354,7 @@ func _process(delta: float) -> void:
 			_signal = clampf(_signal_target + randf_range(-28.0, 4.0), 0.0, 100.0)
 	else:
 		_signal = lerpf(_signal, _signal_target, minf(1.0, delta * 3.0))
-	_dist_label.text = "%.2f km" % _distance
+	_dist_label.text = tr("%.2f km") % _distance
 	_signal_label.text = "%s %d%%" % [data["hud"]["signal"], int(round(_signal))]
 	_flash = maxf(0.0, _flash - delta * 3.0)
 	_hud_draw.queue_redraw()
@@ -714,7 +714,7 @@ func _scene_winter(sc: Dictionary) -> void:
 	slider.grab_focus()
 	while _day < days:
 		var e: float = energy[mini(_day, energy.size() - 1)]
-		info.text = "%s %d/%d · ENERGÍA: %d%%\n%s: %d%%   ·   %s: %d%%" % [
+		info.text = tr("%s %d/%d · ENERGÍA: %d%%\n%s: %d%%   ·   %s: %d%%") % [
 			mm["day"], _day + 1, days, int(e), mm["heaters"], int(slider.value * e / 100.0),
 			mm["instruments"], int((100.0 - slider.value) * e / 100.0)]
 		await get_tree().process_frame

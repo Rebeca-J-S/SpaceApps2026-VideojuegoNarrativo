@@ -44,7 +44,8 @@ var _current_section := ""
 
 func _ready() -> void:
 	theme = RetroTheme.build()
-	game_title.text = "WHAT WAS LEFT\nBEHIND"
+	game_title.text = tr("WHAT WAS LEFT\nBEHIND")
+	add_child(LangButton.new())
 	_menu_buttons = [btn_start, btn_archive, btn_controls, btn_quit]
 
 	# En la versión Web "Salir" no tiene sentido (no se puede cerrar la pestaña).
@@ -65,7 +66,7 @@ func _ready() -> void:
 	dimmer.gui_input.connect(_on_dimmer_input)
 
 	_build_section_tabs()
-	controls_body.text = MissionData.CONTROLS_BBCODE
+	controls_body.text = tr(MissionData.CONTROLS_BBCODE)
 
 	archive_panel.hide()
 	controls_panel.hide()
@@ -86,7 +87,7 @@ func _process(_delta: float) -> void:
 # Botones estilo terminal: "> OPCIÓN" cuando tienen el foco.
 # -------------------------------------------------------------------------
 func _decorate_button(b: Button) -> void:
-	var label := b.text
+	var label := tr(b.text)
 	b.text = "  " + label
 	b.focus_entered.connect(func() -> void: b.text = "> " + label)
 	b.focus_exited.connect(func() -> void: b.text = "  " + label)
@@ -140,11 +141,11 @@ func _update_site_tooltip() -> void:
 		if index >= 0 and not found:
 			found = true
 			var info := p.get_site_info(index)
-			var state := "SILENCIOSO"
+			var state := tr("SILENCIOSO")
 			if info["status"] == "active":
-				state = "ACTIVO"
+				state = tr("ACTIVO")
 			elif info["status"] == "focus":
-				state = "MISIÓN JUGABLE"
+				state = tr("MISIÓN JUGABLE")
 			var text := "%s  [%s]\n%s" % [info["name"], state, info["info"]]
 			if site_tooltip_label.text != text:
 				site_tooltip_label.text = text
@@ -245,7 +246,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_section_tabs() -> void:
 	var group := ButtonGroup.new()
 	for section in GameManager.get_archive()["sections"]:
-		var tab := _make_toggle(section, group, 12)
+		var tab := _make_toggle(tr(section), group, 12)
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tab.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tab.toggled.connect(_on_section_toggled.bind(section))
@@ -291,14 +292,14 @@ func _show_archive_entry(entry: Dictionary) -> void:
 	var dim := RetroTheme.PHOSPHOR_DIM.to_html(false)
 	var white := RetroTheme.WHITE.to_html(false)
 
-	var s := "[color=#%s]%s[/color]\n[color=#%s]%s[/color]\n\n" % [amber, entry["name"], dim, entry["id"]]
+	var s := tr("[color=#%s]%s[/color]\n[color=#%s]%s[/color]\n\n") % [amber, entry["name"], dim, tr(entry["id"])]
 	for fact in entry["facts"]:
-		s += "[color=#%s]»[/color] %s: [color=#%s]%s[/color]\n" % [dim, fact[0], white, fact[1]]
+		s += tr("[color=#%s]»[/color] %s: [color=#%s]%s[/color]\n") % [dim, fact[0], white, fact[1]]
 	# La historia del equipo se desbloquea al completar su misión.
 	if GameManager.is_completed(String(entry.get("mission", ""))):
-		s += "\n[color=#%s]>> SU HISTORIA:[/color]\n%s" % [amber, entry["voice"]]
+		s += tr("\n[color=#%s]>> SU HISTORIA:[/color]\n%s") % [amber, entry["voice"]]
 	else:
-		s += "\n[color=#%s]>> HISTORIA BLOQUEADA[/color]\n[color=#%s]Completa su misión para desbloquearla.[/color]" % [amber, dim]
+		s += tr("\n[color=#%s]>> HISTORIA BLOQUEADA[/color]\n[color=#%s]Completa su misión para desbloquearla.[/color]") % [amber, dim]
 
 	archive_body.text = s
 	archive_body.scroll_to_line(0)
@@ -323,7 +324,7 @@ func _next_voice_line() -> void:
 	var voices: Array = GameManager.get_archive()["voices"]
 	var line: Dictionary = voices[_voice_index % voices.size()]
 	_voice_index += 1
-	voice_speaker.text = "ARCHIVO · %s" % line["speaker"]
+	voice_speaker.text = tr("ARCHIVO · %s") % tr(line["speaker"])
 	voice_text.text = line["text"]
 	voice_text.visible_characters = 0
 	if _voice_tween and _voice_tween.is_valid():

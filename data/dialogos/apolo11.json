@@ -1,8 +1,7 @@
 {
-	"_nota": "Capítulo APOLLO 11: EAGLE (julio de 1969). El jugador es un controlador de vuelo de Houston (personaje imaginado). Las frases históricas se muestran en inglés con su traducción debajo ('sub'). Las entradas 'verificar' son datos por confirmar. Las cinemáticas todavía no existen: se muestra la pantalla 'CINEMÁTICA EN PROGRESO'.",
+	"_nota": "Capítulo APOLLO 11: EAGLE (julio de 1969). El jugador es un controlador de vuelo de Houston (personaje imaginado). Las frases históricas se muestran en inglés con su traducción debajo ('sub'). Las entradas 'verificar' son datos por confirmar. Las cinemáticas de las fases 0, 2 y 5 se dibujan por código (placeholders). Las horas marcadas 'verificar' deben confirmarse con NSSDCA.",
 	"disclaimer": "El controlador de vuelo es un personaje imaginado.\nLas frases en inglés, las fechas y los hechos de la misión son reales.",
 	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
-	"cinematic_pending": "CINEMÁTICA EN PROGRESO",
 	"speakers": {
 		"CONTROL": {"name": "CONTROL (HOUSTON)", "radio": false, "color": "#c8ccd8", "portrait": "control"},
 		"ARMSTRONG": {"name": "ARMSTRONG", "radio": false, "color": "#e0b040", "portrait": "armstrong"},
@@ -25,11 +24,26 @@
 	"scenes": [
 		{
 			"id": "orbita",
-			"title": "FASE 0 · ÓRBITA LUNAR",
+			"title": "FASE 0 · EL VIAJE A LA LUNA",
 			"date": "JULIO 1969",
-			"objective": "VER LA SEPARACIÓN DEL EAGLE",
+			"objective": "VER CUÁNTO TARDÓ EL VIAJE",
 			"fuel": 100,
-			"cinematic_tag": "ÓRBITA LUNAR",
+			"cinematic": {
+				"cap_launch": "16 JUL 1969 · 13:32 UT · CENTRO ESPACIAL KENNEDY, FLORIDA",
+				"cap_orbit": "ÓRBITA TERRESTRE · T+ 2 H 44 MIN: RUMBO A LA LUNA",
+				"cap_transfer": "TRAVESÍA TRANSLUNAR · UNOS 384.400 KM",
+				"arrival": "LLEGADA A LA ÓRBITA LUNAR\n3 DÍAS, 3 HORAS Y 50 MINUTOS",
+				"lines_launch": [
+					{"speaker": "CONTROL", "text": "16 de julio de 1969, 13:32 UT. El Saturno V despega de Florida con Armstrong, Aldrin y Collins a bordo. Empieza el reloj de la misión."}
+				],
+				"lines_tli": [
+					{"speaker": "CONTROL", "text": "Tras dos vueltas y media a la Tierra, la última etapa del cohete vuelve a encenderse y los lanza hacia la Luna. El Eagle viaja plegado en la nariz de la Columbia."}
+				],
+				"lines_arrival": [
+					{"speaker": "CONTROL", "text": "19 de julio, 17:22 UT: el Apolo 11 entra en órbita lunar. Tardaron 75 horas y 50 minutos desde el despegue: más de tres días para cruzar unos 384.400 kilómetros."}
+				],
+				"verificar": "Despegue 16 jul 1969 13:32 UT; inyección translunar T+ 2:44; inserción en órbita lunar 19 jul 17:21:50 UT (T+ 75:49:50). Confirmar con NSSDCA."
+			},
 			"countdown_start": 720,
 			"dialog": [
 				{"speaker": "CONTROL", "text": "Control a todas las estaciones: el Eagle tiene un combustible limitado para el descenso. Cada segundo cuenta."},
@@ -44,7 +58,8 @@
 			"objective": "ALUNIZAR EN UNA ZONA PLANA",
 			"fuel": 100,
 			"intro": [
-				{"speaker": "CONTROL", "text": "Eagle, tienes luz verde para el descenso. Elige con el visor una zona plana, sin cráteres ni rocas."}
+				{"speaker": "CONTROL", "text": "Eagle, tienes luz verde para el descenso. Elige con el visor una zona plana, sin cráteres ni rocas."},
+				{"speaker": "CONTROL", "text": "El piloto automático controla el frenado; tú controlas la inclinación. La turbulencia inclina el Eagle a la derecha y cada clic lo endereza hacia la izquierda: clics rápidos lo inclinan a la izquierda; clics lentos lo dejan caer a la derecha. Hacia donde se inclina, hacia allá se desplaza."}
 			],
 			"zones": [
 				{"name": "A", "x": 70, "w": 78, "safe": true},
@@ -57,7 +72,7 @@
 				"title": "MINIJUEGO: ESTABILIZAR EL EAGLE",
 				"pick_title": "ELIGE LA ZONA DE ATERRIZAJE",
 				"pick_info": "Mueve el visor (flechas / WASD o mouse) y pulsa ENTER o clic para elegir",
-				"info": "Empuje: W / ↑ / ESPACIO · Inclinación: A / D · Baja la velocidad vertical y nivela el módulo",
+				"info": "CLIC / ESPACIO / ENTER: pulso de control · rápidos = izquierda, lentos = derecha · llega nivelado",
 				"zone_ok": "SEGURA",
 				"zone_bad": "PELIGRO",
 				"picked": "ZONA %s ELEGIDA",
@@ -66,10 +81,17 @@
 				"start_vy": -22.0,
 				"gravity": 1.62,
 				"thrust": 4.4,
-				"burn": 1.1,
-				"rcs_burn": 0.22,
-				"rot_rate": 1.0,
-				"disturbance": 0.35,
+				"burn": 0.9,
+				"rcs_pulse": 0.12,
+				"tilt_drift": 0.6,
+				"tilt_kick": 0.24,
+				"tilt_damp": 1.8,
+				"tilt_stiff": 2.0,
+				"gust": 0.18,
+				"vy_gain": 0.12,
+				"vy_min": 1.8,
+				"vy_max": 40.0,
+				"drag": 0.35,
 				"v_ok": 3.5,
 				"vx_ok": 3.0,
 				"ang_ok": 0.15,
@@ -88,7 +110,7 @@
 				{"speaker": "ARMSTRONG", "text": "Houston, Tranquility Base here. The Eagle has landed.", "sub": "Houston, aquí Base Tranquilidad. El Eagle ha alunizado."},
 				{"speaker": "CONTROL", "text": "Entendido, Tranquility. Os copiamos en la superficie."}
 			],
-			"verificar": "La velocidad y el combustible del descenso son valores de juego; la frase 'sesenta segundos de combustible' viene del guion del equipo."
+			"verificar": "La velocidad, el combustible, el piloto automático y el control por ritmo de clics del descenso son valores de juego; la frase 'sesenta segundos de combustible' viene del guion del equipo."
 		},
 		{
 			"id": "primer_paso",
@@ -96,7 +118,16 @@
 			"date": "JULIO 1969",
 			"objective": "INSTALAR EL EQUIPO EN LA SUPERFICIE",
 			"fuel": 100,
-			"cinematic_tag": "ARMSTRONG BAJA LA ESCALERA",
+			"cinematic": {
+				"cap_hatch": "21 JUL 1969 · 02:39 UT · SE ABRE LA ESCOTILLA",
+				"cap_ladder": "ARMSTRONG BAJA POR LA ESCALERA",
+				"cap_step": "02:56 UT · EL PRIMER PASO EN LA LUNA",
+				"cap_aldrin": "UNOS 19 MINUTOS DESPUÉS · BAJA ALDRIN",
+				"lines_aldrin": [
+					{"speaker": "CONTROL", "text": "Unos diecinueve minutos después, Buzz Aldrin baja por la misma escalera y también pisa la Luna."}
+				],
+				"verificar": "Escotilla 02:39 UT, primer paso 02:56:15 UT, Aldrin unos 19 minutos después (NSSDCA)."
+			},
 			"intro": [
 				{"speaker": "ARMSTRONG", "text": "That's one small step for man, one giant leap for mankind.", "sub": "Es un pequeño paso para el hombre, un gran salto para la humanidad."}
 			],
@@ -201,7 +232,19 @@
 			"date": "JULIO 1969",
 			"objective": "VER EL ACOPLAMIENTO",
 			"fuel": 0,
-			"cinematic_tag": "ACOPLAMIENTO CON LA COLUMBIA",
+			"cinematic": {
+				"cap_rendezvous": "21 JUL 1969 · EL EAGLE SUBE AL ENCUENTRO DE LA COLUMBIA",
+				"cap_dock": "21 JUL 1969 · ACOPLAMIENTO EN ÓRBITA LUNAR",
+				"docked": "¡ACOPLADOS!",
+				"cap_farewell": "22 JUL 1969 · LA COLUMBIA EMPRENDE EL REGRESO A LA TIERRA",
+				"lines_rendezvous": [
+					{"speaker": "CONTROL", "text": "El Eagle sube a una órbita más baja que la Columbia y la va alcanzando poco a poco. Collins lleva casi 28 horas solo, dando vueltas a la Luna."}
+				],
+				"lines_farewell": [
+					{"speaker": "CONTROL", "text": "Armstrong y Aldrin pasan a la Columbia con las cajas de muestras. El Eagle se suelta y se queda en órbita lunar; la Columbia enciende su motor rumbo a casa."}
+				],
+				"verificar": "Separación 20 jul 17:44 UT; acoplamiento 21 jul ~21:35 UT; encendido de regreso 22 jul ~04:55 UT."
+			},
 			"dialog": [
 				{"speaker": "COLLINS", "text": "Bienvenidos a casa."},
 				{"speaker": "ARMSTRONG", "text": "Gracias, Mike. Nos alegra estar contigo."}
@@ -232,12 +275,12 @@
 			["C · O · I", "controles, objetivos e información de la misión"]
 		],
 		"phases": [
-			{"tip": "Mira la telemetría: el combustible del descenso es lo que une toda la misión.", "keys": [["ENTER / CLIC", "ui_accept", "AVANZAR"]]},
-			{"tip": "Elige una zona sin cráteres. Frena con empuje corto y mantén el módulo nivelado.", "keys": [["W / ↑ / ESP", "thrust", "EMPUJE"], ["A / D", "", "INCLINAR"], ["ENTER / CLIC", "ui_accept", "ELEGIR ZONA"]]},
-			{"tip": "Cada punto es una acción sin fracaso. Haz clic en cada uno.", "keys": [["CLIC", "", "ACCIÓN"], ["1-4", "", "ACCIÓN"]]},
+			{"tip": "Mira el reloj de vuelo: cuenta cuánto tardó el viaje hasta la Luna.", "keys": [["ENTER / CLIC", "ui_accept", "AVANZAR"]]},
+			{"tip": "Elige una zona sin cráteres. Luego, con el ritmo de los clics, mantén el Eagle nivelado y dirígelo hacia esa zona.", "keys": [["ENTER / CLIC", "ui_accept", "ELEGIR ZONA"], ["CLIC / ESP", "thrust", "PULSO (RÁPIDO = IZQ.)"]]},
+			{"tip": "Mira la cinemática. Después, cada punto es una acción sin fracaso: haz clic en cada uno.", "keys": [["CLIC", "", "ACCIÓN"], ["1-4", "", "ACCIÓN"]]},
 			{"tip": "Recoge rocas al pasar por encima, vigila el oxígeno y no te alejes más de 100 m.", "keys": [["WASD / FLECHAS", "", "MOVERTE"]]},
 			{"tip": "Detén la barra en la zona verde. Después mantén el ángulo en la banda dorada.", "keys": [["ENTER / ESP / CLIC", "ui_accept", "DETENER"], ["A / D", "", "ÁNGULO"]]},
-			{"tip": "Este es el final del viaje.", "keys": [["ENTER / CLIC", "ui_accept", "CONTINUAR"]]}
+			{"tip": "Mira la cinemática del acoplamiento. Este es el final del viaje.", "keys": [["ENTER / CLIC", "ui_accept", "CONTINUAR"]]}
 		]
 	}
 }
