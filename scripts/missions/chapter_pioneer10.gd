@@ -56,6 +56,7 @@ var _static := 0.0
 var _static_decay := 0.0
 var _t := 0.0
 var _shake := 0.0
+var _glitch := 0.0           # interferencia al recibir daño (0-1)
 var _flash := 0.0
 var _mode := ""
 var _hl_rect := Rect2()
@@ -67,7 +68,7 @@ var _stage_y := 0.0
 var _probe_show := 0.0
 # Cinturón
 var _ship := Vector2(110, 144)
-var _asteroids: Array[Vector3] = []
+var _asteroids: Array = []        # cada asteroide es un Dictionary (posición, radio, velocidad, color...)
 var _shield := 5
 var _shield_max := 5
 var _invuln := 0.0
@@ -413,6 +414,7 @@ func toast(text: String, color: Color = YELLOW, seconds: float = 0.9) -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_flash = maxf(0.0, _flash - delta * 3.0)
+	_glitch = maxf(0.0, _glitch - delta * 3.5)
 	if _static_decay > 0.0:
 		_static = maxf(0.0, _static - _static_decay * delta)
 	if _shake > 0.0:
@@ -449,6 +451,14 @@ func _draw_data_panel() -> void:
 
 
 func _draw_static(c: DrawNode) -> void:
+	if _glitch > 0.0:
+		# Bandas de interferencia desplazadas, con borde cian: se ven en toda la pantalla.
+		for i in 8:
+			var yy := floorf(randf() * 350.0)
+			var hh := randf_range(2.0, 12.0)
+			var off := randf_range(-22.0, 22.0) * _glitch
+			c.draw_rect(Rect2(off, yy, W, hh), Color(1, 1, 1, 0.12 * _glitch))
+			c.draw_rect(Rect2(off + 5.0, yy, W, 2.0), Color(0.4, 1.0, 1.0, 0.3 * _glitch))
 	if _static <= 0.0:
 		return
 	var n := int(5000 * _static)
@@ -589,12 +599,7 @@ func _scene_belt(sc: Dictionary) -> void:
 		# Luz zodiacal: resplandor tenue que crece con el avance.
 		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1.0, 0.85, 0.5, 0.025 + 0.05 * _progress))
 		for a in _asteroids:
-			var pts := PackedVector2Array()
-			for k in 8:
-				var ang := k * TAU / 8.0
-				pts.append(Vector2(a.x, a.y) + Vector2(cos(ang), sin(ang)) * a.z * (0.78 + 0.22 * sin(k * 2.1 + a.y)))
-			c.draw_colored_polygon(pts, Color("#6e5f52"))
-			c.draw_rect(Rect2(a.x - a.z * 0.4, a.y - a.z * 0.5, 3, 2), Color("#9a8a78"))
+			_draw_asteroid(c, a)
 		var blink := _invuln > 0.0 and int(c.t * 14.0) % 2 == 0
 		if not blink:
 			PioneerArt.draw_pioneer(c, _ship, PI, 1.5)
@@ -615,30 +620,37 @@ func _scene_belt(sc: Dictionary) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1972
 	var secs := float(mm["seconds"])
-	var gap_c := 144.0
-	var spawn := 0.4
+	var speed := float(mm["ship_speed"])
+	var spawn := 0.8
+	var last_y := 144.0
 	while _progress < 1.0 and not _depleted:
 		await get_tree().process_frame
 		if get_tree().paused:
 			continue
 		var dt := get_process_delta_time()
 		_invuln = maxf(0.0, _invuln - dt)
-		var dir := Input.get_axis("thrust", "move_down")
-		_ship.y = clampf(_ship.y + dir * 125.0 * dt, GAME_TOP + 20.0, GAME_BOTTOM - 20.0)
+		# Movimiento en 8 direcciones (WASD o flechas); en diagonal no va más rápido.
+		var mv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
+		if mv.length() > 1.0:
+			mv = mv.normalized()
+		_ship = (_ship + mv * speed * dt).clamp(Vector2(50, GAME_TOP + 20), Vector2(400, GAME_BOTTOM - 20))
 		_progress = minf(1.0, _progress + dt / secs)
 		_drain(float(mm["energy_per_second"]) * dt)
 		spawn -= dt
-		if spawn <= 0.0 and _progress < 0.93:
-			spawn = rng.randf_range(1.7, 2.3)
-			gap_c = clampf(gap_c + rng.randf_range(-75.0, 75.0), GAME_TOP + 62.0, GAME_BOTTOM - 62.0)
-			_spawn_wall(rng, gap_c)
-		var keep: Array[Vector3] = []
+		if spawn <= 0.0 and _progress < 0.95:
+			var iv: Array = mm["spawn_interval"]
+			spawn = rng.randf_range(float(iv[0]), float(iv[1]))
+			last_y = _spawn_asteroids(rng, mm, last_y)
+		var keep: Array = []
 		for a in _asteroids:
-			var v := Vector3(a.x - 95.0 * dt, a.y, a.z)
-			if _invuln <= 0.0 and Vector2(v.x, v.y).distance_to(_ship) < v.z + 8.0:
+			a["x"] = float(a["x"]) + float(a["vx"]) * dt
+			a["y"] = float(a["y"]) + float(a["vy"]) * dt
+			a["rot"] = float(a["rot"]) + float(a["spin"]) * dt
+			var ap := Vector2(float(a["x"]), float(a["y"]))
+			if _invuln <= 0.0 and ap.distance_to(_ship) < float(a["r"]) * 0.88 + 7.0:
 				_on_belt_hit(mm)
-			if v.x > -30.0:
-				keep.append(v)
+			if ap.x > -50.0 and ap.y > GAME_TOP - 50.0 and ap.y < GAME_BOTTOM + 50.0:
+				keep.append(a)
 		_asteroids = keep
 		_mm_info.text = "%s · %s: %d" % [mm["instruction"], mm["counter"], int(_progress * 12.0)]
 	_mode = ""
@@ -648,19 +660,52 @@ func _scene_belt(sc: Dictionary) -> void:
 	await say(sc["outro"])
 
 
-## Una columna de asteroides con una "ventana" (hueco) por la que pasar.
-func _spawn_wall(rng: RandomNumberGenerator, gap_c: float) -> void:
-	var half := 50.0
-	var y := gap_c - half
-	while y > GAME_TOP - 4.0:
-		var r := rng.randf_range(11.0, 15.0)
-		_asteroids.append(Vector3(670.0 + rng.randf_range(-8.0, 8.0), y - r, r))
-		y -= r * 1.8
-	y = gap_c + half
-	while y < GAME_BOTTOM + 4.0:
-		var r := rng.randf_range(11.0, 15.0)
-		_asteroids.append(Vector3(670.0 + rng.randf_range(-8.0, 8.0), y + r, r))
-		y += r * 1.8
+## Crea uno o dos asteroides dispersos: tamaños, velocidades y colores variados. Devuelve la última Y.
+func _spawn_asteroids(rng: RandomNumberGenerator, mm: Dictionary, last_y: float) -> float:
+	var n := 2 if rng.randf() < float(mm["pair_chance"]) else 1
+	var palette: Array = mm["asteroid_colors"]
+	var rr: Array = mm["radius_range"]
+	var y := last_y
+	var first_y := -1000.0
+	for k in n:
+		# Lejos del asteroide anterior, para que queden esparcidos y haya por dónde pasar.
+		for tries in 8:
+			y = rng.randf_range(GAME_TOP + 14.0, GAME_BOTTOM - 14.0)
+			if absf(y - last_y) > 48.0 and absf(y - first_y) > 80.0:
+				break
+		first_y = y
+		var r := lerpf(float(rr[0]), float(rr[1]), pow(rng.randf(), 1.7))   # pocos grandes, más pequeños
+		var fast := rng.randf() < float(mm["fast_chance"])
+		var sp: Array = mm["speed_fast"] if fast else mm["speed_slow"]
+		var base := Color(String(palette[rng.randi() % palette.size()]))
+		if fast:
+			base = base.lightened(0.18)
+		base.a = rng.randf_range(0.55, 1.0)
+		_asteroids.append({
+			"x": W + 30.0 + r, "y": y, "r": r,
+			"vx": -rng.randf_range(float(sp[0]), float(sp[1])),
+			"vy": rng.randf_range(-24.0, 24.0) if rng.randf() < 0.45 else 0.0,
+			"rot": rng.randf() * TAU, "spin": rng.randf_range(-1.5, 1.5),
+			"seed": rng.randf() * 10.0, "col": base, "fast": fast,
+		})
+		last_y = y
+	return last_y
+
+
+func _draw_asteroid(c: CanvasItem, a: Dictionary) -> void:
+	var p := Vector2(float(a["x"]), float(a["y"]))
+	var r := float(a["r"])
+	var col: Color = a["col"]
+	if bool(a["fast"]):
+		# Estela: se nota a simple vista cuáles vienen más rápido.
+		c.draw_line(p + Vector2(r * 0.6, 0), p + Vector2(r * 0.6 + 26.0 + r, 0), Color(col, 0.28), maxf(2.0, r * 0.6))
+	var pts := PackedVector2Array()
+	for k in 9:
+		var ang := float(a["rot"]) + k * TAU / 9.0
+		pts.append(p + Vector2(cos(ang), sin(ang)) * r * (0.76 + 0.24 * sin(k * 2.3 + float(a["seed"]))))
+	c.draw_colored_polygon(pts, col)
+	c.draw_circle(p + Vector2(-r * 0.3, -r * 0.3), maxf(1.5, r * 0.18), Color(1, 1, 1, 0.16 * col.a))
+	c.draw_circle(p + Vector2(r * 0.25, r * 0.3), maxf(1.2, r * 0.13), Color(0, 0, 0, 0.22))
 
 
 func _on_belt_hit(mm: Dictionary) -> void:
@@ -668,6 +713,10 @@ func _on_belt_hit(mm: Dictionary) -> void:
 	_invuln = 1.3
 	_shake = 6.0
 	_flash = 1.0
+	# Interferencia breve en toda la pantalla.
+	_glitch = 1.0
+	_static = 0.6
+	_static_decay = 2.6
 	if _shield <= 0:
 		# Sin escudo: se pierde tiempo de vuelo y energía, pero no hay "muerte".
 		_progress = maxf(0.0, _progress - 0.15)
