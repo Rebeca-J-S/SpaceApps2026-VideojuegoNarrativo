@@ -105,6 +105,18 @@ var _pol: Dictionary = {}
 var _tone: AudioStreamPlayer
 var _shutter: AudioStreamPlayer
 # Silencio
+# Fase 3 · Cinemática de la tormenta y la magnetosfera
+var _st_shot := 0          # 0 Sol y tormenta · 1 antena · 2 magnetosfera de Júpiter
+var _st_flare := 0.0
+var _st_wave := -1.0       # avance del frente de partículas (0-1)
+var _st_ant := 0.0         # desvío de la antena respecto a la Tierra (radianes)
+var _st_drift := 0.0
+var _st_signal := 1.0
+var _st_jup := 0.0
+var _st_temp := 1.0        # temperatura del plasma relativa a la de fuera (x1 a x100)
+var _st_cross := 0.0
+var _st_bars := 0.0        # franjas negras de cine
+
 var _sil_year := 1976.0
 var _sil_log: Array = []
 var _sil_frac := 0.0
@@ -115,13 +127,28 @@ var _sun := Vector2.ZERO
 var _cursor := Vector2(200, 159)
 var _proposal := Vector2.ZERO
 var _has_prop := false
-var _signs: Array = []
 var _best_pct := 100.0
 var _last_pct := 100.0
 var _frags := 0
-var _attempts := 0
 var _plate_won := false
 var _plate_mm: Dictionary = {}
+var _decoded: Array = []             # un bool por púlsar: ¿ya se reveló su círculo?
+var _tune_i := -1                    # púlsar que se está sincronizando
+var _tune_t := 0.0                   # segundos desde que empezó la sincronización
+var _tune_beat := 1.0                # duración de un "tiempo" (múltiplo del periodo del púlsar)
+var _tune_tol := 0.15                # margen para pulsar a tiempo (s)
+var _tune_hits := 0                  # aciertos seguidos
+var _tune_miss := 0
+var _tune_judged := 2                # último tiempo ya juzgado (los dos primeros son de escucha)
+var _tune_next_blip := 1
+var _tune_flash := 0.0
+var _blip: AudioStreamPlayer
+var _revealed: Array = []            # púlsares que ya "latieron" en el revelado final
+var _rev_rings: Array = []           # ondas que viajan de cada púlsar hasta el Sol
+var _rev_glow := 0.0                 # brillo del Sol (0-1) a medida que llegan los pulsos
+var _rev_flare := 0.0
+var _reveal_done := false
+var _buzz: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -447,6 +474,7 @@ func _process(delta: float) -> void:
 	_t += delta
 	_flash = maxf(0.0, _flash - delta * 3.0)
 	_glitch = maxf(0.0, _glitch - delta * 3.5)
+	_rev_flare = maxf(0.0, _rev_flare - delta * 2.2)
 	if _rk_state == 2:
 		_cruise += delta
 		_recede = _cruise * 4.0
@@ -528,7 +556,7 @@ func _speaker_color(key: String) -> Color:
 
 
 # =========================================================================
-# Aviso inicial y pantalla de cinemática pendiente
+# Aviso inicial
 # =========================================================================
 func _disclaimer() -> void:
 	_set_year("")
@@ -550,24 +578,6 @@ func _disclaimer() -> void:
 	await wait_click_or_accept(4.0)
 	panel.queue_free()
 	h.queue_free()
-	l.queue_free()
-
-
-## Marcador de posición para las cinemáticas que todavía no existen: solo un mensaje en pantalla.
-func _cinematic_pending(tag: String) -> void:
-	var panel := ColorRect.new()
-	panel.color = Color.BLACK
-	panel.position = Vector2(0, GAME_TOP)
-	panel.size = Vector2(W, GAME_BOTTOM - GAME_TOP)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui_layer.add_child(panel)
-	var l := _label(Vector2(0, 100), Vector2(W, 30), 22, RetroTheme.AMBER, ui_layer)
-	l.text = String(data["cinematic_pending"])
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# `tag` identifica qué cinemática falta (queda en el JSON); en pantalla solo va el mensaje.
-	await wait(0.3)
-	await wait_click_or_accept(3.0)
-	panel.queue_free()
 	l.queue_free()
 
 
@@ -1055,8 +1065,6 @@ func _scene_jupiter(sc: Dictionary) -> void:
 		await toast(String(mm["damaged"]), RED, 2.0)
 		_drain(float(mm["damaged_energy_cost"]))
 		await say(sc["outro_partial"])
-	# Io: escena cinemática (aún no existe).
-	await _cinematic_pending(String(sc["io_tag"]))
 
 
 ## Pico de radiación: estática en toda la pantalla durante medio segundo y aviso en grande.
@@ -1382,11 +1390,198 @@ func _draw_polaroid(c: CanvasItem) -> void:
 # =========================================================================
 # FASE 3 · Tormenta y magnetosfera (cinemática pendiente)
 # =========================================================================
+## Cinemática en tres planos: el Sol lanza la tormenta (Pioneer 9 y 10 la registran), la
+## tormenta sacude la nave (única acción: apuntar la antena a la Tierra) y la nave cruza la
+## magnetosfera de Júpiter mientras la temperatura del plasma sube unas cien veces.
 func _scene_storm(sc: Dictionary) -> void:
-	_stars()
-	await _cinematic_pending(String(sc["cinematic_tag"]))
+	var cin: Dictionary = sc["cinematic"]
+	_st_shot = 0
+	_st_flare = 0.0
+	_st_wave = -1.0
+	_st_ant = 0.0
+	_st_drift = 0.0
+	_st_signal = 1.0
+	_st_jup = 0.0
+	_st_temp = 1.0
+	_st_cross = 0.0
+	_st_bars = 0.0
+	_stars(Vector2(-4, 0), 120)
+	_layer(_draw_storm.bind(cin))
+	var tw := create_tween()
+	tw.tween_property(self, "_st_bars", 1.0, 0.6)
+	await tw.finished
+
+	# Plano 1: erupción solar y frente de partículas.
+	var t1 := create_tween()
+	t1.tween_property(self, "_st_flare", 1.0, 1.4).set_trans(Tween.TRANS_SINE)
+	await t1.finished
+	var t2 := create_tween()
+	t2.tween_property(self, "_st_wave", 0.45, 2.2)
+	if not _retry:
+		await say(cin["lines_storm"])
+	if t2.is_running():
+		await t2.finished
+
+	# Plano 2: la tormenta golpea la nave. El jugador mantiene la antena sobre la Tierra.
+	_st_shot = 1
+	_st_wave = 0.0
+	var t3 := create_tween()
+	t3.tween_property(self, "_st_wave", 1.0, 1.6)
+	await t3.finished
+	_shake = 5.0
+	_glitch = 0.8
+	await say(cin["lines_antenna"])
+	_mm_title.text = String(cin["antenna_title"])
+	_mm_info.text = String(cin["antenna_info"])
+	var tol := deg_to_rad(float(cin["antenna_tol_deg"]))
+	var secs := float(cin["antenna_seconds"])
+	var elapsed := 0.0
+	var off_time := 0.0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1973
+	_st_drift = 0.9
+	while elapsed < secs:
+		await get_tree().process_frame
+		if get_tree().paused:
+			continue
+		var dt := get_process_delta_time()
+		elapsed += dt
+		# Las ráfagas de la tormenta empujan la nave; cambian de sentido cada cierto tiempo.
+		if rng.randf() < dt * 0.9:
+			_st_drift = rng.randf_range(0.7, 1.3) * (-1.0 if _st_drift > 0.0 else 1.0)
+			_shake = maxf(_shake, 3.0)
+		var turn := Input.get_action_strength("rotate_right") - Input.get_action_strength("rotate_left")
+		_st_ant = clampf(_st_ant + (_st_drift * 0.55 + turn * 1.6) * dt, -PI * 0.5, PI * 0.5)
+		var ok := absf(_st_ant) <= tol
+		_st_signal = clampf(_st_signal + (0.5 if ok else -0.7) * dt, 0.0, 1.0)
+		_static = (1.0 - _st_signal) * 0.35
+		if not ok:
+			off_time += dt
+			_drain(float(sc["antenna_drain"]) * dt)
+			if _depleted:
+				return
+		_mm_info.text = "%s · %s %d%%%s" % [cin["antenna_info"], cin["signal"], int(_st_signal * 100.0), "" if ok else "   " + String(cin["lost"])]
+	_mm_title.text = ""
+	_mm_info.text = ""
+	_static = 0.0
+	var t4 := create_tween()
+	t4.tween_property(self, "_st_ant", 0.0, 0.5)
+	await say(cin["lines_antenna_ok"] if off_time < secs * 0.35 else cin["lines_antenna_bad"])
+
+	# Plano 3: Júpiter y su magnetosfera; la temperatura del plasma sube.
+	_st_shot = 2
+	var t5 := create_tween()
+	t5.tween_property(self, "_st_jup", 1.0, 2.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	await t5.finished
+	var t6 := create_tween()
+	t6.tween_property(self, "_st_cross", 1.0, 3.0).set_trans(Tween.TRANS_SINE)
+	t6.parallel().tween_property(self, "_st_temp", 100.0, 3.0).set_delay(1.2).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	await say(cin["lines_magnetosphere"])
+	if t6.is_running():
+		await t6.finished
+	await wait(0.6)
+	var t7 := create_tween()
+	t7.tween_property(self, "_st_bars", 0.0, 0.5)
+	await t7.finished
 	_drain(float(sc["energy_cost"]))
 	await say(sc["outro"])
+
+
+func _draw_storm(c: DrawNode, cin: Dictionary) -> void:
+	var font := ThemeDB.fallback_font
+	var cy := 146.0
+	if _st_shot == 0:
+		# Sol a la izquierda con la erupción; Pioneer 9 cerca, Pioneer 10 lejos.
+		var sun := Vector2(-40, cy)
+		for k in 6:
+			c.draw_circle(sun, 96.0 + k * 9.0 + _st_flare * 10.0, Color(1.0, 0.6, 0.15, 0.05))
+		c.draw_circle(sun, 92.0, Color("#ffb347"))
+		c.draw_circle(sun, 80.0, Color("#ffd24a"))
+		# Prominencia que crece.
+		var fl := _st_flare
+		for i in 9:
+			var a := -0.5 + i * 0.12
+			var r := 92.0 + fl * (30.0 + 22.0 * sin(c.t * 5.0 + i))
+			c.draw_line(sun + Vector2(cos(a), sin(a)) * 88.0, sun + Vector2(cos(a), sin(a)) * r, Color(1.0, 0.45, 0.1, 0.8 * fl), 3.0)
+		_draw_wave(c, sun, lerpf(100.0, 700.0, clampf(_st_wave, 0.0, 1.0)))
+		var p9 := Vector2(210, cy + 36)
+		PioneerArt.draw_pioneer(c, p9, PI, 1.0)
+		c.draw_string(font, p9 + Vector2(-26, 22), String(cin["pioneer9"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+		var p10 := Vector2(520, cy - 30)
+		PioneerArt.draw_pioneer(c, p10, PI, 1.4)
+		c.draw_string(font, p10 + Vector2(-30, 28), String(cin["pioneer10"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
+		c.draw_string(font, Vector2(14, GAME_BOTTOM - 40), String(cin["sun"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#ffd24a"))
+		if _st_wave > 0.0:
+			c.draw_string(font, Vector2(150, GAME_TOP + 46), String(cin["storm_label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1.0, 0.6, 0.3, 0.9))
+	elif _st_shot == 1:
+		# Primer plano: la nave, la Tierra (abajo a la izquierda) y el haz de la antena.
+		var probe := Vector2(390, cy - 6)
+		var earth := Vector2(70, GAME_BOTTOM - 46)
+		var base := (earth - probe).angle()
+		var ang := base + _st_ant
+		_draw_wave(c, Vector2(-500, cy), lerpf(700.0, 1300.0, _st_wave))
+		c.draw_circle(earth, 9.0, Color("#3a7bd5"))
+		c.draw_circle(earth + Vector2(-2, -2), 4.0, Color("#5fbf6a"))
+		c.draw_string(font, earth + Vector2(-16, 22), String(cin["earth"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+		var tol := deg_to_rad(float(cin["antenna_tol_deg"]))
+		var ok := absf(_st_ant) <= tol
+		var beam := Color(RetroTheme.PHOSPHOR, 0.35) if ok else Color(RED, 0.3)
+		var far := probe.distance_to(earth) + 30.0
+		var half := 0.07
+		c.draw_colored_polygon(PackedVector2Array([probe, probe + Vector2.from_angle(ang - half) * far, probe + Vector2.from_angle(ang + half) * far]), beam)
+		PioneerArt.draw_pioneer(c, probe, ang, 3.0)
+		# Medidor de señal.
+		var bar := Rect2(470, GAME_TOP + 60, 140, 8)
+		c.draw_string(font, bar.position + Vector2(0, -4), String(cin["signal"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+		c.draw_rect(bar, Color(0, 0, 0, 0.6))
+		c.draw_rect(Rect2(bar.position, Vector2(bar.size.x * _st_signal, bar.size.y)), RetroTheme.PHOSPHOR if ok else RED)
+		c.draw_rect(bar, Color(1, 1, 1, 0.5), false, 1.0)
+	else:
+		# Júpiter entra por la derecha; la nave cruza las líneas de la magnetosfera.
+		var jc := Vector2(lerpf(860.0, 600.0, _st_jup), cy)
+		for k in 5:
+			var r := 230.0 + k * 34.0
+			var col := Color(0.4, 0.9, 1.0, 0.14 + 0.05 * sin(c.t * 2.0 + k))
+			c.draw_arc(jc, r, PI * 0.62, PI * 1.38, 48, col, 2.0)
+		c.draw_arc(jc, 400.0, PI * 0.68, PI * 1.32, 48, Color(0.5, 1.0, 1.0, 0.55), 2.0)
+		c.draw_circle(jc, 150.0, Color("#b98a5e"))
+		for k in range(-6, 7):
+			var dy := k * 22.0
+			var wch := 2.0 * sqrt(maxf(0.0, 150.0 * 150.0 - dy * dy))
+			c.draw_rect(Rect2(jc.x - wch * 0.5, jc.y + dy - 6.0, wch, 11.0), Color(Color("#d8b48a") if k % 2 == 0 else Color("#9a6a44"), 0.6))
+		c.draw_string(font, Vector2(jc.x - 388, GAME_BOTTOM - 26), String(cin["magnetosphere"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.6, 1.0, 1.0, 0.9 * _st_jup))
+		var probe := Vector2(lerpf(40.0, 300.0, _st_cross), cy - 30.0 + 14.0 * _st_cross)
+		PioneerArt.draw_pioneer(c, probe, PI * 0.88, 1.6)
+		var inside := probe.distance_to(jc) < 400.0
+		if inside:
+			c.draw_circle(probe, 16.0 + 3.0 * sin(c.t * 9.0), Color(1.0, 0.45, 0.2, 0.18))
+		var tx := 20.0
+		var ty := GAME_TOP + 60.0
+		c.draw_string(font, Vector2(tx, ty), String(cin["temperature"]) % int(round(_st_temp)), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW if _st_temp < 50.0 else RED)
+		var bar := Rect2(tx, ty + 5, 150, 7)
+		c.draw_rect(bar, Color(0, 0, 0, 0.6))
+		c.draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(_st_temp / 100.0, 0.0, 1.0), bar.size.y)), YELLOW.lerp(RED, clampf(_st_temp / 100.0, 0.0, 1.0)))
+		c.draw_rect(bar, Color(1, 1, 1, 0.5), false, 1.0)
+	# Franjas de cine.
+	var bh := 18.0 * _st_bars
+	if bh > 0.0:
+		c.draw_rect(Rect2(0, GAME_TOP, W, bh), Color.BLACK)
+		c.draw_rect(Rect2(0, GAME_BOTTOM - bh, W, bh), Color.BLACK)
+
+
+## Frente de la tormenta: arco de partículas que avanza desde el Sol.
+func _draw_wave(c: DrawNode, origin: Vector2, radius: float) -> void:
+	if radius <= 0.0:
+		return
+	for k in 3:
+		var r := radius - k * 18.0
+		if r > 0.0:
+			c.draw_arc(origin, r, -0.9, 0.9, 40, Color(1.0, 0.55, 0.2, 0.35 - k * 0.1), 3.0)
+	for i in 70:
+		var a := -0.9 + 1.8 * fposmod(i * 0.618, 1.0)
+		var rr := radius - fposmod(i * 7.3 + c.t * 40.0, 60.0)
+		if rr > 0.0:
+			c.draw_rect(Rect2(origin + Vector2.from_angle(a) * rr, Vector2(2, 1)), Color(1.0, 0.8, 0.4, 0.7))
 
 
 # =========================================================================
@@ -1477,83 +1672,212 @@ func _scene_plate(sc: Dictionary) -> void:
 	var mm := _plate_mm
 	_sun = MAP.position + Vector2(MAP.size.x * 0.52, MAP.size.y * 0.5)
 	_pulsars.clear()
+	_decoded.clear()
 	for p in mm["pulsars"]:
 		var a := deg_to_rad(float(p["angle"]))
 		var d := float(p["dist"])
 		var pos := (_sun + Vector2(cos(a), sin(a)) * d).clamp(MAP.position + Vector2(8, 8), MAP.end - Vector2(8, 8))
 		_pulsars.append({"id": String(p["id"]), "period": float(p["period_s"]), "pos": pos, "len": pos.distance_to(_sun)})
+		_decoded.append(false)
 	_cursor = MAP.get_center()
 	_has_prop = false
-	_signs.clear()
 	_best_pct = 100.0
 	_last_pct = 100.0
 	_frags = 0
 	_plate_won = false
-	_attempts = _attempts_for_energy(mm)
+	_tune_i = -1
+	_revealed.clear()
+	for k in _pulsars.size():
+		_revealed.append(false)
+	_rev_rings.clear()
+	_rev_glow = 0.0
+	_rev_flare = 0.0
+	_reveal_done = false
+	_tune_flash = 0.0
 	_static_decay = 0.9
 	_stars()
+	_setup_plate_audio()
 	_layer(_draw_plate)
 	if not _retry:
 		await say(sc["intro"])
 	_mm_title.text = String(mm["title"])
-	_mm_info.text = String(mm["instruction"])
 	_mode = "plate"
-	var failed := 0
-	var hint_shown := false
 	while not _plate_won:
 		await get_tree().process_frame
 		if get_tree().paused:
 			continue
 		var dt := get_process_delta_time()
-		var mv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
-		_cursor = (_cursor + mv * 130.0 * dt).clamp(MAP.position, MAP.end)
-		if _attempts <= 0 and not _plate_won:
-			# Se agotaron los intentos: la señal se pierde y se vuelve a empezar.
-			_mode = ""
-			_static = 0.9
-			await toast(String(mm["lose"]), RED, 2.4)
-			_frags = 0
-			_best_pct = 100.0
-			_has_prop = false
-			_signs.clear()
-			_attempts = _attempts_for_energy(mm)
-			_mode = "plate"
-		if not hint_shown and failed >= int(mm["hint_after"]) and not _plate_won:
-			hint_shown = true
-			dialog.show_hint("CONTROLADORA", String(mm["hint"]), 8.0)
-		failed = maxi(failed, int(_attempts_used))
+		_tune_flash = maxf(0.0, _tune_flash - dt * 4.0)
+		if _mode == "tune":
+			_tune_step(dt)
+		else:
+			var mv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
+			_cursor = (_cursor + mv * 130.0 * dt).clamp(MAP.position, MAP.end)
+		var n_dec := _decoded.count(true)
+		if _mode == "tune":
+			_mm_info.text = String(mm["tuning"])
+		elif n_dec < int(mm["needed"]):
+			_mm_info.text = "%s  (%d/%d)" % [mm["step1"], n_dec, int(mm["needed"])]
+		else:
+			_mm_info.text = String(mm["step2"])
 	_mode = ""
 	_static = 0.0
-	await wait(0.6)
+	await wait(0.5)
+	await _plate_reveal(mm)
+	await toast(String(mm["verify"]), RetroTheme.PHOSPHOR, 2.0)
 	await toast(String(sc["reward"]), YELLOW, 2.8)
 	await say(sc["outro"])
 
 
-var _attempts_used := 0
+## Al encontrar el Sol: los demás púlsares laten uno a uno y su onda viaja hasta el punto; con cada
+## pulso el Sol brilla un poco más, hasta que se ve claramente. (No se dibujan todos los círculos a la vez.)
+func _plate_reveal(mm: Dictionary) -> void:
+	var order: Array = []
+	for i in _pulsars.size():
+		if not _decoded[i]:
+			order.append(i)
+	order.sort_custom(func(a: int, b: int) -> bool: return float(_pulsars[a]["len"]) < float(_pulsars[b]["len"]))
+	var gap := float(mm["reveal_gap"])
+	var travel := float(mm["reveal_travel"])
+	var total := order.size()
+	var start := _t
+	var launched := 0
+	var arrived := 0
+	while arrived < total:
+		await get_tree().process_frame
+		if get_tree().paused:
+			continue
+		var el := _t - start
+		while launched < total and el >= float(launched) * gap:
+			_rev_rings.append({"i": order[launched], "t0": _t, "arrived": false})
+			_play_plate(_blip, 0.7 + 0.05 * float(launched))   # cada púlsar suena un poco más agudo
+			launched += 1
+		for ring in _rev_rings:
+			if not bool(ring["arrived"]) and _t - float(ring["t0"]) >= travel:
+				ring["arrived"] = true
+				arrived += 1
+				_revealed[int(ring["i"])] = true
+				_rev_glow = float(arrived) / float(total)
+				_rev_flare = 0.5
+	# El Sol queda encendido: se encontró.
+	_rev_flare = 1.0
+	_play_plate(_blip, 2.0)
+	_flash = 0.5
+	await wait(0.7)
+	_reveal_done = true
 
 
-func _attempts_for_energy(mm: Dictionary) -> int:
-	_attempts_used = 0
-	var n := int(mm["base_attempts"]) + int(_energy / float(mm["energy_per_attempt"]))
-	return clampi(n, int(mm["base_attempts"]), int(mm["max_attempts"]))
+func _drain_plate(amount: float) -> void:
+	_energy = maxf(3.0, _energy - amount)   # la energía baja, pero esta fase no se pierde por eso
 
 
+## Índice del púlsar más cercano a `pos` (a menos de 16 px) o -1.
+func _pick_pulsar(pos: Vector2) -> int:
+	var best := -1
+	var bd := 16.0
+	for i in _pulsars.size():
+		var d := pos.distance_to(_pulsars[i]["pos"])
+		if d < bd:
+			bd = d
+			best = i
+	return best
+
+
+## Clic o ENTER en el mapa: sobre un púlsar empieza a sincronizarlo; en otro sitio propone la posición del Sol.
+func _plate_action(pos: Vector2) -> void:
+	var i := _pick_pulsar(pos)
+	if i >= 0:
+		if _decoded[i]:
+			toast("PÚLSAR %s YA SINCRONIZADO" % _pulsars[i]["id"], RetroTheme.WHITE, 0.8)
+		else:
+			_begin_tune(i)
+		return
+	_propose(pos)
+
+
+# --- Sincronizar el pulso de un púlsar (pulsar al ritmo de su destello) ---
+func _begin_tune(i: int) -> void:
+	var mm := _plate_mm
+	var period := float(_pulsars[i]["period"])
+	var k := maxi(1, int(ceil(float(mm["min_beat"]) / period)))   # los púlsares rápidos cuentan 1 de cada k destellos
+	_tune_i = i
+	_tune_beat = period * float(k)
+	# El margen crece con la duración del tiempo: los púlsares lentos son mucho más fáciles de atinar.
+	_tune_tol = clampf(_tune_beat * float(mm["tolerance_ratio"]), 0.12, float(mm["tolerance"]))
+	_tune_t = 0.0
+	_tune_hits = 0
+	_tune_miss = 0
+	_tune_judged = 2
+	_tune_next_blip = 1
+	_mode = "tune"
+
+
+func _tune_step(dt: float) -> void:
+	_tune_t += dt
+	while _tune_t >= float(_tune_next_blip) * _tune_beat:
+		_tune_next_blip += 1
+		_play_plate(_blip, 1.0)
+		_tune_flash = 1.0
+	# Un tiempo que pasó sin pulsar cuenta como fallo (los dos primeros son de escucha).
+	while _mode == "tune" and _tune_t > float(_tune_judged + 1) * _tune_beat + _tune_tol:
+		_tune_judged += 1
+		if _tune_judged >= 3:
+			_tune_register_miss()
+
+
+func _tune_tap() -> void:
+	if _mode != "tune":
+		return
+	var n := int(round(_tune_t / _tune_beat))
+	if n <= 2 or n <= _tune_judged:
+		return   # escucha, o ese tiempo ya se juzgó
+	if absf(_tune_t - float(n) * _tune_beat) <= _tune_tol:
+		_tune_judged = n
+		_tune_hits += 1
+		_play_plate(_blip, 1.7)
+		_flash = 0.25
+		if _tune_hits >= int(_plate_mm["streak_needed"]):
+			_tune_success()
+	else:
+		_tune_register_miss()
+
+
+func _tune_register_miss() -> void:
+	_tune_hits = 0
+	_tune_miss += 1
+	_drain_plate(float(_plate_mm["miss_energy"]))
+	_play_plate(_buzz, 1.0)
+	_static = 0.3
+	if _tune_miss >= 3:
+		var mm := _plate_mm
+		_mode = "plate"
+		_tune_i = -1
+		toast(String(mm["tune_fail"]), RED, 1.4)
+
+
+func _tune_success() -> void:
+	var id := String(_pulsars[_tune_i]["id"])
+	_decoded[_tune_i] = true
+	_tune_i = -1
+	_mode = "plate"
+	_flash = 0.6
+	toast(String(_plate_mm["decoded"]) % id, YELLOW, 1.2)
+
+
+# --- Ubicar el Sol ---
 func _propose(pos: Vector2) -> void:
-	if _plate_won or _attempts <= 0 or not MAP.has_point(pos):
+	if _plate_won or not MAP.has_point(pos):
 		return
 	var mm := _plate_mm
+	if _decoded.count(true) < int(mm["needed"]):
+		toast(String(mm["need_more"]), RetroTheme.WHITE, 1.4)
+		return
 	var thr: Array = mm["thresholds_pct"]
 	var diag := MAP.size.length()
-	_attempts -= 1
-	_attempts_used += 1
 	_proposal = pos
 	_has_prop = true
 	_last_pct = pos.distance_to(_sun) / diag * 100.0
 	_best_pct = minf(_best_pct, _last_pct)
-	_signs.clear()
-	for p in _pulsars:
-		var diff := float(p["len"]) - pos.distance_to(p["pos"])
-		_signs.append("=" if absf(diff) <= 6.0 else ("+" if diff > 0.0 else "−"))
 	# Cada umbral superado descifra un fragmento del mensaje.
 	var unlocked := 0
 	for th in thr:
@@ -1564,6 +1888,8 @@ func _propose(pos: Vector2) -> void:
 		var names: Array = mm["fragments"]
 		toast(String(mm["unlock"]) % String(names[mini(_frags, names.size()) - 1]), YELLOW, 1.2)
 		_flash = 0.6
+	if _last_pct > float(thr[thr.size() - 1]):
+		_drain_plate(float(mm["wrong_energy"]))   # cada propuesta fallida gasta un poco de energía
 	if _last_pct > float(thr[0]):
 		_static = 0.45   # equivocarse mucho llena la pantalla de ruido
 	if _frags >= thr.size():
@@ -1571,9 +1897,57 @@ func _propose(pos: Vector2) -> void:
 		_static = 0.0
 
 
+func _setup_plate_audio() -> void:
+	_blip = AudioStreamPlayer.new()
+	_blip.stream = _make_blip()
+	_blip.volume_db = -12.0
+	world.add_child(_blip)
+	_buzz = AudioStreamPlayer.new()
+	_buzz.stream = _make_noise(0.16)
+	_buzz.volume_db = -14.0
+	world.add_child(_buzz)
+
+
+func _play_plate(player: AudioStreamPlayer, pitch: float) -> void:
+	if is_instance_valid(player):
+		player.pitch_scale = pitch
+		player.play()
+
+
+func _make_blip() -> AudioStreamWAV:
+	var rate := 22050
+	var count := int(rate * 0.09)
+	var bytes := PackedByteArray()
+	bytes.resize(count)
+	for i in count:
+		var env := 1.0 - float(i) / count
+		bytes[i] = int(sin(TAU * 660.0 * float(i) / rate) * 60.0 * env) & 0xFF
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_8_BITS
+	wav.mix_rate = rate
+	wav.stereo = false
+	wav.data = bytes
+	return wav
+
+
+## Círculo recortado al mapa (no se sale del recuadro).
+func _draw_map_circle(c: CanvasItem, center: Vector2, r: float, col: Color, width: float) -> void:
+	var prev := Vector2.ZERO
+	var prev_in := false
+	for k in 97:
+		var ang := TAU * float(k) / 96.0
+		var pt := center + Vector2(cos(ang), sin(ang)) * r
+		var inside := MAP.has_point(pt)
+		if prev_in and inside:
+			c.draw_line(prev, pt, col, width)
+		prev = pt
+		prev_in = inside
+
+
 func _draw_plate(c: DrawNode) -> void:
 	var mm := _plate_mm
 	var font := ThemeDB.fallback_font
+	var circle_cols: Array = [Color("#80f2ff"), Color("#ffd24a"), Color("#ff8ad0"), Color("#7aff9a")]
 	# Mapa de la galaxia con los 14 púlsares.
 	c.draw_rect(MAP, Color(0.02, 0.03, 0.09, 0.9))
 	c.draw_rect(MAP, Color(RetroTheme.PHOSPHOR, 0.6), false, 1.0)
@@ -1581,30 +1955,77 @@ func _draw_plate(c: DrawNode) -> void:
 		c.draw_line(MAP.position + Vector2(gx * MAP.size.x / 8.0, 0), MAP.position + Vector2(gx * MAP.size.x / 8.0, MAP.size.y), Color(1, 1, 1, 0.04), 1.0)
 	for gy in range(1, 4):
 		c.draw_line(MAP.position + Vector2(0, gy * MAP.size.y / 4.0), MAP.position + Vector2(MAP.size.x, gy * MAP.size.y / 4.0), Color(1, 1, 1, 0.04), 1.0)
-	# Líneas desde la propuesta hacia cada púlsar.
+	# Círculos: el radio de cada uno es la longitud de su línea en la placa. El Sol está donde se cruzan.
+	for i in _pulsars.size():
+		if _decoded[i]:
+			var cc: Color = circle_cols[i % circle_cols.size()]
+			_draw_map_circle(c, _pulsars[i]["pos"], float(_pulsars[i]["len"]), Color(cc, 0.8), 1.5)
+	# Líneas desde la propuesta hacia los púlsares ya sincronizados (todos si se acertó).
 	if _has_prop:
 		for i in _pulsars.size():
-			var col := RetroTheme.PHOSPHOR if _signs[i] == "=" else (YELLOW if _plate_won else Color("#ff9a7a"))
-			c.draw_line(_proposal, _pulsars[i]["pos"], Color(col, 0.5), 1.0)
+			if _decoded[i]:
+				var diff := absf(float(_pulsars[i]["len"]) - _proposal.distance_to(_pulsars[i]["pos"]))
+				var col := RetroTheme.PHOSPHOR if diff <= 6.0 else Color("#ff9a7a")
+				c.draw_line(_proposal, _pulsars[i]["pos"], Color(col, 0.55), 1.0)
 	for i in _pulsars.size():
 		var p: Dictionary = _pulsars[i]
 		var pos: Vector2 = p["pos"]
 		var period := maxf(float(p["period"]), 0.18)
 		var phase := fmod(c.t, period) / period
 		var lit := phase < 0.16
-		c.draw_circle(pos, 4.0 if lit else 2.5, Color("#ffffff") if lit else Color("#8aa0ff"))
+		var dot_col := Color("#ffffff") if lit else Color("#8aa0ff")
+		if _decoded[i] or _revealed[i]:
+			dot_col = circle_cols[i % circle_cols.size()]
+		c.draw_circle(pos, 4.0 if lit else 2.5, dot_col)
 		if lit:
 			c.draw_arc(pos, 8.0, 0.0, TAU, 14, Color(1, 1, 1, 0.5), 1.0)
 		c.draw_string(font, pos + Vector2(6, -4), "%s %.2fs" % [p["id"], p["period"]], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.8))
-		if _has_prop and i < _signs.size():
-			var sg: String = _signs[i]
-			c.draw_string(font, pos + Vector2(-4, 14), sg, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, RetroTheme.PHOSPHOR if sg == "=" else RED)
-	if _plate_won:
-		c.draw_circle(_sun, 6.0, YELLOW)
-		c.draw_arc(_sun, 10.0 + 2.0 * sin(c.t * 4.0), 0.0, TAU, 20, YELLOW, 1.0)
+		if _decoded[i] or _revealed[i]:
+			c.draw_line(pos + Vector2(-4, 12), pos + Vector2(-1, 15), RetroTheme.PHOSPHOR, 2.0)
+			c.draw_line(pos + Vector2(-1, 15), pos + Vector2(5, 8), RetroTheme.PHOSPHOR, 2.0)
+	# Sincronización: un anillo se cierra sobre el púlsar y hay que pulsar cuando lo alcanza.
+	if _tune_i >= 0:
+		var tp: Vector2 = _pulsars[_tune_i]["pos"]
+		var nb := int(floor(_tune_t / _tune_beat)) + 1
+		var prog := 1.0 - (float(nb) * _tune_beat - _tune_t) / _tune_beat
+		var ring_col := Color(1, 1, 1, 0.55) if nb <= 2 else YELLOW
+		c.draw_arc(tp, lerpf(38.0, 7.0, prog), 0.0, TAU, 36, ring_col, 2.0)
+		# Zona de acierto: la franja que se ve alrededor del púlsar es el margen para pulsar a tiempo.
+		var win_px := clampf(_tune_tol / _tune_beat * 31.0, 2.0, 12.0)
+		c.draw_arc(tp, 7.0 + win_px * 0.5, 0.0, TAU, 28, Color(RetroTheme.PHOSPHOR, 0.3), win_px)
+		c.draw_arc(tp, 7.0, 0.0, TAU, 20, Color(1, 1, 1, 0.9), 1.0)
+		if _tune_flash > 0.0:
+			c.draw_circle(tp, 5.0 + 10.0 * _tune_flash, Color(1, 1, 1, 0.45 * _tune_flash))
+		if nb <= 2:
+			c.draw_string(font, tp + Vector2(-20, -16), "ESCUCHA", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.8))
+		else:
+			c.draw_string(font, tp + Vector2(-8, -16), "¡YA!" if prog > 0.82 else "...", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
+	# Revelado: la onda de cada púlsar viaja hasta el Sol y luego se desvanece.
+	var travel := float(mm.get("reveal_travel", 0.55))
+	for ring in _rev_rings:
+		var age := _t - float(ring["t0"])
+		var rp := clampf(age / travel, 0.0, 1.0)
+		var alpha := 0.9 if age < travel else maxf(0.0, 1.0 - (age - travel) / 0.45) * 0.9
+		if alpha > 0.02:
+			var ri := int(ring["i"])
+			var rcol: Color = circle_cols[ri % circle_cols.size()]
+			var rpos: Vector2 = _pulsars[ri]["pos"]
+			_draw_map_circle(c, rpos, float(_pulsars[ri]["len"]) * (1.0 - pow(1.0 - rp, 2.0)), Color(rcol, alpha), 2.0)
+			if age < 0.18:
+				c.draw_circle(rpos, 7.0 - age * 20.0, Color(1, 1, 1, 0.7 - age * 3.0))   # el púlsar late
+	# El Sol brilla más con cada pulso que llega.
+	if _rev_glow > 0.0 or _reveal_done:
+		var g := 1.0 if _reveal_done else _rev_glow
+		c.draw_circle(_sun, 6.0 + 16.0 * g, Color(YELLOW, 0.10 + 0.10 * g))
+		c.draw_circle(_sun, 3.0 + 3.0 * g, Color(1.0, 0.95, 0.6, 0.35 + 0.65 * g))
+		if _rev_flare > 0.0:
+			c.draw_arc(_sun, 8.0 + (1.0 - _rev_flare) * 26.0, 0.0, TAU, 28, Color(YELLOW, _rev_flare * 0.8), 2.0)
+		if _reveal_done:
+			c.draw_arc(_sun, 11.0 + 2.0 * sin(c.t * 4.0), 0.0, TAU, 20, YELLOW, 1.0)
 	# Cursor y propuesta.
-	c.draw_line(_cursor + Vector2(-7, 0), _cursor + Vector2(7, 0), Color(1, 1, 1, 0.7), 1.0)
-	c.draw_line(_cursor + Vector2(0, -7), _cursor + Vector2(0, 7), Color(1, 1, 1, 0.7), 1.0)
+	if _tune_i < 0:
+		c.draw_line(_cursor + Vector2(-7, 0), _cursor + Vector2(7, 0), Color(1, 1, 1, 0.7), 1.0)
+		c.draw_line(_cursor + Vector2(0, -7), _cursor + Vector2(0, 7), Color(1, 1, 1, 0.7), 1.0)
 	if _has_prop:
 		c.draw_arc(_proposal, 5.0, 0.0, TAU, 12, YELLOW, 2.0)
 	# Placa: cuatro fragmentos que se van descifrando.
@@ -1622,16 +2043,28 @@ func _draw_plate(c: DrawNode) -> void:
 			for k in 24:
 				c.draw_rect(Rect2(cell.position + Vector2(randf() * 108.0, randf() * 48.0), Vector2(2, 1)), Color(1, 1, 1, 0.18))
 			c.draw_string(font, cell.position + Vector2(44, 32), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 1, 1, 0.3))
-	# Medidor de error, intentos y leyenda.
-	var err_col := RetroTheme.PHOSPHOR if _last_pct <= float(mm["thresholds_pct"][3]) else (YELLOW if _last_pct <= float(mm["thresholds_pct"][1]) else RED)
+	# Medidor de error y estado de la sincronización.
+	var thr: Array = mm["thresholds_pct"]
+	var err_col := RetroTheme.PHOSPHOR if _last_pct <= float(thr[3]) else (YELLOW if _last_pct <= float(thr[1]) else RED)
 	c.draw_string(font, Vector2(398, 202), "%s %s" % [mm["error_label"], ("--" if not _has_prop else "%d%%" % int(round(_last_pct)))], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, RetroTheme.WHITE)
 	var eb := Rect2(398, 208, 234, 8)
 	c.draw_rect(eb, Color(0, 0, 0, 0.6))
 	if _has_prop:
 		c.draw_rect(Rect2(eb.position, Vector2(eb.size.x * clampf(_last_pct / 50.0, 0.04, 1.0), eb.size.y)), err_col)
 	c.draw_rect(eb, err_col, false, 1.0)
-	c.draw_string(font, Vector2(398, 232), "%s: %d" % [mm["attempts_label"], _attempts], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW)
-	c.draw_string(font, Vector2(398, 248), String(mm["legend"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.75))
+	var needed := int(mm["needed"])
+	var n_dec := mini(_decoded.count(true), needed)
+	if _tune_i >= 0:
+		c.draw_string(font, Vector2(398, 232), "%s %s" % [mm["tune_title"], _pulsars[_tune_i]["id"]], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW)
+		var sn := int(mm["streak_needed"])
+		for k in sn:
+			c.draw_circle(Vector2(560 + k * 14, 229), 4.0, YELLOW if k < _tune_hits else Color(1, 1, 1, 0.2))
+		c.draw_string(font, Vector2(398, 248), "Fallos: %d/3" % _tune_miss, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#ff9a7a") if _tune_miss > 0 else Color(1, 1, 1, 0.6))
+	else:
+		c.draw_string(font, Vector2(398, 232), "%s: %d/%d" % [mm["sync_label"], n_dec, needed], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW)
+		for k in needed:
+			c.draw_circle(Vector2(560 + k * 14, 229), 4.0, YELLOW if k < n_dec else Color(1, 1, 1, 0.2))
+		c.draw_string(font, Vector2(398, 248), String(mm["legend"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.75))
 
 
 func _draw_fragment(c: DrawNode, i: int, cell: Rect2) -> void:
@@ -1736,9 +2169,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event is InputEventMouseMotion:
 				_cursor = get_local_mouse_position().clamp(MAP.position, MAP.end)
 			elif click:
-				_propose(get_local_mouse_position())
+				_plate_action(get_local_mouse_position())
 			elif event.is_action_pressed("ui_accept"):
-				_propose(_cursor)
+				_plate_action(_cursor)
+		"tune":
+			if click or event.is_action_pressed("ui_accept"):
+				_tune_tap()
 
 
 func _toggle_pause() -> void:

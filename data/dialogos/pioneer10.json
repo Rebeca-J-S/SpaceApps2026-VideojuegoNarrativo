@@ -1,8 +1,7 @@
 {
-	"_nota": "Capítulo PIONEER 10. El jugador es una controladora de vuelo (personaje imaginado) en Goldstone, California; la protagonista es la nave. La controladora nunca habla por la nave. Los hechos vienen de fuentes de la NASA. Las entradas 'verificar' son valores por confirmar. Las cinemáticas todavía no existen: se muestra la pantalla 'CINEMÁTICA PENDIENTE'.",
+	"_nota": "Capítulo PIONEER 10. El jugador es una controladora de vuelo (personaje imaginado) en Goldstone, California; la protagonista es la nave. La controladora nunca habla por la nave. Los hechos vienen de fuentes de la NASA. Las entradas 'verificar' son valores por confirmar. La Fase 3 (tormenta) tiene su cinemática.",
 	"disclaimer": "La controladora es un personaje imaginado.\nLa nave, las fechas y los hechos son reales.",
 	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
-	"cinematic_pending": "CINEMÁTICA PENDIENTE",
 	"speakers": {
 		"CONTROLADORA": {"name": "CONTROLADORA", "radio": false, "color": "#ffb347", "portrait": "controladora"},
 		"PIONEER": {"name": "PIONEER 10", "radio": true, "color": "#80f2ff", "portrait": "pioneer10"}
@@ -134,7 +133,6 @@
 			"outro_partial": [
 				{"speaker": "CONTROLADORA", "text": "La radiación venció a la cámara, pero guardamos las fotos que alcanzamos a tomar."}
 			],
-			"io_tag": "IO",
 			"outro": []
 		},
 		{
@@ -145,8 +143,41 @@
 			"energy": 80,
 			"show_progress": false,
 			"energy_cost": 4.0,
-			"cinematic_tag": "TORMENTA SOLAR Y MAGNETOSFERA",
-			"cinematic_notes": "Para la cinemática futura: tormenta solar registrada junto con la Pioneer 9 y temperatura que sube cien veces al entrar en la magnetosfera de Júpiter; única acción del jugador: apuntar la antena.",
+			"antenna_drain": 1.2,
+			"cinematic": {
+				"sun": "SOL",
+				"pioneer9": "PIONEER 9",
+				"pioneer10": "PIONEER 10",
+				"earth": "TIERRA",
+				"storm_label": "TORMENTA SOLAR",
+				"magnetosphere": "MAGNETOSFERA DE JÚPITER",
+				"jupiter": "JÚPITER",
+				"temperature": "TEMPERATURA DEL PLASMA  x%d",
+				"antenna_title": "APUNTA LA ANTENA A LA TIERRA",
+				"antenna_info": "A/D o ←/→: girar la antena · mantén el haz sobre la Tierra",
+				"signal": "SEÑAL",
+				"lost": "¡SEÑAL DÉBIL!",
+				"antenna_seconds": 9.0,
+				"antenna_tol_deg": 14.0,
+				"lines_storm": [
+					{"speaker": "CONTROLADORA", "text": "El Sol acaba de lanzar una tormenta: una nube enorme de partículas viaja por el espacio hacia la Pioneer 10."},
+					{"speaker": "CONTROLADORA", "text": "No es la única que la ve. La Pioneer 9, mucho más cerca del Sol, también la registra. Dos naves miden la misma tormenta desde lugares distintos."}
+				],
+				"lines_antenna": [
+					{"speaker": "CONTROLADORA", "text": "¡La tormenta llega a la nave y la sacude! Mantén su antena apuntando a la Tierra o perderemos la señal."}
+				],
+				"lines_antenna_ok": [
+					{"speaker": "CONTROLADORA", "text": "Pasó lo peor. La antena sigue mirando a casa y los datos de la tormenta llegaron a Goldstone."}
+				],
+				"lines_antenna_bad": [
+					{"speaker": "CONTROLADORA", "text": "Perdimos parte de la señal, pero la antena vuelve a mirar a casa. Los datos de la tormenta siguen llegando."}
+				],
+				"lines_magnetosphere": [
+					{"speaker": "CONTROLADORA", "text": "Noviembre de 1973. La Pioneer 10 cruza el borde de la magnetosfera de Júpiter: la enorme burbuja magnética que rodea al planeta."},
+					{"speaker": "CONTROLADORA", "text": "Al entrar, la temperatura del gas que la rodea sube unas cien veces. Sus instrumentos lo registran todo, por primera vez en la historia."}
+				],
+				"verificar": "La gran tormenta solar registrada a la vez por Pioneer 9 y Pioneer 10 fue en agosto de 1972 (la fase muestra 1973-1974). Cruce de la magnetosfera: finales de noviembre de 1973. Temperatura x100: dato del guion del equipo. Confirmar con fuentes NASA."
+			},
 			"intro": [],
 			"outro": [
 				{"speaker": "CONTROLADORA", "text": "La nave superó el susto, aunque la energía bajó un poco."}
@@ -189,23 +220,35 @@
 			"show_progress": false,
 			"intro": [
 				{"speaker": "CONTROLADORA", "text": "Esta es la placa de la Pioneer 10: un hombre, una mujer, el sistema solar y nuestra posición respecto a 14 púlsares."},
-				{"speaker": "CONTROLADORA", "text": "Las líneas de la placa miden la distancia del Sol a cada púlsar. Busca el punto donde todas esas distancias coinciden."}
+				{"speaker": "CONTROLADORA", "text": "Las líneas de la placa miden la distancia del Sol a cada púlsar. Busca el punto donde todas esas distancias coinciden."},
+				{"speaker": "CONTROLADORA", "text": "Para medir cada distancia, sincroniza el pulso de tres púlsares: pulsa al ritmo de su destello y aparecerá un círculo a su alrededor."}
 			],
 			"minimission": {
 				"title": "MINIJUEGO: LA POSICIÓN DEL SOL",
-				"instruction": "Haz clic (o mueve el cursor con las flechas y pulsa ENTER) para proponer dónde está el Sol",
+				"instruction": "Sincroniza 3 púlsares y ubica el Sol donde se cruzan sus círculos",
+				"step1": "1) Haz clic en un púlsar (o flechas y ENTER) y pulsa al ritmo de su destello",
+				"step2": "2) Ubica el Sol donde se cruzan los círculos (clic, o flechas y ENTER)",
+				"tuning": "Pulsa ENTER o clic cuando el anillo llegue al púlsar",
+				"tune_title": "SINCRONIZANDO PÚLSAR",
+				"sync_label": "SINCRONIZADOS",
+				"need_more": "PRIMERO SINCRONIZA 3 PÚLSARES",
+				"decoded": "¡PÚLSAR %s SINCRONIZADO!",
+				"tune_fail": "SEÑAL PERDIDA: INTÉNTALO DE NUEVO",
+				"verify": "VERIFICACIÓN: LOS 14 PÚLSARES COINCIDEN",
+				"reveal_gap": 0.4,
+				"reveal_travel": 0.55,
+				"needed": 3,
+				"streak_needed": 4,
+				"tolerance": 0.9,
+				"tolerance_ratio": 0.22,
+				"min_beat": 0.6,
+				"miss_energy": 0.4,
+				"wrong_energy": 0.6,
 				"error_label": "ERROR",
-				"attempts_label": "INTENTOS",
-				"legend": "+ línea más larga · − línea más corta",
-				"lose": "Demasiados intentos. La señal se pierde.",
+				"legend": "El Sol está donde se cruzan los círculos",
 				"unlock": "FRAGMENTO DESCIFRADO: %s",
 				"thresholds_pct": [28.0, 16.0, 9.0, 4.0],
 				"fragments": ["UN HOMBRE", "UNA MUJER", "EL SISTEMA SOLAR", "14 PÚLSARES"],
-				"base_attempts": 4,
-				"energy_per_attempt": 3.5,
-				"max_attempts": 12,
-				"hint_after": 3,
-				"hint": "Mira los signos junto a cada púlsar: «+» pide una línea más larga y «−» una más corta.",
 				"verificar": "Los 14 púlsares usan nombres y periodos de juego (no son los de la placa real): sustituir por los periodos reales de la documentación de la placa.",
 				"pulsars": [
 					{"id": "A", "period_s": 0.71, "angle": 10, "dist": 62},
@@ -265,9 +308,9 @@
 			{"tip": "Fíjate en el año, el objetivo y la energía: los usarás en todas las fases.", "keys": [["ENTER / CLIC", "ui_accept", "AVANZAR"]]},
 			{"tip": "Muévete en cualquier dirección. Los asteroides con estela son más rápidos y cada impacto gasta un segmento del escudo.", "keys": [["WASD / FLECHAS", "", "MOVERTE EN 8 DIRECCIONES"]]},
 			{"tip": "La foto necesita al menos 70 % de precisión. El visor tiene retraso y no puedes escanear durante un pico de radiación: espera a que pase.", "keys": [["WASD / FLECHAS", "", "MOVER VISOR"], ["ENTER / CLIC", "ui_accept", "ESCANEAR"]]},
-			{"tip": "Observa la secuencia. Luego sigue la historia.", "keys": [["ENTER / CLIC", "ui_accept", "CONTINUAR"]]},
+			{"tip": "Mira la cinemática. Cuando llegue la tormenta, gira la antena para que el haz siga sobre la Tierra.", "keys": [["A / ←", "rotate_left", "GIRAR"], ["D / →", "rotate_right", "GIRAR"], ["ENTER / CLIC", "ui_accept", "CONTINUAR"]]},
 			{"tip": "Observa cómo baja la energía y se debilita la señal.", "keys": [["ENTER / CLIC", "ui_accept", "ADELANTAR"]]},
-			{"tip": "Compara las líneas: «+» pide una línea más larga y «−» una más corta.", "keys": [["CLIC", "", "PROPONER"], ["FLECHAS", "", "MOVER CURSOR"], ["ENTER", "ui_accept", "PROPONER"]]},
+			{"tip": "Haz clic en un púlsar y pulsa al ritmo de su destello: con 3 círculos basta. El Sol está donde se cruzan.", "keys": [["CLIC", "", "ELEGIR / UBICAR"], ["FLECHAS", "", "MOVER CURSOR"], ["ENTER", "ui_accept", "ELEGIR / AL RITMO"]]},
 			{"tip": "Este es el final del viaje.", "keys": [["ENTER / CLIC", "ui_accept", "VOLVER"]]}
 		]
 	}

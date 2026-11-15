@@ -54,6 +54,7 @@ var _name: Label
 var _tag: Label
 var _text: Label
 var _hint: Label
+var _sub: Label            # traducción pequeña debajo del texto (opcional: clave "sub" de la línea)
 var _transit: Label
 var _noise_mat: ShaderMaterial
 var _blip: AudioStreamPlayer
@@ -83,6 +84,8 @@ func show_hint(speaker_key: String, text: String, seconds: float = 7.0) -> void:
 	_name.text = String(sp.get("name", speaker_key))
 	_name.add_theme_color_override("font_color", col)
 	_tag.text = ""
+	_sub.text = ""
+	_sub.visible = false
 	_portrait_color = col
 	_set_portrait(String(sp.get("portrait", speaker_key.to_lower())), speaker_key)
 	_text.add_theme_color_override("font_color", RetroTheme.WHITE)
@@ -138,6 +141,9 @@ func _build() -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint = _label(Vector2(_box.size.x - 70, 68), 9, RetroTheme.PHOSPHOR_DIM)
 	_hint.text = "ENTER >>"
+	_sub = _label(Vector2(8, 52), 9, Color("#a8b0c0"))
+	_sub.size = Vector2(_box.size.x - 80, 14)
+	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_transit = _label(Vector2(8, 32), 12, RetroTheme.PHOSPHOR)
 
 	# Ruido sobre la caja (shader ligero).
@@ -181,6 +187,8 @@ func _idle() -> void:
 	_text.visible_characters = -1
 	_text.add_theme_color_override("font_color", RetroTheme.PHOSPHOR_DIM)
 	_transit.text = ""
+	_sub.text = ""
+	_sub.visible = false
 	_hint.visible = false
 	_portrait_code = ""
 	_portrait_color = Color("#1a2a2a")
@@ -213,6 +221,8 @@ func _next() -> void:
 	_full = String(line.get("text", ""))
 	_text.add_theme_color_override("font_color", RetroTheme.WHITE)
 	_text.text = _full
+	_sub.text = String(line.get("sub", ""))   # la traducción aparece cuando el texto termina
+	_sub.visible = false
 	_text.visible_characters = 0
 	_chars = 0.0
 	_reveal_t = 0.0
@@ -285,7 +295,8 @@ func _finish_line() -> void:
 	_text.visible_characters = -1
 	_transit.text = ""
 	_hint.visible = true
-	_auto_left = clampf(1.0 + _full.length() * 0.03, 1.5, 5.5)
+	_sub.visible = _sub.text != ""
+	_auto_left = clampf(1.0 + (_full.length() + _sub.text.length()) * 0.03, 1.5, 6.5)
 	_noise_mat.set_shader_parameter("intensity", 0.08 if _radio else 0.0)
 	_set_robot_speaking(false)
 
