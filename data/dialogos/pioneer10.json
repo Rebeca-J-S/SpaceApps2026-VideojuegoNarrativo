@@ -1,5 +1,5 @@
 {
-	"_nota": "Capítulo PIONEER 10. El jugador es una controladora de vuelo (personaje imaginado) en Goldstone, California; la protagonista es la nave. La controladora nunca habla por la nave. Los hechos vienen de fuentes de la NASA. Las entradas 'verificar' son valores por confirmar. Las cinemáticas todavía no existen: se muestra la pantalla 'CINEMÁTICA PENDIENTE'.",
+	"_nota": "Capítulo PIONEER 10. El jugador es una controladora de vuelo (personaje imaginado) en Goldstone, California; la protagonista es la nave. La controladora nunca habla por la nave. Los hechos vienen de fuentes de la NASA. Las entradas 'verificar' son valores por confirmar. La Fase 3 (tormenta) ya tiene su cinemática; la de Io todavía muestra 'CINEMÁTICA PENDIENTE'.",
 	"disclaimer": "La controladora es un personaje imaginado.\nLa nave, las fechas y los hechos son reales.",
 	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
 	"cinematic_pending": "CINEMÁTICA PENDIENTE",
@@ -145,8 +145,41 @@
 			"energy": 80,
 			"show_progress": false,
 			"energy_cost": 4.0,
-			"cinematic_tag": "TORMENTA SOLAR Y MAGNETOSFERA",
-			"cinematic_notes": "Para la cinemática futura: tormenta solar registrada junto con la Pioneer 9 y temperatura que sube cien veces al entrar en la magnetosfera de Júpiter; única acción del jugador: apuntar la antena.",
+			"antenna_drain": 1.2,
+			"cinematic": {
+				"sun": "SOL",
+				"pioneer9": "PIONEER 9",
+				"pioneer10": "PIONEER 10",
+				"earth": "TIERRA",
+				"storm_label": "TORMENTA SOLAR",
+				"magnetosphere": "MAGNETOSFERA DE JÚPITER",
+				"jupiter": "JÚPITER",
+				"temperature": "TEMPERATURA DEL PLASMA  x%d",
+				"antenna_title": "APUNTA LA ANTENA A LA TIERRA",
+				"antenna_info": "A/D o ←/→: girar la antena · mantén el haz sobre la Tierra",
+				"signal": "SEÑAL",
+				"lost": "¡SEÑAL DÉBIL!",
+				"antenna_seconds": 9.0,
+				"antenna_tol_deg": 14.0,
+				"lines_storm": [
+					{"speaker": "CONTROLADORA", "text": "El Sol acaba de lanzar una tormenta: una nube enorme de partículas viaja por el espacio hacia la Pioneer 10."},
+					{"speaker": "CONTROLADORA", "text": "No es la única que la ve. La Pioneer 9, mucho más cerca del Sol, también la registra. Dos naves miden la misma tormenta desde lugares distintos."}
+				],
+				"lines_antenna": [
+					{"speaker": "CONTROLADORA", "text": "¡La tormenta llega a la nave y la sacude! Mantén su antena apuntando a la Tierra o perderemos la señal."}
+				],
+				"lines_antenna_ok": [
+					{"speaker": "CONTROLADORA", "text": "Pasó lo peor. La antena sigue mirando a casa y los datos de la tormenta llegaron a Goldstone."}
+				],
+				"lines_antenna_bad": [
+					{"speaker": "CONTROLADORA", "text": "Perdimos parte de la señal, pero la antena vuelve a mirar a casa. Los datos de la tormenta siguen llegando."}
+				],
+				"lines_magnetosphere": [
+					{"speaker": "CONTROLADORA", "text": "Noviembre de 1973. La Pioneer 10 cruza el borde de la magnetosfera de Júpiter: la enorme burbuja magnética que rodea al planeta."},
+					{"speaker": "CONTROLADORA", "text": "Al entrar, la temperatura del gas que la rodea sube unas cien veces. Sus instrumentos lo registran todo, por primera vez en la historia."}
+				],
+				"verificar": "La gran tormenta solar registrada a la vez por Pioneer 9 y Pioneer 10 fue en agosto de 1972 (la fase muestra 1973-1974). Cruce de la magnetosfera: finales de noviembre de 1973. Temperatura x100: dato del guion del equipo. Confirmar con fuentes NASA."
+			},
 			"intro": [],
 			"outro": [
 				{"speaker": "CONTROLADORA", "text": "La nave superó el susto, aunque la energía bajó un poco."}
@@ -265,7 +298,7 @@
 			{"tip": "Fíjate en el año, el objetivo y la energía: los usarás en todas las fases.", "keys": [["ENTER / CLIC", "ui_accept", "AVANZAR"]]},
 			{"tip": "Muévete en cualquier dirección. Los asteroides con estela son más rápidos y cada impacto gasta un segmento del escudo.", "keys": [["WASD / FLECHAS", "", "MOVERTE EN 8 DIRECCIONES"]]},
 			{"tip": "La foto necesita al menos 70 % de precisión. El visor tiene retraso y no puedes escanear durante un pico de radiación: espera a que pase.", "keys": [["WASD / FLECHAS", "", "MOVER VISOR"], ["ENTER / CLIC", "ui_accept", "ESCANEAR"]]},
-			{"tip": "Observa la secuencia. Luego sigue la historia.", "keys": [["ENTER / CLIC", "ui_accept", "CONTINUAR"]]},
+			{"tip": "Mira la cinemática. Cuando llegue la tormenta, gira la antena para que el haz siga sobre la Tierra.", "keys": [["A / ←", "rotate_left", "GIRAR"], ["D / →", "rotate_right", "GIRAR"], ["ENTER / CLIC", "ui_accept", "CONTINUAR"]]},
 			{"tip": "Observa cómo baja la energía y se debilita la señal.", "keys": [["ENTER / CLIC", "ui_accept", "ADELANTAR"]]},
 			{"tip": "Compara las líneas: «+» pide una línea más larga y «−» una más corta.", "keys": [["CLIC", "", "PROPONER"], ["FLECHAS", "", "MOVER CURSOR"], ["ENTER", "ui_accept", "PROPONER"]]},
 			{"tip": "Este es el final del viaje.", "keys": [["ENTER / CLIC", "ui_accept", "VOLVER"]]}

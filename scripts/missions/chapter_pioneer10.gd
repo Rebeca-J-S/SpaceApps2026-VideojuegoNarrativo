@@ -105,6 +105,18 @@ var _pol: Dictionary = {}
 var _tone: AudioStreamPlayer
 var _shutter: AudioStreamPlayer
 # Silencio
+# Fase 3 · Cinemática de la tormenta y la magnetosfera
+var _st_shot := 0          # 0 Sol y tormenta · 1 antena · 2 magnetosfera de Júpiter
+var _st_flare := 0.0
+var _st_wave := -1.0       # avance del frente de partículas (0-1)
+var _st_ant := 0.0         # desvío de la antena respecto a la Tierra (radianes)
+var _st_drift := 0.0
+var _st_signal := 1.0
+var _st_jup := 0.0
+var _st_temp := 1.0        # temperatura del plasma relativa a la de fuera (x1 a x100)
+var _st_cross := 0.0
+var _st_bars := 0.0        # franjas negras de cine
+
 var _sil_year := 1976.0
 var _sil_log: Array = []
 var _sil_frac := 0.0
@@ -1382,11 +1394,198 @@ func _draw_polaroid(c: CanvasItem) -> void:
 # =========================================================================
 # FASE 3 · Tormenta y magnetosfera (cinemática pendiente)
 # =========================================================================
+## Cinemática en tres planos: el Sol lanza la tormenta (Pioneer 9 y 10 la registran), la
+## tormenta sacude la nave (única acción: apuntar la antena a la Tierra) y la nave cruza la
+## magnetosfera de Júpiter mientras la temperatura del plasma sube unas cien veces.
 func _scene_storm(sc: Dictionary) -> void:
-	_stars()
-	await _cinematic_pending(String(sc["cinematic_tag"]))
+	var cin: Dictionary = sc["cinematic"]
+	_st_shot = 0
+	_st_flare = 0.0
+	_st_wave = -1.0
+	_st_ant = 0.0
+	_st_drift = 0.0
+	_st_signal = 1.0
+	_st_jup = 0.0
+	_st_temp = 1.0
+	_st_cross = 0.0
+	_st_bars = 0.0
+	_stars(Vector2(-4, 0), 120)
+	_layer(_draw_storm.bind(cin))
+	var tw := create_tween()
+	tw.tween_property(self, "_st_bars", 1.0, 0.6)
+	await tw.finished
+
+	# Plano 1: erupción solar y frente de partículas.
+	var t1 := create_tween()
+	t1.tween_property(self, "_st_flare", 1.0, 1.4).set_trans(Tween.TRANS_SINE)
+	await t1.finished
+	var t2 := create_tween()
+	t2.tween_property(self, "_st_wave", 0.45, 2.2)
+	if not _retry:
+		await say(cin["lines_storm"])
+	if t2.is_running():
+		await t2.finished
+
+	# Plano 2: la tormenta golpea la nave. El jugador mantiene la antena sobre la Tierra.
+	_st_shot = 1
+	_st_wave = 0.0
+	var t3 := create_tween()
+	t3.tween_property(self, "_st_wave", 1.0, 1.6)
+	await t3.finished
+	_shake = 5.0
+	_glitch = 0.8
+	await say(cin["lines_antenna"])
+	_mm_title.text = String(cin["antenna_title"])
+	_mm_info.text = String(cin["antenna_info"])
+	var tol := deg_to_rad(float(cin["antenna_tol_deg"]))
+	var secs := float(cin["antenna_seconds"])
+	var elapsed := 0.0
+	var off_time := 0.0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1973
+	_st_drift = 0.9
+	while elapsed < secs:
+		await get_tree().process_frame
+		if get_tree().paused:
+			continue
+		var dt := get_process_delta_time()
+		elapsed += dt
+		# Las ráfagas de la tormenta empujan la nave; cambian de sentido cada cierto tiempo.
+		if rng.randf() < dt * 0.9:
+			_st_drift = rng.randf_range(0.7, 1.3) * (-1.0 if _st_drift > 0.0 else 1.0)
+			_shake = maxf(_shake, 3.0)
+		var turn := Input.get_action_strength("rotate_right") - Input.get_action_strength("rotate_left")
+		_st_ant = clampf(_st_ant + (_st_drift * 0.55 + turn * 1.6) * dt, -PI * 0.5, PI * 0.5)
+		var ok := absf(_st_ant) <= tol
+		_st_signal = clampf(_st_signal + (0.5 if ok else -0.7) * dt, 0.0, 1.0)
+		_static = (1.0 - _st_signal) * 0.35
+		if not ok:
+			off_time += dt
+			_drain(float(sc["antenna_drain"]) * dt)
+			if _depleted:
+				return
+		_mm_info.text = "%s · %s %d%%%s" % [cin["antenna_info"], cin["signal"], int(_st_signal * 100.0), "" if ok else "   " + String(cin["lost"])]
+	_mm_title.text = ""
+	_mm_info.text = ""
+	_static = 0.0
+	var t4 := create_tween()
+	t4.tween_property(self, "_st_ant", 0.0, 0.5)
+	await say(cin["lines_antenna_ok"] if off_time < secs * 0.35 else cin["lines_antenna_bad"])
+
+	# Plano 3: Júpiter y su magnetosfera; la temperatura del plasma sube.
+	_st_shot = 2
+	var t5 := create_tween()
+	t5.tween_property(self, "_st_jup", 1.0, 2.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	await t5.finished
+	var t6 := create_tween()
+	t6.tween_property(self, "_st_cross", 1.0, 3.0).set_trans(Tween.TRANS_SINE)
+	t6.parallel().tween_property(self, "_st_temp", 100.0, 3.0).set_delay(1.2).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	await say(cin["lines_magnetosphere"])
+	if t6.is_running():
+		await t6.finished
+	await wait(0.6)
+	var t7 := create_tween()
+	t7.tween_property(self, "_st_bars", 0.0, 0.5)
+	await t7.finished
 	_drain(float(sc["energy_cost"]))
 	await say(sc["outro"])
+
+
+func _draw_storm(c: DrawNode, cin: Dictionary) -> void:
+	var font := ThemeDB.fallback_font
+	var cy := 146.0
+	if _st_shot == 0:
+		# Sol a la izquierda con la erupción; Pioneer 9 cerca, Pioneer 10 lejos.
+		var sun := Vector2(-40, cy)
+		for k in 6:
+			c.draw_circle(sun, 96.0 + k * 9.0 + _st_flare * 10.0, Color(1.0, 0.6, 0.15, 0.05))
+		c.draw_circle(sun, 92.0, Color("#ffb347"))
+		c.draw_circle(sun, 80.0, Color("#ffd24a"))
+		# Prominencia que crece.
+		var fl := _st_flare
+		for i in 9:
+			var a := -0.5 + i * 0.12
+			var r := 92.0 + fl * (30.0 + 22.0 * sin(c.t * 5.0 + i))
+			c.draw_line(sun + Vector2(cos(a), sin(a)) * 88.0, sun + Vector2(cos(a), sin(a)) * r, Color(1.0, 0.45, 0.1, 0.8 * fl), 3.0)
+		_draw_wave(c, sun, lerpf(100.0, 700.0, clampf(_st_wave, 0.0, 1.0)))
+		var p9 := Vector2(210, cy + 36)
+		PioneerArt.draw_pioneer(c, p9, PI, 1.0)
+		c.draw_string(font, p9 + Vector2(-26, 22), String(cin["pioneer9"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+		var p10 := Vector2(520, cy - 30)
+		PioneerArt.draw_pioneer(c, p10, PI, 1.4)
+		c.draw_string(font, p10 + Vector2(-30, 28), String(cin["pioneer10"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
+		c.draw_string(font, Vector2(14, GAME_BOTTOM - 40), String(cin["sun"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#ffd24a"))
+		if _st_wave > 0.0:
+			c.draw_string(font, Vector2(150, GAME_TOP + 46), String(cin["storm_label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1.0, 0.6, 0.3, 0.9))
+	elif _st_shot == 1:
+		# Primer plano: la nave, la Tierra (abajo a la izquierda) y el haz de la antena.
+		var probe := Vector2(390, cy - 6)
+		var earth := Vector2(70, GAME_BOTTOM - 46)
+		var base := (earth - probe).angle()
+		var ang := base + _st_ant
+		_draw_wave(c, Vector2(-500, cy), lerpf(700.0, 1300.0, _st_wave))
+		c.draw_circle(earth, 9.0, Color("#3a7bd5"))
+		c.draw_circle(earth + Vector2(-2, -2), 4.0, Color("#5fbf6a"))
+		c.draw_string(font, earth + Vector2(-16, 22), String(cin["earth"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+		var tol := deg_to_rad(float(cin["antenna_tol_deg"]))
+		var ok := absf(_st_ant) <= tol
+		var beam := Color(RetroTheme.PHOSPHOR, 0.35) if ok else Color(RED, 0.3)
+		var far := probe.distance_to(earth) + 30.0
+		var half := 0.07
+		c.draw_colored_polygon(PackedVector2Array([probe, probe + Vector2.from_angle(ang - half) * far, probe + Vector2.from_angle(ang + half) * far]), beam)
+		PioneerArt.draw_pioneer(c, probe, ang, 3.0)
+		# Medidor de señal.
+		var bar := Rect2(470, GAME_TOP + 60, 140, 8)
+		c.draw_string(font, bar.position + Vector2(0, -4), String(cin["signal"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+		c.draw_rect(bar, Color(0, 0, 0, 0.6))
+		c.draw_rect(Rect2(bar.position, Vector2(bar.size.x * _st_signal, bar.size.y)), RetroTheme.PHOSPHOR if ok else RED)
+		c.draw_rect(bar, Color(1, 1, 1, 0.5), false, 1.0)
+	else:
+		# Júpiter entra por la derecha; la nave cruza las líneas de la magnetosfera.
+		var jc := Vector2(lerpf(860.0, 600.0, _st_jup), cy)
+		for k in 5:
+			var r := 230.0 + k * 34.0
+			var col := Color(0.4, 0.9, 1.0, 0.14 + 0.05 * sin(c.t * 2.0 + k))
+			c.draw_arc(jc, r, PI * 0.62, PI * 1.38, 48, col, 2.0)
+		c.draw_arc(jc, 400.0, PI * 0.68, PI * 1.32, 48, Color(0.5, 1.0, 1.0, 0.55), 2.0)
+		c.draw_circle(jc, 150.0, Color("#b98a5e"))
+		for k in range(-6, 7):
+			var dy := k * 22.0
+			var wch := 2.0 * sqrt(maxf(0.0, 150.0 * 150.0 - dy * dy))
+			c.draw_rect(Rect2(jc.x - wch * 0.5, jc.y + dy - 6.0, wch, 11.0), Color(Color("#d8b48a") if k % 2 == 0 else Color("#9a6a44"), 0.6))
+		c.draw_string(font, Vector2(jc.x - 388, GAME_BOTTOM - 26), String(cin["magnetosphere"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.6, 1.0, 1.0, 0.9 * _st_jup))
+		var probe := Vector2(lerpf(40.0, 300.0, _st_cross), cy - 30.0 + 14.0 * _st_cross)
+		PioneerArt.draw_pioneer(c, probe, PI * 0.88, 1.6)
+		var inside := probe.distance_to(jc) < 400.0
+		if inside:
+			c.draw_circle(probe, 16.0 + 3.0 * sin(c.t * 9.0), Color(1.0, 0.45, 0.2, 0.18))
+		var tx := 20.0
+		var ty := GAME_TOP + 60.0
+		c.draw_string(font, Vector2(tx, ty), String(cin["temperature"]) % int(round(_st_temp)), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW if _st_temp < 50.0 else RED)
+		var bar := Rect2(tx, ty + 5, 150, 7)
+		c.draw_rect(bar, Color(0, 0, 0, 0.6))
+		c.draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(_st_temp / 100.0, 0.0, 1.0), bar.size.y)), YELLOW.lerp(RED, clampf(_st_temp / 100.0, 0.0, 1.0)))
+		c.draw_rect(bar, Color(1, 1, 1, 0.5), false, 1.0)
+	# Franjas de cine.
+	var bh := 18.0 * _st_bars
+	if bh > 0.0:
+		c.draw_rect(Rect2(0, GAME_TOP, W, bh), Color.BLACK)
+		c.draw_rect(Rect2(0, GAME_BOTTOM - bh, W, bh), Color.BLACK)
+
+
+## Frente de la tormenta: arco de partículas que avanza desde el Sol.
+func _draw_wave(c: DrawNode, origin: Vector2, radius: float) -> void:
+	if radius <= 0.0:
+		return
+	for k in 3:
+		var r := radius - k * 18.0
+		if r > 0.0:
+			c.draw_arc(origin, r, -0.9, 0.9, 40, Color(1.0, 0.55, 0.2, 0.35 - k * 0.1), 3.0)
+	for i in 70:
+		var a := -0.9 + 1.8 * fposmod(i * 0.618, 1.0)
+		var rr := radius - fposmod(i * 7.3 + c.t * 40.0, 60.0)
+		if rr > 0.0:
+			c.draw_rect(Rect2(origin + Vector2.from_angle(a) * rr, Vector2(2, 1)), Color(1.0, 0.8, 0.4, 0.7))
 
 
 # =========================================================================

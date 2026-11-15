@@ -20,7 +20,7 @@ el espacio profundo, contada en primera persona por las propias máquinas, que t
 | `scenes/missions/mision_surveyor3.tscn` | Misión 2 · Huellas en el polvo (guion aprobado). |
 | `scenes/missions/mision_pioneer.tscn` | Misión 3 · La última señal (propuesta). |
 | `scenes/missions/chapter_spirit_opportunity.tscn` | Misión 4 · Capítulo Spirit y Opportunity (vista top-down, HUD propio, transmisiones TX/RX). Textos en `data/dialogos/spirit_opportunity.json`. Emite `chapter_finished`. Debug: F1-F7 saltan a cada escena, F8 al cierre. |
-| `scenes/missions/chapter_pioneer10.tscn` | Capítulo Pioneer 10 (selector → Espacio profundo → Pioneer 10): lanzamiento, cinturón (esquive), Júpiter (encuadre y disparo), silencio, la placa (púlsares) y epílogo. Las cinemáticas aún no existen y muestran "CINEMÁTICA PENDIENTE". Textos en `data/dialogos/pioneer10.json`. Debug: F1-F7 saltan a cada fase. |
+| `scenes/missions/chapter_pioneer10.tscn` | Capítulo Pioneer 10 (selector → Espacio profundo → Pioneer 10): lanzamiento, cinturón (esquive), Júpiter (encuadre y disparo), cinemática de la tormenta solar y la magnetosfera (con un momento de control: apuntar la antena a la Tierra con A/D), silencio, la placa (púlsares) y epílogo. La cinemática de Io aún muestra "CINEMÁTICA PENDIENTE". Pioneer 11 ya no aparece en el selector. Textos en `data/dialogos/pioneer10.json`. Debug: F1-F7 saltan a cada fase. |
 
 Las misiones 1-3 siguen las mismas 6 fases (0 tutorial → 5 legado) sobre `scripts/missions/mission_base.gd`.
 La misión 4 (Marte) es un capítulo independiente: `scripts/missions/chapter_spirit_opportunity.gd`.
