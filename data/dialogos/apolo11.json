@@ -271,7 +271,7 @@
 		},
 		"general_controls": [
 			["ENTER / CLIC", "avanzar los mensajes"],
-			["ESC", "pausa (continuar o volver)"],
+			["ESC", "menú de pausa: sonido, ayuda y salir"],
 			["C · O · I", "controles, objetivos e información de la misión"]
 		],
 		"phases": [

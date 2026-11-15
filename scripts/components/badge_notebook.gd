@@ -3,6 +3,7 @@ extends Control
 ## Cuaderno de insignias (se abre desde el Archivo científico). Una libreta con espiral y renglones:
 ## las insignias de cada cuerpo (Luna, Marte, espacio profundo), completas, a medias o sin piezas.
 ## Clic / ENTER en una insignia abre su ficha: insignia grande, estado, descripción y enlace NASA.
+## Con la insignia completa, el botón FICHA TÉCNICA abre la ficha histórica y técnica (BadgeSheet).
 ## ESC: vuelve de la ficha a la libreta, o cierra la libreta. Emite `closed` al cerrarse.
 
 signal closed
@@ -27,6 +28,8 @@ var _detail_state: Label
 var _detail_desc: Label
 var _detail_link: Label
 var _btn_open: Button
+var _btn_sheet: Button
+var _sheet: BadgeSheet
 var _btn_back: Button
 var _btn_close: Button
 
@@ -80,6 +83,10 @@ func _build_detail() -> void:
 	_btn_open.text = tr("> ABRIR ENLACE")
 	_btn_open.pressed.connect(_open_link)
 	row.add_child(_btn_open)
+	# Ficha técnica: solo con la insignia completa.
+	_btn_sheet = Button.new()
+	_btn_sheet.pressed.connect(_open_sheet)
+	row.add_child(_btn_sheet)
 	_detail_box.hide()
 
 
@@ -194,20 +201,32 @@ func _open_detail(i: int) -> void:
 	var n := int(b["pieces"])
 	_detail_title.text = String(b["name"])
 	_detail_meta.text = "%s · %s" % [site.get("place", ""), site.get("year", "")] if not site.is_empty() else ""
-	if got.size() >= n:
+	var complete := got.size() >= n
+	_btn_sheet.text = tr("> FICHA TÉCNICA") if complete else tr("FICHA BLOQUEADA")
+	_btn_sheet.disabled = not complete
+	if complete:
 		_detail_state.text = tr("COMPLETA")
 		_detail_state.add_theme_color_override("font_color", BadgeArt.GOLD)
 	elif bool(site.get("locked", false)) or String(site.get("scene", "")) == "":
 		_detail_state.text = tr("BLOQUEADA: este artefacto todavía no tiene misión.")
 		_detail_state.add_theme_color_override("font_color", RetroTheme.PHOSPHOR_DIM)
 	else:
-		_detail_state.text = "%s · %s" % [tr("EN PROGRESO") if not got.is_empty() else tr("Completa las fases de su misión para armarla."), tr("Cada fase completada de la misión desbloquea una pieza.")]
+		_detail_state.text = "%s · %s %s" % [tr("EN PROGRESO") if not got.is_empty() else tr("Completa las fases de su misión para armarla."), tr("Cada fase completada de la misión desbloquea una pieza."), tr("Completa la insignia para desbloquear su ficha técnica.")]
 		_detail_state.add_theme_color_override("font_color", RetroTheme.PHOSPHOR)
 	_detail_desc.text = String(b["desc"])
 	_detail_link.text = String(b["link"])
 	_detail_box.show()
 	_btn_close.hide()
-	_btn_open.grab_focus()
+	(_btn_sheet if complete else _btn_open).grab_focus()
+
+
+func _open_sheet() -> void:
+	if _detail < 0 or _sheet:
+		return
+	_sheet = BadgeSheet.open_for(self, _cells[_detail]["badge"])
+	_sheet.closed.connect(func() -> void:
+		_sheet = null
+		_btn_sheet.grab_focus())
 
 
 func _back() -> void:
@@ -240,7 +259,7 @@ func _cell_at(p: Vector2) -> int:
 
 ## Mientras la libreta está abierta se queda con el teclado (el menú de atrás no reacciona).
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouse:
+	if event is InputEventMouse or _sheet:
 		return
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
@@ -278,7 +297,7 @@ func _input(event: InputEvent) -> void:
 	
 
 func _gui_input(event: InputEvent) -> void:
-	if _detail >= 0:
+	if _detail >= 0 or _sheet:
 		return
 	if event is InputEventMouseMotion:
 		var i := _cell_at(event.position)

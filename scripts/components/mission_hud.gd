@@ -47,6 +47,9 @@ var _idle := 0.0
 
 var _badge: Button
 var _buttons: HBoxContainer
+## false = los botones C/O/I no se muestran en pantalla (están dentro del menú de tres puntos).
+var show_info_buttons := true
+var _ready_for_keys := false
 var _keys_view: Control
 var _reminder: PanelContainer
 var _reminder_text: Label
@@ -169,7 +172,8 @@ func show_briefing() -> void:
 ## Sin animación (al reiniciar una fase o saltar con debug).
 func minimize_now() -> void:
 	_badge.show()
-	_buttons.show()
+	_buttons.visible = show_info_buttons
+	_ready_for_keys = true
 
 
 # =========================================================================
@@ -215,7 +219,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			_open_modal(_section_for_key(event.physical_keycode))
 		return
-	if get_tree().paused or not _buttons.visible:
+	if get_tree().paused or not _ready_for_keys:
 		return
 	if event is InputEventKey and event.pressed and not event.echo \
 		and event.physical_keycode in [KEY_C, KEY_O, KEY_I]:
@@ -276,6 +280,11 @@ func _open_modal(section: String) -> void:
 			s += tr("[color=#%s]NARRADORES:[/color] %s\n") % [amber, b.get("narrators", "")]
 	_modal_body.text = s
 	_modal_close.grab_focus()
+
+
+## Abre un panel de información ("controles", "objetivos" o "mision"); lo usa el menú de pausa.
+func open_section(section: String) -> void:
+	_open_modal(section)
 
 
 func _close_modal() -> void:

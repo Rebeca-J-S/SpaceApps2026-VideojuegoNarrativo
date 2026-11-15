@@ -54,7 +54,7 @@ var _mm_title: Label
 var _mm_info: Label
 var _toast: Label
 var _hud_draw: Control
-var _pause_panel: PanelContainer
+var _pause_menu: PauseMenu
 var _fade: ColorRect
 var _badge_toast: BadgeToast
 
@@ -138,7 +138,7 @@ func _run_chapter() -> void:
 	_preload_evidence(first)
 	for i in range(first, scenes.size()):
 		await _run_scene(scenes[i], i)
-		_award_badge_piece(i)
+		await _award_badge_piece(i)
 	mission_hud.mark_all_done()
 	chapter_finished.emit()
 	if auto_return:
@@ -149,7 +149,12 @@ func _run_chapter() -> void:
 ## Cuaderno de insignias: cada fase terminada gana una pieza de la insignia de la misión.
 func _award_badge_piece(index: int) -> void:
 	var b := GameManager.find_badge(BADGE_ID)
-	if not b.is_empty() and GameManager.unlock_badge_piece(BADGE_ID, index):
+	if b.is_empty() or not GameManager.unlock_badge_piece(BADGE_ID, index):
+		return
+	if GameManager.is_badge_complete(BADGE_ID):
+		# Insignia completa: se desbloquea su ficha técnica (aviso grande, espera al jugador).
+		await BadgeUnlockCard.present(self, b)
+	else:
 		_badge_toast.show_piece(b, GameManager.badge_pieces(BADGE_ID), index)
 
 
@@ -159,6 +164,8 @@ func _run_scene(sc: Dictionary, index: int) -> void:
 	_set_objective(String(sc["objective"]))
 	await _banner(String(sc["title"]))
 	mission_hud.set_phase(index, String(sc["title"]), String(sc["objective"]))
+	# Tarjeta "CÓMO SE JUEGA" antes de cada minijuego (las fases que son solo cinemática no tienen).
+	await TutorialCard.present(self, GameManager.get_tutorial(BADGE_ID, String(sc["id"])), String(sc["title"]))
 	match String(sc["id"]):
 		"aterrizaje": await _act_plan(sc)
 		"agua": await _act_water(sc)
@@ -329,7 +336,8 @@ func _build() -> void:
 	mission_hud = MissionHUD.new()
 	add_child(mission_hud)
 	mission_hud.badge_pos = Vector2(8, GAME_TOP + 3)
-	mission_hud.buttons_pos = Vector2(W - 6, GAME_TOP + 3)
+	mission_hud.buttons_pos = Vector2(W - 28, GAME_TOP + 3)
+	mission_hud.show_info_buttons = false   # C / O / I van dentro del menú de tres puntos
 	mission_hud.reminder_pos = Vector2(8, GAME_TOP + 54)
 	mission_hud.briefing_auto_seconds = 7.0
 	mission_hud.briefing_area = Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP)
@@ -354,28 +362,14 @@ func _build() -> void:
 	add_child(crt)
 
 
+## Menú de pausa común (botón de tres puntos o ESC): sonido, ayuda de los minijuegos y salir.
 func _build_pause() -> void:
-	_pause_panel = PanelContainer.new()
-	_pause_panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	_pause_panel.position = Vector2(220, 100)
-	_pause_panel.custom_minimum_size = Vector2(200, 0)
-	add_child(_pause_panel)
-	var box := VBoxContainer.new()
-	_pause_panel.add_child(box)
-	var t := Label.new()
-	t.text = data["hud"]["pause_title"]
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	t.add_theme_color_override("font_color", GOLD)
-	box.add_child(t)
-	var cont := Button.new()
-	cont.text = data["hud"]["pause_continue"]
-	cont.pressed.connect(_toggle_pause)
-	box.add_child(cont)
-	var exit := Button.new()
-	exit.text = data["hud"]["pause_exit"]
-	exit.pressed.connect(GameManager.go_to_planet_select)
-	box.add_child(exit)
-	_pause_panel.hide()
+	_pause_menu = PauseMenu.new()
+	_pause_menu.setup(BADGE_ID, data["scenes"])
+	_pause_menu.hud = mission_hud
+	_pause_menu.dots_pos = Vector2(W - 6, GAME_TOP + 3)
+	add_child(_pause_menu)
+	_pause_menu.apply_layout()
 
 
 func _label(pos: Vector2, sz: Vector2, font_size: int, color: Color, parent: Node = null) -> Label:
@@ -3242,8 +3236,4 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _toggle_pause() -> void:
-	var p := not get_tree().paused
-	get_tree().paused = p
-	_pause_panel.visible = p
-	if p:
-		(_pause_panel.get_child(0).get_child(1) as Button).grab_focus()
+	_pause_menu.toggle()

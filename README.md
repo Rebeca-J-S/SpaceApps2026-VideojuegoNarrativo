@@ -73,6 +73,23 @@ ficha dice "BLOQUEADO". Hoy solo se juegan **Apolo 11** y **Pioneer 10**. Para h
   su estado, la descripción y el botón **ABRIR ENLACE** a la página de la NASA.
 - Las piezas ganadas se guardan en `user://progreso.cfg` (sección `insignias`). El dibujo de cada insignia
   está en `scripts/components/badge_art.gd` (PLACEHOLDER: se puede sustituir por sprites).
+- **Ficha técnica**: al completar una insignia se desbloquea la ficha histórica y técnica del artefacto
+  (campo `sheet` de `data/badges.json`: datos, historia y dónde está hoy). La misión muestra un aviso
+  grande (`BadgeUnlockCard`) con el botón **VER FICHA**, y en el cuaderno aparece el botón
+  **FICHA TÉCNICA** (`BadgeSheet`).
+
+## Menú de pausa, tutoriales y sonido
+- En cada misión, el botón de tres puntos (esquina superior derecha) o **ESC** abre el menú de pausa
+  (`scripts/components/pause_menu.gd`): **SONIDO** (volumen de música y efectos), **AYUDA** (cómo se
+  juega cada minijuego de la misión y preguntas frecuentes) y **SALIR DE LA MISIÓN** (elegir otra
+  misión, menú principal o cerrar el juego).
+- Antes de cada minijuego aparece una tarjeta **CÓMO SE JUEGA** (`TutorialCard`) con el objetivo, las
+  teclas y las reglas; pausa el juego hasta pulsar ENTER o clic. Los textos están en `data/guia.json`
+  (`juegos` → misión → id de escena; las fases que son solo cinemática no tienen tarjeta) y la misma
+  guía se ve en **AYUDA**.
+- Sonido: `GameManager` crea los buses **Music** y **SFX**; todo `AudioStreamPlayer` nuevo pasa al bus SFX.
+  La música ambiental es un bucle generado por código (PLACEHOLDER: se puede cambiar por una pista real
+  en `GameManager._start_music`). El volumen se guarda en `user://progreso.cfg` (sección `ajustes`).
 
 ## Datos y precisión
 - Todos los textos están en `data/`. Las entradas con `"verificar"` son datos por confirmar con las

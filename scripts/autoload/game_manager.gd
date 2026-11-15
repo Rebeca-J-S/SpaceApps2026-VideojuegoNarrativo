@@ -15,10 +15,12 @@ const SAVE_PATH := "user://progreso.cfg"
 const SITES_PATH := "res://data/sites.json"
 const ARCHIVE_PATH := "res://data/archive.json"
 const BADGES_PATH := "res://data/badges.json"
+const GUIDE_PATH := "res://data/guia.json"
+const MAIN_MENU_SCENE := "res://scenes/ui/main_menu.tscn"
 const PLANET_SELECT_SCENE := "res://scenes/ui/planet_select.tscn"
 const I18N_DIR := "res://data/i18n/en/"
 ## Archivos del catálogo inglés (lista fija: en una exportación no conviene listar carpetas).
-const I18N_FILES := ["ui", "sites", "archive", "intro", "apolo11", "spirit_opportunity", "pioneer10", "badges"]
+const I18N_FILES := ["ui", "sites", "archive", "intro", "apolo11", "spirit_opportunity", "pioneer10", "badges", "guia"]
 ## Claves de los JSON que son identificadores (no se traducen).
 const I18N_SKIP_KEYS := ["id", "speaker", "portrait", "mode", "scene", "color", "kind", "twin", "action", "missions", "mission", "sections", "link", "site", "icon", "body"]
 
@@ -52,12 +54,17 @@ var _tr_en: Translation
 var _missing: Dictionary = {}
 var _IDENT := RegEx.create_from_string("^[a-z0-9_]+$")
 
+## Volumen (0..1) de los buses "Music" y "SFX". Se guarda en [ajustes].
+var volume := {"music": 0.5, "sfx": 0.8}
+var _music: AudioStreamPlayer
+
 
 func _ready() -> void:
 	_register_input_actions()
 	_load_progress()
 	_load_catalog()
 	_apply_locale()
+	_setup_audio()
 
 
 # -------------------------------------------------------------------------
@@ -247,6 +254,8 @@ func _save() -> void:
 	for id in _completed.keys():
 		cfg.set_value("misiones", id, true)
 	cfg.set_value("ajustes", "idioma", lang)
+	cfg.set_value("ajustes", "musica", volume["music"])
+	cfg.set_value("ajustes", "efectos", volume["sfx"])
 	for id in _badges.keys():
 		cfg.set_value("insignias", id, _badges[id])
 	cfg.save(SAVE_PATH)
@@ -257,6 +266,8 @@ func _load_progress() -> void:
 	if cfg.load(SAVE_PATH) != OK:
 		return
 	lang = String(cfg.get_value("ajustes", "idioma", "en"))
+	volume["music"] = clampf(float(cfg.get_value("ajustes", "musica", volume["music"])), 0.0, 1.0)
+	volume["sfx"] = clampf(float(cfg.get_value("ajustes", "efectos", volume["sfx"])), 0.0, 1.0)
 	if cfg.has_section("insignias"):
 		for id in cfg.get_section_keys("insignias"):
 			var v: Variant = cfg.get_value("insignias", id, [])
@@ -283,6 +294,132 @@ func consume_start_phase() -> int:
 func go_to_planet_select() -> void:
 	get_tree().paused = false
 	SceneTransition.change_scene(PLANET_SELECT_SCENE)
+
+
+func go_to_main_menu() -> void:
+	get_tree().paused = false
+	SceneTransition.change_scene(MAIN_MENU_SCENE)
+
+
+# -------------------------------------------------------------------------
+# Guía de minijuegos (tarjetas de tutorial y MENÚ > AYUDA)
+# -------------------------------------------------------------------------
+## Tarjeta de una fase: {title, goal, keys: [[tecla, texto]], rules: [...]}; vacía si es solo cinemática.
+func get_tutorial(mission: String, scene_id: String) -> Dictionary:
+	var data: Dictionary = load_json(GUIDE_PATH)
+	return data.get("juegos", {}).get(mission, {}).get(scene_id, {})
+
+
+func get_faq() -> Array:
+	var data: Dictionary = load_json(GUIDE_PATH)
+	return data.get("faq", [])
+
+
+# -------------------------------------------------------------------------
+# Sonido: buses "Music" y "SFX" (se crean aquí) y una música ambiental generada por código.
+# Todo AudioStreamPlayer que se añada al árbol en el bus "Master" pasa al bus "SFX".
+# -------------------------------------------------------------------------
+func set_volume(kind: String, value: float, save := true) -> void:
+	volume[kind] = clampf(value, 0.0, 1.0)
+	_apply_volume(kind)
+	if save:
+		_save()
+
+
+func _apply_volume(kind: String) -> void:
+	var idx := AudioServer.get_bus_index("Music" if kind == "music" else "SFX")
+	if idx < 0:
+		return
+	var v: float = volume[kind]
+	AudioServer.set_bus_mute(idx, v <= 0.001)
+	AudioServer.set_bus_volume_db(idx, linear_to_db(maxf(v, 0.001)))
+
+
+func _setup_audio() -> void:
+	for bus in ["Music", "SFX"]:
+		if AudioServer.get_bus_index(bus) < 0:
+			AudioServer.add_bus()
+			var i := AudioServer.bus_count - 1
+			AudioServer.set_bus_name(i, bus)
+			AudioServer.set_bus_send(i, &"Master")
+	_apply_volume("music")
+	_apply_volume("sfx")
+	get_tree().node_added.connect(_on_node_added)
+	_music = AudioStreamPlayer.new()
+	_music.bus = &"Music"
+	_music.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_music)
+	if DisplayServer.get_name() != "headless":
+		WorkerThreadPool.add_task(_build_music)
+
+
+func _on_node_added(node: Node) -> void:
+	if node is AudioStreamPlayer and node != _music and node.bus == &"Master":
+		node.bus = &"SFX"
+	elif node is AudioStreamPlayer2D and node.bus == &"Master":
+		node.bus = &"SFX"
+
+
+## Música ambiental en bucle (16 s): acordes suaves que se funden y algún destello agudo.
+## Se genera en un hilo aparte para no frenar el arranque.
+func _build_music() -> void:
+	const RATE := 22050
+	const CHORD_S := 4.0
+	var chords: Array = [[110.0, 130.81, 164.81], [87.31, 110.0, 130.81], [98.0, 123.47, 146.83], [82.41, 103.83, 123.47]]
+	var n := int(RATE * CHORD_S * chords.size())
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var fade := RATE * 1.2
+	for c in chords.size():
+		var start := int((c * CHORD_S - 0.6) * RATE)
+		var length := int((CHORD_S + 1.2) * RATE)
+		for f in chords[c]:
+			var w: float = TAU * f / RATE
+			for j in length:
+				var env := minf(minf(j / fade, (length - j) / fade), 1.0)
+				var ph: float = w * (start + j)
+				var idx := posmod(start + j, n)
+				buf[idx] += env * (sin(ph) + 0.25 * sin(ph * 2.0) + 0.08 * sin(ph * 3.0)) * 0.11
+	# Destellos: notas agudas cortas, como señales lejanas.
+	for b in [[1.5, 659.25], [5.8, 587.33], [9.2, 523.25], [13.6, 493.88]]:
+		var s0 := int(b[0] * RATE)
+		var w2 := TAU * float(b[1]) / RATE
+		for j in int(RATE * 2.5):
+			buf[posmod(s0 + j, n)] += sin(w2 * j) * exp(-j / (RATE * 0.5)) * 0.05
+	var bytes := PackedByteArray()
+	bytes.resize(n * 2)
+	for i in n:
+		var tremolo := 0.85 + 0.15 * sin(TAU * i / (RATE * 8.0))
+		bytes.encode_s16(i * 2, int(clampf(buf[i] * tremolo, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = RATE
+	wav.stereo = false
+	wav.data = bytes
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = n
+	call_deferred("_start_music", wav)
+
+
+func _start_music(wav: AudioStreamWAV) -> void:
+	_music.stream = wav
+	_music.play()
+
+
+# -------------------------------------------------------------------------
+# Pantalla completa: F11 o Alt+Enter (en cualquier escena).
+# -------------------------------------------------------------------------
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.physical_keycode == KEY_F11 or (event.physical_keycode == KEY_ENTER and event.alt_pressed):
+			get_viewport().set_input_as_handled()
+			toggle_fullscreen()
+
+
+func toggle_fullscreen() -> void:
+	var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
 # -------------------------------------------------------------------------
