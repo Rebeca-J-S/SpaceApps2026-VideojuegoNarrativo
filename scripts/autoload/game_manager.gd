@@ -408,6 +408,21 @@ func _start_music(wav: AudioStreamWAV) -> void:
 
 
 # -------------------------------------------------------------------------
+# Pantalla completa: F11 o Alt+Enter (en cualquier escena).
+# -------------------------------------------------------------------------
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.physical_keycode == KEY_F11 or (event.physical_keycode == KEY_ENTER and event.alt_pressed):
+			get_viewport().set_input_as_handled()
+			toggle_fullscreen()
+
+
+func toggle_fullscreen() -> void:
+	var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+
+# -------------------------------------------------------------------------
 # Input Map
 # -------------------------------------------------------------------------
 func _register_input_actions() -> void:
