@@ -127,13 +127,28 @@ var _sun := Vector2.ZERO
 var _cursor := Vector2(200, 159)
 var _proposal := Vector2.ZERO
 var _has_prop := false
-var _signs: Array = []
 var _best_pct := 100.0
 var _last_pct := 100.0
 var _frags := 0
-var _attempts := 0
 var _plate_won := false
 var _plate_mm: Dictionary = {}
+var _decoded: Array = []             # un bool por púlsar: ¿ya se reveló su círculo?
+var _tune_i := -1                    # púlsar que se está sincronizando
+var _tune_t := 0.0                   # segundos desde que empezó la sincronización
+var _tune_beat := 1.0                # duración de un "tiempo" (múltiplo del periodo del púlsar)
+var _tune_tol := 0.15                # margen para pulsar a tiempo (s)
+var _tune_hits := 0                  # aciertos seguidos
+var _tune_miss := 0
+var _tune_judged := 2                # último tiempo ya juzgado (los dos primeros son de escucha)
+var _tune_next_blip := 1
+var _tune_flash := 0.0
+var _blip: AudioStreamPlayer
+var _revealed: Array = []            # púlsares que ya "latieron" en el revelado final
+var _rev_rings: Array = []           # ondas que viajan de cada púlsar hasta el Sol
+var _rev_glow := 0.0                 # brillo del Sol (0-1) a medida que llegan los pulsos
+var _rev_flare := 0.0
+var _reveal_done := false
+var _buzz: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -459,6 +474,7 @@ func _process(delta: float) -> void:
 	_t += delta
 	_flash = maxf(0.0, _flash - delta * 3.0)
 	_glitch = maxf(0.0, _glitch - delta * 3.5)
+	_rev_flare = maxf(0.0, _rev_flare - delta * 2.2)
 	if _rk_state == 2:
 		_cruise += delta
 		_recede = _cruise * 4.0
@@ -1656,83 +1672,212 @@ func _scene_plate(sc: Dictionary) -> void:
 	var mm := _plate_mm
 	_sun = MAP.position + Vector2(MAP.size.x * 0.52, MAP.size.y * 0.5)
 	_pulsars.clear()
+	_decoded.clear()
 	for p in mm["pulsars"]:
 		var a := deg_to_rad(float(p["angle"]))
 		var d := float(p["dist"])
 		var pos := (_sun + Vector2(cos(a), sin(a)) * d).clamp(MAP.position + Vector2(8, 8), MAP.end - Vector2(8, 8))
 		_pulsars.append({"id": String(p["id"]), "period": float(p["period_s"]), "pos": pos, "len": pos.distance_to(_sun)})
+		_decoded.append(false)
 	_cursor = MAP.get_center()
 	_has_prop = false
-	_signs.clear()
 	_best_pct = 100.0
 	_last_pct = 100.0
 	_frags = 0
 	_plate_won = false
-	_attempts = _attempts_for_energy(mm)
+	_tune_i = -1
+	_revealed.clear()
+	for k in _pulsars.size():
+		_revealed.append(false)
+	_rev_rings.clear()
+	_rev_glow = 0.0
+	_rev_flare = 0.0
+	_reveal_done = false
+	_tune_flash = 0.0
 	_static_decay = 0.9
 	_stars()
+	_setup_plate_audio()
 	_layer(_draw_plate)
 	if not _retry:
 		await say(sc["intro"])
 	_mm_title.text = String(mm["title"])
-	_mm_info.text = String(mm["instruction"])
 	_mode = "plate"
-	var failed := 0
-	var hint_shown := false
 	while not _plate_won:
 		await get_tree().process_frame
 		if get_tree().paused:
 			continue
 		var dt := get_process_delta_time()
-		var mv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
-		_cursor = (_cursor + mv * 130.0 * dt).clamp(MAP.position, MAP.end)
-		if _attempts <= 0 and not _plate_won:
-			# Se agotaron los intentos: la señal se pierde y se vuelve a empezar.
-			_mode = ""
-			_static = 0.9
-			await toast(String(mm["lose"]), RED, 2.4)
-			_frags = 0
-			_best_pct = 100.0
-			_has_prop = false
-			_signs.clear()
-			_attempts = _attempts_for_energy(mm)
-			_mode = "plate"
-		if not hint_shown and failed >= int(mm["hint_after"]) and not _plate_won:
-			hint_shown = true
-			dialog.show_hint("CONTROLADORA", String(mm["hint"]), 8.0)
-		failed = maxi(failed, int(_attempts_used))
+		_tune_flash = maxf(0.0, _tune_flash - dt * 4.0)
+		if _mode == "tune":
+			_tune_step(dt)
+		else:
+			var mv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
+			_cursor = (_cursor + mv * 130.0 * dt).clamp(MAP.position, MAP.end)
+		var n_dec := _decoded.count(true)
+		if _mode == "tune":
+			_mm_info.text = String(mm["tuning"])
+		elif n_dec < int(mm["needed"]):
+			_mm_info.text = "%s  (%d/%d)" % [mm["step1"], n_dec, int(mm["needed"])]
+		else:
+			_mm_info.text = String(mm["step2"])
 	_mode = ""
 	_static = 0.0
-	await wait(0.6)
+	await wait(0.5)
+	await _plate_reveal(mm)
+	await toast(String(mm["verify"]), RetroTheme.PHOSPHOR, 2.0)
 	await toast(String(sc["reward"]), YELLOW, 2.8)
 	await say(sc["outro"])
 
 
-var _attempts_used := 0
+## Al encontrar el Sol: los demás púlsares laten uno a uno y su onda viaja hasta el punto; con cada
+## pulso el Sol brilla un poco más, hasta que se ve claramente. (No se dibujan todos los círculos a la vez.)
+func _plate_reveal(mm: Dictionary) -> void:
+	var order: Array = []
+	for i in _pulsars.size():
+		if not _decoded[i]:
+			order.append(i)
+	order.sort_custom(func(a: int, b: int) -> bool: return float(_pulsars[a]["len"]) < float(_pulsars[b]["len"]))
+	var gap := float(mm["reveal_gap"])
+	var travel := float(mm["reveal_travel"])
+	var total := order.size()
+	var start := _t
+	var launched := 0
+	var arrived := 0
+	while arrived < total:
+		await get_tree().process_frame
+		if get_tree().paused:
+			continue
+		var el := _t - start
+		while launched < total and el >= float(launched) * gap:
+			_rev_rings.append({"i": order[launched], "t0": _t, "arrived": false})
+			_play_plate(_blip, 0.7 + 0.05 * float(launched))   # cada púlsar suena un poco más agudo
+			launched += 1
+		for ring in _rev_rings:
+			if not bool(ring["arrived"]) and _t - float(ring["t0"]) >= travel:
+				ring["arrived"] = true
+				arrived += 1
+				_revealed[int(ring["i"])] = true
+				_rev_glow = float(arrived) / float(total)
+				_rev_flare = 0.5
+	# El Sol queda encendido: se encontró.
+	_rev_flare = 1.0
+	_play_plate(_blip, 2.0)
+	_flash = 0.5
+	await wait(0.7)
+	_reveal_done = true
 
 
-func _attempts_for_energy(mm: Dictionary) -> int:
-	_attempts_used = 0
-	var n := int(mm["base_attempts"]) + int(_energy / float(mm["energy_per_attempt"]))
-	return clampi(n, int(mm["base_attempts"]), int(mm["max_attempts"]))
+func _drain_plate(amount: float) -> void:
+	_energy = maxf(3.0, _energy - amount)   # la energía baja, pero esta fase no se pierde por eso
 
 
+## Índice del púlsar más cercano a `pos` (a menos de 16 px) o -1.
+func _pick_pulsar(pos: Vector2) -> int:
+	var best := -1
+	var bd := 16.0
+	for i in _pulsars.size():
+		var d := pos.distance_to(_pulsars[i]["pos"])
+		if d < bd:
+			bd = d
+			best = i
+	return best
+
+
+## Clic o ENTER en el mapa: sobre un púlsar empieza a sincronizarlo; en otro sitio propone la posición del Sol.
+func _plate_action(pos: Vector2) -> void:
+	var i := _pick_pulsar(pos)
+	if i >= 0:
+		if _decoded[i]:
+			toast("PÚLSAR %s YA SINCRONIZADO" % _pulsars[i]["id"], RetroTheme.WHITE, 0.8)
+		else:
+			_begin_tune(i)
+		return
+	_propose(pos)
+
+
+# --- Sincronizar el pulso de un púlsar (pulsar al ritmo de su destello) ---
+func _begin_tune(i: int) -> void:
+	var mm := _plate_mm
+	var period := float(_pulsars[i]["period"])
+	var k := maxi(1, int(ceil(float(mm["min_beat"]) / period)))   # los púlsares rápidos cuentan 1 de cada k destellos
+	_tune_i = i
+	_tune_beat = period * float(k)
+	# El margen crece con la duración del tiempo: los púlsares lentos son mucho más fáciles de atinar.
+	_tune_tol = clampf(_tune_beat * float(mm["tolerance_ratio"]), 0.12, float(mm["tolerance"]))
+	_tune_t = 0.0
+	_tune_hits = 0
+	_tune_miss = 0
+	_tune_judged = 2
+	_tune_next_blip = 1
+	_mode = "tune"
+
+
+func _tune_step(dt: float) -> void:
+	_tune_t += dt
+	while _tune_t >= float(_tune_next_blip) * _tune_beat:
+		_tune_next_blip += 1
+		_play_plate(_blip, 1.0)
+		_tune_flash = 1.0
+	# Un tiempo que pasó sin pulsar cuenta como fallo (los dos primeros son de escucha).
+	while _mode == "tune" and _tune_t > float(_tune_judged + 1) * _tune_beat + _tune_tol:
+		_tune_judged += 1
+		if _tune_judged >= 3:
+			_tune_register_miss()
+
+
+func _tune_tap() -> void:
+	if _mode != "tune":
+		return
+	var n := int(round(_tune_t / _tune_beat))
+	if n <= 2 or n <= _tune_judged:
+		return   # escucha, o ese tiempo ya se juzgó
+	if absf(_tune_t - float(n) * _tune_beat) <= _tune_tol:
+		_tune_judged = n
+		_tune_hits += 1
+		_play_plate(_blip, 1.7)
+		_flash = 0.25
+		if _tune_hits >= int(_plate_mm["streak_needed"]):
+			_tune_success()
+	else:
+		_tune_register_miss()
+
+
+func _tune_register_miss() -> void:
+	_tune_hits = 0
+	_tune_miss += 1
+	_drain_plate(float(_plate_mm["miss_energy"]))
+	_play_plate(_buzz, 1.0)
+	_static = 0.3
+	if _tune_miss >= 3:
+		var mm := _plate_mm
+		_mode = "plate"
+		_tune_i = -1
+		toast(String(mm["tune_fail"]), RED, 1.4)
+
+
+func _tune_success() -> void:
+	var id := String(_pulsars[_tune_i]["id"])
+	_decoded[_tune_i] = true
+	_tune_i = -1
+	_mode = "plate"
+	_flash = 0.6
+	toast(String(_plate_mm["decoded"]) % id, YELLOW, 1.2)
+
+
+# --- Ubicar el Sol ---
 func _propose(pos: Vector2) -> void:
-	if _plate_won or _attempts <= 0 or not MAP.has_point(pos):
+	if _plate_won or not MAP.has_point(pos):
 		return
 	var mm := _plate_mm
+	if _decoded.count(true) < int(mm["needed"]):
+		toast(String(mm["need_more"]), RetroTheme.WHITE, 1.4)
+		return
 	var thr: Array = mm["thresholds_pct"]
 	var diag := MAP.size.length()
-	_attempts -= 1
-	_attempts_used += 1
 	_proposal = pos
 	_has_prop = true
 	_last_pct = pos.distance_to(_sun) / diag * 100.0
 	_best_pct = minf(_best_pct, _last_pct)
-	_signs.clear()
-	for p in _pulsars:
-		var diff := float(p["len"]) - pos.distance_to(p["pos"])
-		_signs.append("=" if absf(diff) <= 6.0 else ("+" if diff > 0.0 else "−"))
 	# Cada umbral superado descifra un fragmento del mensaje.
 	var unlocked := 0
 	for th in thr:
@@ -1743,6 +1888,8 @@ func _propose(pos: Vector2) -> void:
 		var names: Array = mm["fragments"]
 		toast(String(mm["unlock"]) % String(names[mini(_frags, names.size()) - 1]), YELLOW, 1.2)
 		_flash = 0.6
+	if _last_pct > float(thr[thr.size() - 1]):
+		_drain_plate(float(mm["wrong_energy"]))   # cada propuesta fallida gasta un poco de energía
 	if _last_pct > float(thr[0]):
 		_static = 0.45   # equivocarse mucho llena la pantalla de ruido
 	if _frags >= thr.size():
@@ -1750,9 +1897,57 @@ func _propose(pos: Vector2) -> void:
 		_static = 0.0
 
 
+func _setup_plate_audio() -> void:
+	_blip = AudioStreamPlayer.new()
+	_blip.stream = _make_blip()
+	_blip.volume_db = -12.0
+	world.add_child(_blip)
+	_buzz = AudioStreamPlayer.new()
+	_buzz.stream = _make_noise(0.16)
+	_buzz.volume_db = -14.0
+	world.add_child(_buzz)
+
+
+func _play_plate(player: AudioStreamPlayer, pitch: float) -> void:
+	if is_instance_valid(player):
+		player.pitch_scale = pitch
+		player.play()
+
+
+func _make_blip() -> AudioStreamWAV:
+	var rate := 22050
+	var count := int(rate * 0.09)
+	var bytes := PackedByteArray()
+	bytes.resize(count)
+	for i in count:
+		var env := 1.0 - float(i) / count
+		bytes[i] = int(sin(TAU * 660.0 * float(i) / rate) * 60.0 * env) & 0xFF
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_8_BITS
+	wav.mix_rate = rate
+	wav.stereo = false
+	wav.data = bytes
+	return wav
+
+
+## Círculo recortado al mapa (no se sale del recuadro).
+func _draw_map_circle(c: CanvasItem, center: Vector2, r: float, col: Color, width: float) -> void:
+	var prev := Vector2.ZERO
+	var prev_in := false
+	for k in 97:
+		var ang := TAU * float(k) / 96.0
+		var pt := center + Vector2(cos(ang), sin(ang)) * r
+		var inside := MAP.has_point(pt)
+		if prev_in and inside:
+			c.draw_line(prev, pt, col, width)
+		prev = pt
+		prev_in = inside
+
+
 func _draw_plate(c: DrawNode) -> void:
 	var mm := _plate_mm
 	var font := ThemeDB.fallback_font
+	var circle_cols: Array = [Color("#80f2ff"), Color("#ffd24a"), Color("#ff8ad0"), Color("#7aff9a")]
 	# Mapa de la galaxia con los 14 púlsares.
 	c.draw_rect(MAP, Color(0.02, 0.03, 0.09, 0.9))
 	c.draw_rect(MAP, Color(RetroTheme.PHOSPHOR, 0.6), false, 1.0)
@@ -1760,30 +1955,77 @@ func _draw_plate(c: DrawNode) -> void:
 		c.draw_line(MAP.position + Vector2(gx * MAP.size.x / 8.0, 0), MAP.position + Vector2(gx * MAP.size.x / 8.0, MAP.size.y), Color(1, 1, 1, 0.04), 1.0)
 	for gy in range(1, 4):
 		c.draw_line(MAP.position + Vector2(0, gy * MAP.size.y / 4.0), MAP.position + Vector2(MAP.size.x, gy * MAP.size.y / 4.0), Color(1, 1, 1, 0.04), 1.0)
-	# Líneas desde la propuesta hacia cada púlsar.
+	# Círculos: el radio de cada uno es la longitud de su línea en la placa. El Sol está donde se cruzan.
+	for i in _pulsars.size():
+		if _decoded[i]:
+			var cc: Color = circle_cols[i % circle_cols.size()]
+			_draw_map_circle(c, _pulsars[i]["pos"], float(_pulsars[i]["len"]), Color(cc, 0.8), 1.5)
+	# Líneas desde la propuesta hacia los púlsares ya sincronizados (todos si se acertó).
 	if _has_prop:
 		for i in _pulsars.size():
-			var col := RetroTheme.PHOSPHOR if _signs[i] == "=" else (YELLOW if _plate_won else Color("#ff9a7a"))
-			c.draw_line(_proposal, _pulsars[i]["pos"], Color(col, 0.5), 1.0)
+			if _decoded[i]:
+				var diff := absf(float(_pulsars[i]["len"]) - _proposal.distance_to(_pulsars[i]["pos"]))
+				var col := RetroTheme.PHOSPHOR if diff <= 6.0 else Color("#ff9a7a")
+				c.draw_line(_proposal, _pulsars[i]["pos"], Color(col, 0.55), 1.0)
 	for i in _pulsars.size():
 		var p: Dictionary = _pulsars[i]
 		var pos: Vector2 = p["pos"]
 		var period := maxf(float(p["period"]), 0.18)
 		var phase := fmod(c.t, period) / period
 		var lit := phase < 0.16
-		c.draw_circle(pos, 4.0 if lit else 2.5, Color("#ffffff") if lit else Color("#8aa0ff"))
+		var dot_col := Color("#ffffff") if lit else Color("#8aa0ff")
+		if _decoded[i] or _revealed[i]:
+			dot_col = circle_cols[i % circle_cols.size()]
+		c.draw_circle(pos, 4.0 if lit else 2.5, dot_col)
 		if lit:
 			c.draw_arc(pos, 8.0, 0.0, TAU, 14, Color(1, 1, 1, 0.5), 1.0)
 		c.draw_string(font, pos + Vector2(6, -4), "%s %.2fs" % [p["id"], p["period"]], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.8))
-		if _has_prop and i < _signs.size():
-			var sg: String = _signs[i]
-			c.draw_string(font, pos + Vector2(-4, 14), sg, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, RetroTheme.PHOSPHOR if sg == "=" else RED)
-	if _plate_won:
-		c.draw_circle(_sun, 6.0, YELLOW)
-		c.draw_arc(_sun, 10.0 + 2.0 * sin(c.t * 4.0), 0.0, TAU, 20, YELLOW, 1.0)
+		if _decoded[i] or _revealed[i]:
+			c.draw_line(pos + Vector2(-4, 12), pos + Vector2(-1, 15), RetroTheme.PHOSPHOR, 2.0)
+			c.draw_line(pos + Vector2(-1, 15), pos + Vector2(5, 8), RetroTheme.PHOSPHOR, 2.0)
+	# Sincronización: un anillo se cierra sobre el púlsar y hay que pulsar cuando lo alcanza.
+	if _tune_i >= 0:
+		var tp: Vector2 = _pulsars[_tune_i]["pos"]
+		var nb := int(floor(_tune_t / _tune_beat)) + 1
+		var prog := 1.0 - (float(nb) * _tune_beat - _tune_t) / _tune_beat
+		var ring_col := Color(1, 1, 1, 0.55) if nb <= 2 else YELLOW
+		c.draw_arc(tp, lerpf(38.0, 7.0, prog), 0.0, TAU, 36, ring_col, 2.0)
+		# Zona de acierto: la franja que se ve alrededor del púlsar es el margen para pulsar a tiempo.
+		var win_px := clampf(_tune_tol / _tune_beat * 31.0, 2.0, 12.0)
+		c.draw_arc(tp, 7.0 + win_px * 0.5, 0.0, TAU, 28, Color(RetroTheme.PHOSPHOR, 0.3), win_px)
+		c.draw_arc(tp, 7.0, 0.0, TAU, 20, Color(1, 1, 1, 0.9), 1.0)
+		if _tune_flash > 0.0:
+			c.draw_circle(tp, 5.0 + 10.0 * _tune_flash, Color(1, 1, 1, 0.45 * _tune_flash))
+		if nb <= 2:
+			c.draw_string(font, tp + Vector2(-20, -16), "ESCUCHA", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.8))
+		else:
+			c.draw_string(font, tp + Vector2(-8, -16), "¡YA!" if prog > 0.82 else "...", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
+	# Revelado: la onda de cada púlsar viaja hasta el Sol y luego se desvanece.
+	var travel := float(mm.get("reveal_travel", 0.55))
+	for ring in _rev_rings:
+		var age := _t - float(ring["t0"])
+		var rp := clampf(age / travel, 0.0, 1.0)
+		var alpha := 0.9 if age < travel else maxf(0.0, 1.0 - (age - travel) / 0.45) * 0.9
+		if alpha > 0.02:
+			var ri := int(ring["i"])
+			var rcol: Color = circle_cols[ri % circle_cols.size()]
+			var rpos: Vector2 = _pulsars[ri]["pos"]
+			_draw_map_circle(c, rpos, float(_pulsars[ri]["len"]) * (1.0 - pow(1.0 - rp, 2.0)), Color(rcol, alpha), 2.0)
+			if age < 0.18:
+				c.draw_circle(rpos, 7.0 - age * 20.0, Color(1, 1, 1, 0.7 - age * 3.0))   # el púlsar late
+	# El Sol brilla más con cada pulso que llega.
+	if _rev_glow > 0.0 or _reveal_done:
+		var g := 1.0 if _reveal_done else _rev_glow
+		c.draw_circle(_sun, 6.0 + 16.0 * g, Color(YELLOW, 0.10 + 0.10 * g))
+		c.draw_circle(_sun, 3.0 + 3.0 * g, Color(1.0, 0.95, 0.6, 0.35 + 0.65 * g))
+		if _rev_flare > 0.0:
+			c.draw_arc(_sun, 8.0 + (1.0 - _rev_flare) * 26.0, 0.0, TAU, 28, Color(YELLOW, _rev_flare * 0.8), 2.0)
+		if _reveal_done:
+			c.draw_arc(_sun, 11.0 + 2.0 * sin(c.t * 4.0), 0.0, TAU, 20, YELLOW, 1.0)
 	# Cursor y propuesta.
-	c.draw_line(_cursor + Vector2(-7, 0), _cursor + Vector2(7, 0), Color(1, 1, 1, 0.7), 1.0)
-	c.draw_line(_cursor + Vector2(0, -7), _cursor + Vector2(0, 7), Color(1, 1, 1, 0.7), 1.0)
+	if _tune_i < 0:
+		c.draw_line(_cursor + Vector2(-7, 0), _cursor + Vector2(7, 0), Color(1, 1, 1, 0.7), 1.0)
+		c.draw_line(_cursor + Vector2(0, -7), _cursor + Vector2(0, 7), Color(1, 1, 1, 0.7), 1.0)
 	if _has_prop:
 		c.draw_arc(_proposal, 5.0, 0.0, TAU, 12, YELLOW, 2.0)
 	# Placa: cuatro fragmentos que se van descifrando.
@@ -1801,16 +2043,28 @@ func _draw_plate(c: DrawNode) -> void:
 			for k in 24:
 				c.draw_rect(Rect2(cell.position + Vector2(randf() * 108.0, randf() * 48.0), Vector2(2, 1)), Color(1, 1, 1, 0.18))
 			c.draw_string(font, cell.position + Vector2(44, 32), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 1, 1, 0.3))
-	# Medidor de error, intentos y leyenda.
-	var err_col := RetroTheme.PHOSPHOR if _last_pct <= float(mm["thresholds_pct"][3]) else (YELLOW if _last_pct <= float(mm["thresholds_pct"][1]) else RED)
+	# Medidor de error y estado de la sincronización.
+	var thr: Array = mm["thresholds_pct"]
+	var err_col := RetroTheme.PHOSPHOR if _last_pct <= float(thr[3]) else (YELLOW if _last_pct <= float(thr[1]) else RED)
 	c.draw_string(font, Vector2(398, 202), "%s %s" % [mm["error_label"], ("--" if not _has_prop else "%d%%" % int(round(_last_pct)))], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, RetroTheme.WHITE)
 	var eb := Rect2(398, 208, 234, 8)
 	c.draw_rect(eb, Color(0, 0, 0, 0.6))
 	if _has_prop:
 		c.draw_rect(Rect2(eb.position, Vector2(eb.size.x * clampf(_last_pct / 50.0, 0.04, 1.0), eb.size.y)), err_col)
 	c.draw_rect(eb, err_col, false, 1.0)
-	c.draw_string(font, Vector2(398, 232), "%s: %d" % [mm["attempts_label"], _attempts], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW)
-	c.draw_string(font, Vector2(398, 248), String(mm["legend"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.75))
+	var needed := int(mm["needed"])
+	var n_dec := mini(_decoded.count(true), needed)
+	if _tune_i >= 0:
+		c.draw_string(font, Vector2(398, 232), "%s %s" % [mm["tune_title"], _pulsars[_tune_i]["id"]], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW)
+		var sn := int(mm["streak_needed"])
+		for k in sn:
+			c.draw_circle(Vector2(560 + k * 14, 229), 4.0, YELLOW if k < _tune_hits else Color(1, 1, 1, 0.2))
+		c.draw_string(font, Vector2(398, 248), "Fallos: %d/3" % _tune_miss, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#ff9a7a") if _tune_miss > 0 else Color(1, 1, 1, 0.6))
+	else:
+		c.draw_string(font, Vector2(398, 232), "%s: %d/%d" % [mm["sync_label"], n_dec, needed], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, YELLOW)
+		for k in needed:
+			c.draw_circle(Vector2(560 + k * 14, 229), 4.0, YELLOW if k < n_dec else Color(1, 1, 1, 0.2))
+		c.draw_string(font, Vector2(398, 248), String(mm["legend"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1, 1, 1, 0.75))
 
 
 func _draw_fragment(c: DrawNode, i: int, cell: Rect2) -> void:
@@ -1915,9 +2169,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event is InputEventMouseMotion:
 				_cursor = get_local_mouse_position().clamp(MAP.position, MAP.end)
 			elif click:
-				_propose(get_local_mouse_position())
+				_plate_action(get_local_mouse_position())
 			elif event.is_action_pressed("ui_accept"):
-				_propose(_cursor)
+				_plate_action(_cursor)
+		"tune":
+			if click or event.is_action_pressed("ui_accept"):
+				_tune_tap()
 
 
 func _toggle_pause() -> void:
