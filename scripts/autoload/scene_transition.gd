@@ -35,6 +35,14 @@ func change_scene(path: String, duration: float = 0.6) -> void:
 
 	await _fade_to(1.0, duration)
 
+	# Se libera la escena actual de inmediato (no al final del frame): así las corrutinas que seguían
+	# esperando (diálogos, minijuegos, fichas) no se reanudan con el nodo ya fuera del árbol, que era lo
+	# que producía errores de script ("get_tree() es null") al cambiar de escena a mitad de una fase.
+	var current := get_tree().current_scene
+	if is_instance_valid(current):
+		get_tree().current_scene = null
+		current.free()
+
 	var err := get_tree().change_scene_to_file(path)
 	if err != OK:
 		push_error("SceneTransition: no se pudo cargar '%s' (error %d)" % [path, err])

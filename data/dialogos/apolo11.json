@@ -1,0 +1,243 @@
+{
+	"_nota": "Capítulo APOLLO 11: EAGLE (julio de 1969). El jugador es un controlador de vuelo de Houston (personaje imaginado). Las frases históricas se muestran en inglés con su traducción debajo ('sub'). Las entradas 'verificar' son datos por confirmar. Las cinemáticas todavía no existen: se muestra la pantalla 'CINEMÁTICA EN PROGRESO'.",
+	"disclaimer": "El controlador de vuelo es un personaje imaginado.\nLas frases en inglés, las fechas y los hechos de la misión son reales.",
+	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
+	"cinematic_pending": "CINEMÁTICA EN PROGRESO",
+	"speakers": {
+		"CONTROL": {"name": "CONTROL (HOUSTON)", "radio": false, "color": "#c8ccd8", "portrait": "control"},
+		"ARMSTRONG": {"name": "ARMSTRONG", "radio": false, "color": "#e0b040", "portrait": "armstrong"},
+		"ALDRIN": {"name": "ALDRIN", "radio": false, "color": "#d8c080", "portrait": "aldrin"},
+		"COLLINS": {"name": "COLLINS", "radio": false, "color": "#a8c0d8", "portrait": "collins"},
+		"NIXON": {"name": "PRESIDENTE NIXON", "radio": false, "color": "#b8b0a0", "portrait": "nixon"}
+	},
+	"hud": {
+		"date": "FECHA",
+		"objective": "OBJETIVO",
+		"fuel": "COMBUSTIBLE",
+		"oxygen": "OXÍGENO",
+		"in_transit": "SEÑAL EN TRÁNSITO",
+		"debug": "DEBUG · F1-F6: SALTAR FASE",
+		"pause_title": "PAUSA",
+		"pause_continue": "CONTINUAR",
+		"pause_exit": "VOLVER AL SELECTOR",
+		"button_back": "ENTER / CLIC: VOLVER AL SELECTOR"
+	},
+	"scenes": [
+		{
+			"id": "orbita",
+			"title": "FASE 0 · ÓRBITA LUNAR",
+			"date": "JULIO 1969",
+			"objective": "VER LA SEPARACIÓN DEL EAGLE",
+			"fuel": 100,
+			"cinematic_tag": "ÓRBITA LUNAR",
+			"countdown_start": 720,
+			"dialog": [
+				{"speaker": "CONTROL", "text": "Control a todas las estaciones: el Eagle tiene un combustible limitado para el descenso. Cada segundo cuenta."},
+				{"speaker": "COLLINS", "text": "Eagle, aquí Columbia. Te veo bien. Yo me quedo arriba."},
+				{"speaker": "ARMSTRONG", "text": "Entendido, Mike. Separación confirmada."}
+			]
+		},
+		{
+			"id": "descenso",
+			"title": "FASE 1 · DESCENSO Y ATERRIZAJE",
+			"date": "JULIO 1969",
+			"objective": "ALUNIZAR EN UNA ZONA PLANA",
+			"fuel": 100,
+			"intro": [
+				{"speaker": "CONTROL", "text": "Eagle, tienes luz verde para el descenso. Elige con el visor una zona plana, sin cráteres ni rocas."}
+			],
+			"zones": [
+				{"name": "A", "x": 70, "w": 78, "safe": true},
+				{"name": "B", "x": 195, "w": 78, "safe": false},
+				{"name": "C", "x": 320, "w": 78, "safe": true},
+				{"name": "D", "x": 445, "w": 78, "safe": false},
+				{"name": "E", "x": 570, "w": 78, "safe": true}
+			],
+			"minimission": {
+				"title": "MINIJUEGO: ESTABILIZAR EL EAGLE",
+				"pick_title": "ELIGE LA ZONA DE ATERRIZAJE",
+				"pick_info": "Mueve el visor (flechas / WASD o mouse) y pulsa ENTER o clic para elegir",
+				"info": "Empuje: W / ↑ / ESPACIO · Inclinación: A / D · Baja la velocidad vertical y nivela el módulo",
+				"zone_ok": "SEGURA",
+				"zone_bad": "PELIGRO",
+				"picked": "ZONA %s ELEGIDA",
+				"picked_bad": "ZONA %s ELEGIDA: HAY ROCAS Y CRÁTERES. PUEDES CORREGIR EL RUMBO",
+				"start_alt": 1000.0,
+				"start_vy": -22.0,
+				"gravity": 1.62,
+				"thrust": 4.4,
+				"burn": 1.1,
+				"rcs_burn": 0.22,
+				"rot_rate": 1.0,
+				"disturbance": 0.35,
+				"v_ok": 3.5,
+				"vx_ok": 3.0,
+				"ang_ok": 0.15,
+				"warn_fuel": 25.0,
+				"low_fuel": 18.0,
+				"warn_text": "Tenéis sesenta segundos de combustible.",
+				"low_label": "COMBUSTIBLE CRÍTICO",
+				"crash_speed": "SE ESTRELLÓ: VELOCIDAD VERTICAL DEMASIADO ALTA",
+				"crash_tilt": "SE ESTRELLÓ: MÓDULO INCLINADO",
+				"crash_zone": "SE ESTRELLÓ: ZONA DE PELIGRO",
+				"crash_drift": "SE ESTRELLÓ: DEMASIADA VELOCIDAD LATERAL",
+				"retry": "REINTENTO: NUEVO COMBUSTIBLE Y NUEVA ELECCIÓN DE ZONA",
+				"landed": "¡EL EAGLE HA ALUNIZADO!"
+			},
+			"outro": [
+				{"speaker": "ARMSTRONG", "text": "Houston, Tranquility Base here. The Eagle has landed.", "sub": "Houston, aquí Base Tranquilidad. El Eagle ha alunizado."},
+				{"speaker": "CONTROL", "text": "Entendido, Tranquility. Os copiamos en la superficie."}
+			],
+			"verificar": "La velocidad y el combustible del descenso son valores de juego; la frase 'sesenta segundos de combustible' viene del guion del equipo."
+		},
+		{
+			"id": "primer_paso",
+			"title": "FASE 2 · PRIMER PASO",
+			"date": "JULIO 1969",
+			"objective": "INSTALAR EL EQUIPO EN LA SUPERFICIE",
+			"fuel": 100,
+			"cinematic_tag": "ARMSTRONG BAJA LA ESCALERA",
+			"intro": [
+				{"speaker": "ARMSTRONG", "text": "That's one small step for man, one giant leap for mankind.", "sub": "Es un pequeño paso para el hombre, un gran salto para la humanidad."}
+			],
+			"actions": {
+				"title": "ACCIONES EN LA SUPERFICIE",
+				"info": "Haz clic en los puntos (o pulsa su número). No hay fracaso: tómate tu tiempo",
+				"items": [
+					{"id": "bandera", "label": "DESPLEGAR LA BANDERA", "x": 470, "y": 176},
+					{"id": "placa", "label": "LEER LA PLACA", "x": 168, "y": 168},
+					{"id": "easep", "label": "INSTALAR EL EASEP", "x": 490, "y": 226},
+					{"id": "nixon", "label": "LLAMADA A NIXON", "x": 330, "y": 106}
+				],
+				"flag_text": "BANDERA DESPLEGADA",
+				"plaque_title": "LA PLACA",
+				"plaque_es": "Aquí, hombres del planeta Tierra pisaron la Luna por primera vez. Julio de 1969 d. C. Venimos en paz para toda la humanidad.",
+				"plaque_en": "Here men from the planet Earth first set foot upon the Moon, July 1969, A.D. We came in peace for all mankind.",
+				"easep_text": "EASEP INSTALADO: SISMÓMETRO Y DETECTOR DE POLVO",
+				"nixon_lines": [
+					{"speaker": "NIXON", "text": "Hello, Neil and Buzz. I'm talking to you by telephone from the Oval Office at the White House.", "sub": "Hola, Neil y Buzz. Os hablo por teléfono desde el Despacho Oval de la Casa Blanca."},
+					{"speaker": "NIXON", "text": "This certainly has to be the most historic telephone call ever made.", "sub": "Esta tiene que ser la llamada telefónica más histórica jamás hecha."}
+				],
+				"done": "TODAS LAS ACCIONES COMPLETADAS"
+			},
+			"outro": [
+				{"speaker": "ALDRIN", "text": "Magnificent desolation.", "sub": "(19 minutos después) Magnífica desolación."}
+			],
+			"verificar": "Texto de la placa y de la llamada de Nixon: confirmar la redacción exacta con las fuentes de la NASA. El guion del equipo habla de 'sismómetro y detector de polvo' para el EASEP; la misión real también llevó un espejo láser (LRRR)."
+		},
+		{
+			"id": "rocas",
+			"title": "FASE 3 · RECOLECCIÓN DE ROCAS",
+			"date": "JULIO 1969",
+			"objective": "RECOGER 21,5 KG DE MUESTRAS",
+			"fuel": 100,
+			"minimission": {
+				"title": "MINIJUEGO: RECOLECCIÓN DE ROCAS",
+				"info": "Muévete en 8 direcciones (WASD / flechas) y recoge las rocas al pasar por encima",
+				"goal_kg": 21.5,
+				"limit_m": 100,
+				"speed": 44.0,
+				"o2_base": 2.0,
+				"o2_distance": 1.6,
+				"rocks_big": 4,
+				"rocks_mid": 10,
+				"rocks_small": 16,
+				"limit_text": "LÍMITE DE 100 M DEL MÓDULO",
+				"return_text": "¡MUESTRAS COMPLETAS! VUELVE AL EAGLE",
+				"success": "RECOLECCIÓN COMPLETADA",
+				"fail": "OXÍGENO AGOTADO: VUELVES AL MÓDULO SIN COMPLETAR LA RECOLECCIÓN",
+				"retry": "REINTENTO: NUEVO OXÍGENO Y NUEVAS ROCAS",
+				"hint_start": "Voy hacia la roca grande.",
+				"hint_o2": "Quedan treinta minutos de oxígeno.",
+				"o2_warn": 40.0
+			},
+			"outro": [
+				{"speaker": "CONTROL", "text": "Veintiún kilos y medio de roca lunar. Ahora, a volver al Eagle: el siguiente paso es el despegue."}
+			],
+			"verificar": "Alcance, masa de las rocas y consumo de oxígeno son valores de juego; el objetivo de 21,5 kg y el límite de unos 100 m vienen del guion del equipo."
+		},
+		{
+			"id": "despegue",
+			"title": "FASE 4 · DESPEGUE",
+			"date": "JULIO 1969",
+			"objective": "DESPEGAR Y ENTRAR EN ÓRBITA",
+			"fuel": 15,
+			"intro": [
+				{"speaker": "CONTROL", "text": "El motor de ascenso tiene que funcionar a la primera. Cada intento gasta combustible, y queda muy poco."}
+			],
+			"minimission": {
+				"title": "MINIJUEGO: DESPEGUE",
+				"meter_info": "Pulsa ENTER / ESPACIO / clic para detener la barra dentro de la zona verde",
+				"orbit_info": "Mantén el ángulo (A / D) dentro de la banda dorada hasta llegar a la órbita",
+				"fuel_start": 15.0,
+				"fail_low_cost": 3.0,
+				"fail_high_cost": 4.0,
+				"low_text": "POTENCIA BAJA: EL MÓDULO NO SALE DE LA SUPERFICIE",
+				"high_text": "POTENCIA ALTA: EL MÓDULO SE DESVÍA",
+				"liftoff_text": "¡DESPEGUE!",
+				"no_fuel": "SIN COMBUSTIBLE: NO SE ALCANZA LA ÓRBITA",
+				"retry": "REINTENTO: COMBUSTIBLE DE ASCENSO RECARGADO",
+				"orbit_ok": "ÓRBITA ALCANZADA",
+				"orbit_burn_in": 0.45,
+				"orbit_burn_out": 1.2,
+				"orbit_seconds": 9.0,
+				"orbit_limit": 18.0,
+				"band": 9.0,
+				"pm_speed": 0.85,
+				"zone": [0.66, 0.80],
+				"hint": "Ascenso confirmado."
+			},
+			"liftoff": [
+				{"speaker": "ARMSTRONG", "text": "Tranquility, Eagle lifting off.", "sub": "Base Tranquilidad, el Eagle despega."}
+			],
+			"outro": [
+				{"speaker": "CONTROL", "text": "Ascenso confirmado."}
+			],
+			"verificar": "Las frases del despegue vienen del guion del equipo; el combustible y la barra de potencia son valores de juego."
+		},
+		{
+			"id": "acoplamiento",
+			"title": "FASE 5 · ACOPLAMIENTO Y REGRESO",
+			"date": "JULIO 1969",
+			"objective": "VER EL ACOPLAMIENTO",
+			"fuel": 0,
+			"cinematic_tag": "ACOPLAMIENTO CON LA COLUMBIA",
+			"dialog": [
+				{"speaker": "COLLINS", "text": "Bienvenidos a casa."},
+				{"speaker": "ARMSTRONG", "text": "Gracias, Mike. Nos alegra estar contigo."}
+			],
+			"epilogue": [
+				"El Eagle se separa de la Columbia y queda en órbita lunar.",
+				"Su destino no se conoce: se supone que se estrelló entre uno y cuatro meses después."
+			],
+			"final_text": "El Eagle cumplió su misión.\nNadie sabe exactamente dónde terminó.",
+			"verificar": "El destino exacto de la etapa de ascenso del Eagle no está confirmado: confirmar el rango de 'entre uno y cuatro meses' con fuentes NASA."
+		}
+	],
+	"mission_hud": {
+		"briefing": {
+			"header": "MISIÓN 1 · LUNA",
+			"badge": "M1 · APOLLO 11",
+			"title": "APOLLO 11: EAGLE",
+			"year": "JULIO 1969",
+			"place": "Mar de la Tranquilidad, Luna",
+			"equipment": "Módulo lunar Eagle y módulo de comando Columbia",
+			"narrators": "Un controlador de vuelo de Houston imaginado, con hechos reales",
+			"objective": "Guiar al Eagle desde la órbita hasta la superficie y de vuelta a casa, administrando combustible y oxígeno.",
+			"scientist": "CONTROL"
+		},
+		"general_controls": [
+			["ENTER / CLIC", "avanzar los mensajes"],
+			["ESC", "pausa (continuar o volver)"],
+			["C · O · I", "controles, objetivos e información de la misión"]
+		],
+		"phases": [
+			{"tip": "Mira la telemetría: el combustible del descenso es lo que une toda la misión.", "keys": [["ENTER / CLIC", "ui_accept", "AVANZAR"]]},
+			{"tip": "Elige una zona sin cráteres. Frena con empuje corto y mantén el módulo nivelado.", "keys": [["W / ↑ / ESP", "thrust", "EMPUJE"], ["A / D", "", "INCLINAR"], ["ENTER / CLIC", "ui_accept", "ELEGIR ZONA"]]},
+			{"tip": "Cada punto es una acción sin fracaso. Haz clic en cada uno.", "keys": [["CLIC", "", "ACCIÓN"], ["1-4", "", "ACCIÓN"]]},
+			{"tip": "Recoge rocas al pasar por encima, vigila el oxígeno y no te alejes más de 100 m.", "keys": [["WASD / FLECHAS", "", "MOVERTE"]]},
+			{"tip": "Detén la barra en la zona verde. Después mantén el ángulo en la banda dorada.", "keys": [["ENTER / ESP / CLIC", "ui_accept", "DETENER"], ["A / D", "", "ÁNGULO"]]},
+			{"tip": "Este es el final del viaje.", "keys": [["ENTER / CLIC", "ui_accept", "CONTINUAR"]]}
+		]
+	}
+}
