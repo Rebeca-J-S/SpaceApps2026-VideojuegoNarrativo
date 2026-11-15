@@ -19,6 +19,7 @@ const INPUT_ACTIONS := {
 	"move_down": [KEY_S, KEY_DOWN],             # bajar (Pioneer en el cinturón)
 	"rotate_left": [KEY_A, KEY_LEFT],           # propulsores RCS / girar / empujar a la izquierda
 	"rotate_right": [KEY_D, KEY_RIGHT],         # propulsores RCS / girar / empujar a la derecha
+	"interact": [KEY_E],                        # recoger / usar (Apolo 11: recolección)
 }
 
 ## Sitio elegido en el selector (lo leen las misiones: p. ej. qué gemela de Marte).

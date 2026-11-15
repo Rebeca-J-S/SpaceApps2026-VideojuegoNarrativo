@@ -189,8 +189,6 @@ func _mission_id_for(site: Dictionary) -> String:
 	var scene := String(site.get("scene", ""))
 	if scene.contains("apolo11"):
 		return "apolo11"
-	if scene.contains("surveyor3"):
-		return "surveyor3"
 	if scene.contains("pioneer"):
 		return "pioneer"
 	return "gemelas"

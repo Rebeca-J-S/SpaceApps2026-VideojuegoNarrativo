@@ -23,8 +23,8 @@ const INPUT_GRACE := 0.25       # ignora pulsaciones justo al aparecer (evita sa
 
 const PORTRAIT_COLORS := {
 	"eagle": Color("#c8962e"), "houston": Color("#2e6bd1"), "easep": Color("#3d6fd6"),
-	"lrrr": Color("#9aa0b4"), "centaur": Color("#d8dce8"), "surveyor": Color("#c9c9d2"),
-	"brazo": Color("#8a8ea6"), "bean": Color("#e8ecf4"), "pioneer10": Color("#e0b040"),
+	"lrrr": Color("#9aa0b4"), "neil": Color("#e8ecf4"), "buzz": Color("#d8dce8"),
+	"pioneer10": Color("#e0b040"),
 	"pioneer11": Color("#d0902a"), "spirit": Color("#c0532a"), "opportunity": Color("#cf7440"),
 	"gemelas": Color("#b5532a"), "senal": Color("#39ff7a"), "cientifico": Color("#c8963e"),
 }
