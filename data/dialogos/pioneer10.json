@@ -70,6 +70,11 @@
 				"speed_slow": [65, 105],
 				"speed_fast": [140, 210],
 				"radius_range": [8.0, 27.0],
+				"bg_interval": [0.22, 0.5],
+				"bg_speed": [26, 58],
+				"bg_radius": [6.0, 20.0],
+				"bg_alpha": [0.07, 0.17],
+				"bg_color": "#5a6684",
 				"asteroid_colors": ["#6e5f52", "#7a6a5a", "#5a5048", "#8a7a6a", "#4a4a54", "#6a5a60", "#847466"]
 			},
 			"reward": "Primera nave en atravesar el cinturón de asteroides.",

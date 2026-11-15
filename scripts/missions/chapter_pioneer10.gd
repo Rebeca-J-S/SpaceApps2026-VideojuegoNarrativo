@@ -72,6 +72,8 @@ var _asteroids: Array = []        # cada asteroide es un Dictionary (posición, 
 var _shield := 5
 var _shield_max := 5
 var _invuln := 0.0
+var _belt_coast := false     # tras cruzar el cinturón la nave sigue su viaje y los asteroides siguen pasando
+var _coast_speed := 0.0
 # Júpiter
 var _moons: Array = []
 var _moon_i := 0
@@ -363,6 +365,7 @@ func _clear() -> void:
 	_hl_rect = Rect2()
 	_shake = 0.0
 	_fade_text.hide()
+	_belt_coast = false
 	world.position = Vector2.ZERO
 	for n in world.get_children():
 		world.remove_child(n)
@@ -422,7 +425,17 @@ func _process(delta: float) -> void:
 		world.position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake
 	elif world.position != Vector2.ZERO:
 		world.position = Vector2.ZERO
+	if _belt_coast:
+		_coast_step(delta)
 	_hud_draw.queue_redraw()
+
+
+## Después del cinturón: la nave acelera hacia la derecha y los asteroides restantes siguen pasando (sin dañar).
+func _coast_step(dt: float) -> void:
+	_coast_speed = minf(150.0, _coast_speed + 22.0 * dt)
+	_ship.x += _coast_speed * dt
+	_ship.y = lerpf(_ship.y, 144.0, minf(1.0, dt * 1.2))
+	_move_asteroids(dt, false, {})
 
 
 func _draw_data_panel() -> void:
@@ -599,7 +612,11 @@ func _scene_belt(sc: Dictionary) -> void:
 		# Luz zodiacal: resplandor tenue que crece con el avance.
 		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1.0, 0.85, 0.5, 0.025 + 0.05 * _progress))
 		for a in _asteroids:
-			_draw_asteroid(c, a)
+			if bool(a["bg"]):
+				_draw_asteroid(c, a)
+		for a in _asteroids:
+			if not bool(a["bg"]):
+				_draw_asteroid(c, a)
 		var blink := _invuln > 0.0 and int(c.t * 14.0) % 2 == 0
 		if not blink:
 			PioneerArt.draw_pioneer(c, _ship, PI, 1.5)
@@ -622,7 +639,10 @@ func _scene_belt(sc: Dictionary) -> void:
 	var secs := float(mm["seconds"])
 	var speed := float(mm["ship_speed"])
 	var spawn := 0.8
+	var bg_spawn := 0.2
 	var last_y := 144.0
+	_belt_coast = false
+	_coast_speed = 30.0
 	while _progress < 1.0 and not _depleted:
 		await get_tree().process_frame
 		if get_tree().paused:
@@ -637,27 +657,62 @@ func _scene_belt(sc: Dictionary) -> void:
 		_progress = minf(1.0, _progress + dt / secs)
 		_drain(float(mm["energy_per_second"]) * dt)
 		spawn -= dt
-		if spawn <= 0.0 and _progress < 0.95:
+		if spawn <= 0.0 and _progress < 0.88:
 			var iv: Array = mm["spawn_interval"]
 			spawn = rng.randf_range(float(iv[0]), float(iv[1]))
 			last_y = _spawn_asteroids(rng, mm, last_y)
-		var keep: Array = []
-		for a in _asteroids:
-			a["x"] = float(a["x"]) + float(a["vx"]) * dt
-			a["y"] = float(a["y"]) + float(a["vy"]) * dt
-			a["rot"] = float(a["rot"]) + float(a["spin"]) * dt
-			var ap := Vector2(float(a["x"]), float(a["y"]))
-			if _invuln <= 0.0 and ap.distance_to(_ship) < float(a["r"]) * 0.88 + 7.0:
-				_on_belt_hit(mm)
-			if ap.x > -50.0 and ap.y > GAME_TOP - 50.0 and ap.y < GAME_BOTTOM + 50.0:
-				keep.append(a)
-		_asteroids = keep
+		# Asteroides de fondo: muy tenues y lejanos, no chocan (dan profundidad).
+		bg_spawn -= dt
+		if bg_spawn <= 0.0 and _progress < 0.9:
+			var bi: Array = mm["bg_interval"]
+			bg_spawn = rng.randf_range(float(bi[0]), float(bi[1]))
+			_spawn_background(rng, mm)
+		_move_asteroids(dt, true, mm)
 		_mm_info.text = "%s · %s: %d" % [mm["instruction"], mm["counter"], int(_progress * 12.0)]
 	_mode = ""
 	if _depleted:
 		return
+	# La nave no se detiene: sigue su viaje fuera del cinturón mientras se cuenta el logro.
+	_belt_coast = true
+	_mm_info.text = ""
 	await toast(String(sc["reward"]), YELLOW, 2.6)
 	await say(sc["outro"])
+	var guard := 0.0
+	while _ship.x < W + 40.0 and guard < 4.0:
+		await get_tree().process_frame
+		guard += get_process_delta_time()
+	_belt_coast = false
+
+
+## Mueve los asteroides; los sólidos (no de fondo) dañan a la nave si `collide` es true.
+func _move_asteroids(dt: float, collide: bool, mm: Dictionary) -> void:
+	var keep: Array = []
+	for a in _asteroids:
+		a["x"] = float(a["x"]) + float(a["vx"]) * dt
+		a["y"] = float(a["y"]) + float(a["vy"]) * dt
+		a["rot"] = float(a["rot"]) + float(a["spin"]) * dt
+		var ap := Vector2(float(a["x"]), float(a["y"]))
+		if collide and not bool(a["bg"]) and _invuln <= 0.0 and ap.distance_to(_ship) < float(a["r"]) * 0.88 + 7.0:
+			_on_belt_hit(mm)
+		if ap.x > -50.0 and ap.y > GAME_TOP - 50.0 and ap.y < GAME_BOTTOM + 50.0:
+			keep.append(a)
+	_asteroids = keep
+
+
+## Un asteroide lejano: pequeño, lento, casi transparente y sin colisión.
+func _spawn_background(rng: RandomNumberGenerator, mm: Dictionary) -> void:
+	var rr: Array = mm["bg_radius"]
+	var sp: Array = mm["bg_speed"]
+	var al: Array = mm["bg_alpha"]
+	var r := rng.randf_range(float(rr[0]), float(rr[1]))
+	var col := Color(String(mm["bg_color"]))
+	col.a = rng.randf_range(float(al[0]), float(al[1]))
+	_asteroids.append({
+		"x": W + 30.0 + r, "y": rng.randf_range(GAME_TOP + 6.0, GAME_BOTTOM - 6.0), "r": r,
+		"vx": -rng.randf_range(float(sp[0]), float(sp[1])), "vy": 0.0,
+		"rot": rng.randf() * TAU, "spin": rng.randf_range(-0.6, 0.6),
+		"seed": rng.randf() * 10.0, "col": col, "fast": false, "bg": true,
+	})
 
 
 ## Crea uno o dos asteroides dispersos: tamaños, velocidades y colores variados. Devuelve la última Y.
@@ -680,13 +735,13 @@ func _spawn_asteroids(rng: RandomNumberGenerator, mm: Dictionary, last_y: float)
 		var base := Color(String(palette[rng.randi() % palette.size()]))
 		if fast:
 			base = base.lightened(0.18)
-		base.a = rng.randf_range(0.55, 1.0)
+		base.a = rng.randf_range(0.82, 1.0)   # los que dañan se ven siempre sólidos
 		_asteroids.append({
 			"x": W + 30.0 + r, "y": y, "r": r,
 			"vx": -rng.randf_range(float(sp[0]), float(sp[1])),
 			"vy": rng.randf_range(-24.0, 24.0) if rng.randf() < 0.45 else 0.0,
 			"rot": rng.randf() * TAU, "spin": rng.randf_range(-1.5, 1.5),
-			"seed": rng.randf() * 10.0, "col": base, "fast": fast,
+			"seed": rng.randf() * 10.0, "col": base, "fast": fast, "bg": false,
 		})
 		last_y = y
 	return last_y
@@ -704,6 +759,12 @@ func _draw_asteroid(c: CanvasItem, a: Dictionary) -> void:
 		var ang := float(a["rot"]) + k * TAU / 9.0
 		pts.append(p + Vector2(cos(ang), sin(ang)) * r * (0.76 + 0.24 * sin(k * 2.3 + float(a["seed"]))))
 	c.draw_colored_polygon(pts, col)
+	if bool(a["bg"]):
+		return
+	# Borde claro: los asteroides sólidos (los que dañan) se leen bien.
+	var rim := pts.duplicate()
+	rim.append(pts[0])
+	c.draw_polyline(rim, Color(1, 1, 1, 0.22), 1.0)
 	c.draw_circle(p + Vector2(-r * 0.3, -r * 0.3), maxf(1.5, r * 0.18), Color(1, 1, 1, 0.16 * col.a))
 	c.draw_circle(p + Vector2(r * 0.25, r * 0.3), maxf(1.2, r * 0.13), Color(0, 0, 0, 0.22))
 
