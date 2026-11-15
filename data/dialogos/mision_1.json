@@ -1,44 +1,246 @@
 {
-	"_nota": "Misión 1 – GUARDIANES DE LA TRANQUILIDAD (Apolo 11). Guion aprobado por el equipo: textos literales. Las entradas con 'propuesta' son añadidos sugeridos.",
+	"_nota": "Misión 1 – GUARDIANES DE LA TRANQUILIDAD (Apolo 11). Adaptado a tercera persona desde el guion aprobado. Las máquinas no hablan en primera persona: el narrador (Control de Misión) explica todo en tercera persona. 'verificar' = dato a confirmar; 'propuesta' = añadido que no estaba en el guion aprobado.",
 	"f0_intro": [
-		{"speaker": "EAGLE", "portrait": "eagle", "text": "Hola, piloto. Soy la etapa inferior del Eagle. Mido 4.2 metros de ancho y cargo 8,248 kilos de combustible en mis tanques. Mi único trabajo es llevar a Neil y a Buzz sanos y salvos hasta el polvo lunar. Cuando ellos terminen su misión, usarán mi techo como plataforma de despegue y me dejarán aquí para siempre. Pero antes de quedar en silencio, tengo que entregar una carga muy especial. Usa los propulsores laterales para estabilizarme. ¡Vamos a hacer historia!"}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Operador, te habla Control de Misión. Este es el Eagle, el módulo lunar del Apolo 11. Su etapa inferior mide 4.2 metros de ancho y carga 8,248 kilos de combustible. Su trabajo: llevar a Neil y a Buzz sanos y salvos hasta el polvo lunar."
+		},
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Cuando terminen su misión, los astronautas usarán su techo como plataforma de despegue y la etapa de descenso se quedará en la Luna para siempre. Antes, tiene que entregar una carga muy especial. Usa los propulsores laterales para estabilizarlo."
+		}
 	],
 	"f0_ok": [
-		{"speaker": "EAGLE", "portrait": "eagle", "propuesta": true, "text": "Estable. Así se hace. Ahora sí: preparados para encender el motor de descenso."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "El Eagle está estable. Ya puede encender el motor de descenso.",
+			"propuesta": true
+		}
 	],
 	"f1_ignicion": [
-		{"speaker": "EAGLE", "portrait": "eagle", "text": "¡Motor encendido! Tenemos 756.3 segundos de fuego para frenar nuestra caída. Vigila mi combustible, piloto; cada gota cuenta."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Motor de descenso encendido: 45,000 newtons de empuje. El Eagle tiene 756.3 segundos de fuego para frenar la caída. Vigila su combustible, operador: cada gota cuenta."
+		}
 	],
 	"f1_alarma": [
-		{"speaker": "HOUSTON", "portrait": "houston", "text": "¡Atención! La computadora de guiado está saturada de datos, pero los radares funcionan. No pierdas la concentración, mantén la inclinación."},
-		{"speaker": "EAGLE", "portrait": "eagle", "text": "Mis circuitos aguantan, pero necesito tus manos en los controles para no desviarnos de las coordenadas 0.67° Norte, 23.47° Este."}
+		{
+			"speaker": "HOUSTON",
+			"portrait": "houston",
+			"text": "¡Atención! La computadora de guiado está saturada de datos, pero los radares funcionan. No pierdas la concentración, mantén la inclinación."
+		},
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Los circuitos del Eagle aguantan, pero necesita tus manos en los controles para no desviarse de las coordenadas 0.67° Norte, 23.47° Este."
+		}
 	],
 	"f2_50m": [
-		{"speaker": "EAGLE", "portrait": "eagle", "text": "¡Cuidado abajo! Hay rocas gigantes justo en nuestro camino. Usa los propulsores laterales para desplazarte a un terreno plano. Si aterrizo muy inclinado, los astronautas no podrán despegar de vuelta a casa ni sacar mis instrumentos científicos."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "¡Cuidado abajo! Hay rocas gigantes justo en su camino. Usa los propulsores laterales para llevarlo a un terreno plano. Si aterriza muy inclinado, los astronautas no podrán despegar de vuelta a casa ni sacar sus instrumentos científicos."
+		}
 	],
 	"f2_10m": [
-		{"speaker": "EAGLE", "portrait": "eagle", "text": "El chorro de mi motor está levantando una tormenta de polvo gris... ¡Ya no veo el suelo! Confía en los indicadores de velocidad vertical. Suave... muy suave... ¡Queda menos del 5% de combustible!"}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "El chorro del motor está levantando una tormenta de polvo gris: ya no se ve el suelo. Confía en los indicadores de velocidad vertical. Suave... muy suave... ¡Queda menos del 5% de combustible!"
+		}
 	],
 	"f2_touchdown": [
-		{"speaker": "EAGLE", "portrait": "eagle", "text": "¡Luz de contacto! Mis cuatro patas tocaron la Luna. Motor apagado. Lo logramos, piloto. Bienvenidos a la Base Tranquilidad."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "¡Luz de contacto! Las cuatro patas tocaron la Luna y el motor se apagó. Lo lograron, operador. Bienvenidos a la Base Tranquilidad."
+		}
 	],
 	"f2_fallo": [
-		{"speaker": "HOUSTON", "portrait": "houston", "propuesta": true, "text": "Eagle, ese contacto no fue seguro. Volvemos a intentarlo desde 100 metros. Despacio, sobre terreno plano."}
+		{
+			"speaker": "HOUSTON",
+			"portrait": "houston",
+			"text": "Eagle, ese contacto no fue seguro. Volvemos a intentarlo desde 100 metros. Despacio, sobre terreno plano.",
+			"propuesta": true
+		}
 	],
 	"f3_easep": [
-		{"speaker": "EASEP", "portrait": "easep", "text": "Gracias por aterrizarnos de una pieza. Soy el EASEP, peso solo 48 kilos y dormía dentro de la bodega del Eagle. Los astronautas me sacaron, me llevaron 17 metros al sur y desplegaron mis dos paneles solares hacia el este y el oeste. A 5 metros de mí colocaron a mi pequeño compañero: el espejo láser LRRR. A las 04:40 UT, una señal de radio desde la Tierra a 2119 MHz me despertó. Mis ojos científicos acababan de abrirse."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Aterrizaje sin daños. Ahora le toca al EASEP: pesa solo 48 kilos y viajaba dentro de la bodega del Eagle. Los astronautas lo sacaron, lo llevaron 17 metros al sur y desplegaron sus dos paneles solares hacia el este y el oeste."
+		},
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "A 5 metros de él colocaron a su pequeño compañero: el espejo láser LRRR. A las 04:40 UT, una señal de radio desde la Tierra a 2119 MHz lo encendió. Sus instrumentos científicos acababan de abrirse."
+		}
 	],
 	"f4_despedida": [
-		{"speaker": "EAGLE", "portrait": "eagle", "text": "Llegó la hora. La cabina superior acaba de encender su motor de 15,000 N usando mi techo como trampolín. Neil y Buzz vuelven a casa con 21.55 kilos de rocas lunares. Mi trabajo de transporte ha terminado. Ahora me quedaré aquí en silencio, guardando la placa que dice: 'Vinimos en paz en nombre de toda la humanidad'."},
-		{"speaker": "EASEP", "portrait": "easep", "text": "No estarás solo, Eagle. Yo me quedo contigo. Es hora de hacer ciencia."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Llegó la hora. La cabina superior enciende su motor de 15,000 N usando el techo del Eagle como trampolín. Neil y Buzz vuelven a casa con 21.55 kilos de rocas lunares."
+		},
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "El trabajo de transporte del Eagle terminó. Su etapa de descenso se queda en silencio, guardando la placa que dice: 'Vinimos en paz en nombre de toda la humanidad'. El EASEP sigue a su lado: es hora de hacer ciencia."
+		}
 	],
 	"f5_sismometro": [
-		{"speaker": "EASEP", "portrait": "easep", "text": "Escucha esto... ¡Son lunamotos! Durante semanas soporté temperaturas 30 grados por encima de mi límite y sobreviví a la congelante noche lunar del 3 de agosto. Desperté un segundo día lunar y seguí enviando datos a la Tierra a 2276.5 MHz hasta que el calor extremo del 27 de agosto de 1969 apagó mi voz para siempre."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Escucha esto: son lunamotos. Durante semanas el EASEP soportó temperaturas 30 grados por encima de su límite y sobrevivió a la congelante noche lunar del 3 de agosto. Despertó un segundo día lunar y siguió enviando datos a la Tierra a 2276.5 MHz hasta que el calor extremo del 27 de agosto de 1969 lo apagó para siempre."
+		}
 	],
 	"f5_placa": [
-		{"speaker": "EAGLE", "portrait": "eagle", "propuesta": true, "text": "Esta es mi placa. La llevo atornillada a la pata de la escalera. Tiene los dos hemisferios de la Tierra y las firmas de Neil, Buzz, Michael y del presidente Nixon. Dice: 'Aquí hombres del planeta Tierra pusieron pie por primera vez sobre la Luna, julio de 1969 d.C. Vinimos en paz en nombre de toda la humanidad'."}
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Esta es la placa del Eagle, atornillada a la pata de la escalera. Tiene los dos hemisferios de la Tierra y las firmas de Neil, Buzz, Michael y del presidente Nixon. Dice: 'Aquí hombres del planeta Tierra pusieron pie por primera vez sobre la Luna, julio de 1969 d.C. Vinimos en paz en nombre de toda la humanidad'.",
+			"propuesta": true
+		}
 	],
 	"f5_lrrr": [
-		{"speaker": "ESPEJO LÁSER LRRR", "portrait": "lrrr", "text": "El Eagle descansa en silencio y el EASEP duerme bajo el polvo... pero yo no necesito baterías. Hoy mismo, en pleno año 2026, los científicos de la Tierra siguen disparándome rayos láser desde observatorios. Gracias a que tú nos aterrizaste con precisión en 1969, hoy sabemos que la Luna se aleja de la Tierra 3.8 centímetros cada año. Fuimos abandonados en la Luna... pero jamás olvidados."}
-	]
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "El Eagle descansa en silencio y el EASEP ya no transmite... pero el espejo láser no necesita baterías. Hoy, en 2026, los observatorios de la Tierra le siguen disparando rayos láser."
+		},
+		{
+			"speaker": "CONTROL DE MISIÓN",
+			"portrait": "cientifico",
+			"text": "Gracias a que ayudaste a aterrizar con precisión, sabemos que la Luna se aleja de la Tierra 3.8 centímetros cada año. Fueron abandonados en la Luna... pero jamás olvidados."
+		}
+	],
+	"hud": {
+		"briefing": {
+			"header": "MISIÓN 1 · LUNA",
+			"badge": "M1 · APOLO 11 · 1969",
+			"title": "GUARDIANES DE LA TRANQUILIDAD",
+			"year": "APOLO 11 · JULIO DE 1969",
+			"place": "Mare Tranquillitatis, la Luna",
+			"equipment": "Etapa de descenso del Eagle (LM-5), paquete científico EASEP y espejo láser LRRR",
+			"narrators": "Control de Misión y Houston",
+			"objective": "Ayudar al Eagle a alunizar con precisión y despertar los experimentos que siguen en la Luna.",
+			"scientist": "CIENTÍFICO · CONTROL DE MISIÓN"
+		},
+		"general_controls": [
+			[
+				"ENTER / CLIC",
+				"avanzar los mensajes de radio"
+			],
+			[
+				"ESC",
+				"pausa (continuar, reiniciar fase o volver)"
+			],
+			[
+				"C · O · I",
+				"controles, objetivos e información de la misión"
+			]
+		],
+		"phases": [
+			{
+				"tip": "Usa A y D para frenar el giro. Cuando la INCLINACIÓN esté cerca de 0° y deje de girar, suelta las teclas.",
+				"keys": [
+					[
+						"A",
+						"rotate_left",
+						"RCS IZQ."
+					],
+					[
+						"D",
+						"rotate_right",
+						"RCS DER."
+					]
+				]
+			},
+			{
+				"tip": "Mantén la velocidad vertical (V/V) por debajo de 12 m/s con el motor. Si el DESVÍO crece, inclina un poco hacia el lado contrario.",
+				"keys": [
+					[
+						"W / ESP",
+						"thrust",
+						"MOTOR"
+					],
+					[
+						"A",
+						"rotate_left",
+						"RCS IZQ."
+					],
+					[
+						"D",
+						"rotate_right",
+						"RCS DER."
+					]
+				]
+			},
+			{
+				"tip": "Busca suelo plano entre las rocas. Al final, pulsos cortos de motor: menos de 2 m/s y menos de 6° de inclinación.",
+				"keys": [
+					[
+						"W / ESP",
+						"thrust",
+						"MOTOR"
+					],
+					[
+						"A",
+						"rotate_left",
+						"RCS IZQ."
+					],
+					[
+						"D",
+						"rotate_right",
+						"RCS DER."
+					]
+				]
+			},
+			{
+				"tip": "Activa los puntos en orden: primero saca el EASEP, luego despliega sus paneles y al final coloca el espejo láser.",
+				"keys": [
+					[
+						"1-3",
+						"",
+						"ACTIVAR PUNTO"
+					],
+					[
+						"CLIC",
+						"",
+						"SOBRE EL PUNTO"
+					]
+				]
+			},
+			{
+				"tip": "Solo hay que encender el motor de ascenso. La etapa de descenso se queda en la Luna.",
+				"keys": [
+					[
+						"W / ESP",
+						"thrust",
+						"DESPEGAR"
+					]
+				]
+			},
+			{
+				"tip": "Escucha al sismómetro y a la placa. El espejo láser se desbloquea al final.",
+				"keys": [
+					[
+						"1-3",
+						"",
+						"ACTIVAR PUNTO"
+					],
+					[
+						"CLIC",
+						"",
+						"SOBRE EL PUNTO"
+					]
+				]
+			}
+		]
+	}
 }

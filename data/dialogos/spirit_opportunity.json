@@ -1,11 +1,26 @@
 {
-	"_nota": "Capítulo SPIRIT Y OPPORTUNITY. La conversación es ficción; los hechos vienen de fuentes de la NASA. No escribir que Spirit 'murió': usar 'dejó de comunicarse'. Las entradas 'verificar' son valores por confirmar.",
-	"disclaimer": "Los rovers nunca hablaron entre sí.\nEstas conversaciones son imaginadas, pero los hechos son reales.",
+	"_nota": "Capítulo SPIRIT Y OPPORTUNITY. El narrador (Control de Misión) explica todo; los rovers solo confirman que llegan datos (TX) o mensajes (RX). Los mensajes son ficción; los hechos vienen de fuentes de la NASA. No escribir que Spirit 'murió': usar 'dejó de comunicarse'.",
+	"disclaimer": "Los mensajes de esta misión son imaginados.\nLos hechos son reales.",
 	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
 	"speakers": {
-		"CIENTIFICO": {"name": "CONTROL DE MISIÓN", "radio": false, "color": "#ffb347", "portrait": "cientifico"},
-		"SPIRIT": {"name": "SPIRIT", "radio": true, "color": "#80f2ff", "portrait": "spirit"},
-		"OPPORTUNITY": {"name": "OPPORTUNITY", "radio": true, "color": "#ffd24a", "portrait": "opportunity"}
+		"CIENTIFICO": {
+			"name": "CONTROL DE MISIÓN",
+			"radio": false,
+			"color": "#ffb347",
+			"portrait": "cientifico"
+		},
+		"SPIRIT": {
+			"name": "SPIRIT",
+			"radio": true,
+			"color": "#80f2ff",
+			"portrait": "spirit"
+		},
+		"OPPORTUNITY": {
+			"name": "OPPORTUNITY",
+			"radio": true,
+			"color": "#ffd24a",
+			"portrait": "opportunity"
+		}
 	},
 	"hud": {
 		"year": "AÑO",
@@ -13,7 +28,7 @@
 		"distance": "DISTANCIA RECORRIDA",
 		"signal": "SEÑAL",
 		"in_transit": "SEÑAL EN TRÁNSITO",
-		"debug": "DEBUG · F1-F7: SALTAR ESCENA",
+		"debug": "DEBUG · F1-F7: ESCENA · F8: CIERRE",
 		"pause_title": "PAUSA",
 		"pause_continue": "CONTINUAR",
 		"pause_exit": "VOLVER AL SELECTOR"
@@ -28,18 +43,35 @@
 			"distance_km": 0.0,
 			"signal": 92,
 			"intro": [
-				{"speaker": "CIENTIFICO", "text": "Control de Misión a Spirit. Bienvenido a Marte. Tu misión es buscar señales de agua en el pasado de este planeta."},
-				{"speaker": "CIENTIFICO", "text": "Has aterrizado en el cráter Gusev, un posible antiguo lago. Tu misión está planeada para unos tres meses."},
-				{"speaker": "CIENTIFICO", "text": "Tu gemelo, Opportunity, aterrizará en unas semanas, al otro lado del planeta."}
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Control de Misión a Spirit. Bienvenido a Marte, al cráter Gusev, un posible antiguo lago. Tu misión: buscar señales de agua del pasado. Está planeada para unos tres meses."
+				}
 			],
 			"minimission": {
 				"title": "MINIMISIÓN: SALIDA DEL MÓDULO",
-				"steps": ["LEVANTAR EL MÁSTIL DE LA CÁMARA", "ORIENTAR LA ANTENA HACIA LA TIERRA", "ELEGIR RUTA DE SALIDA Y BAJAR"],
-				"routes": ["RUTA A", "RUTA B", "RUTA C"],
+				"steps": [
+					"LEVANTAR EL MÁSTIL DE LA CÁMARA",
+					"ORIENTAR LA ANTENA HACIA LA TIERRA",
+					"ELEGIR RUTA DE SALIDA Y BAJAR"
+				],
+				"routes": [
+					"RUTA A",
+					"RUTA B",
+					"RUTA C"
+				],
 				"earth_label": "TIERRA"
 			},
 			"outro": [
-				{"speaker": "SPIRIT", "mode": "TX", "text": "Aquí Spirit. Sistemas en línea. Empiezo a explorar."}
+				{
+					"speaker": "SPIRIT",
+					"mode": "TX",
+					"text": "TELEMETRÍA RECIBIDA."
+				},
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Spirit está en línea y todos sus sistemas funcionan. Empieza la exploración."
+				}
 			]
 		},
 		{
@@ -51,7 +83,15 @@
 			"distance_km": 0.0,
 			"signal": 90,
 			"intro": [
-				{"speaker": "OPPORTUNITY", "mode": "TX", "text": "Aquí Opportunity. Hay pequeñas esferas en el suelo. ¿Qué son?"}
+				{
+					"speaker": "OPPORTUNITY",
+					"mode": "TX",
+					"text": "IMAGEN RECIBIDA."
+				},
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Opportunity, el gemelo de Spirit, aterrizó semanas después al otro lado del planeta. Acaba de enviar una imagen: hay pequeñas esferas en el suelo. ¿Qué serán?"
+				}
 			],
 			"minimission": {
 				"title": "MINIMISIÓN: CAZADOR DE BLUEBERRIES",
@@ -61,7 +101,10 @@
 				"wrong": "Esa es una roca normal"
 			},
 			"outro": [
-				{"speaker": "CIENTIFICO", "text": "Les llamamos 'blueberries'. Son esferas de hematita y suelen formarse con agua. Aquí hubo agua, aunque era ácida."}
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Les llamamos 'blueberries'. Son esferas de hematita y suelen formarse con agua. Aquí hubo agua, aunque era ácida."
+				}
 			]
 		},
 		{
@@ -76,13 +119,20 @@
 			"intro": [],
 			"minimission": {
 				"title": "MINIMISIÓN: RUEDA EXCAVADORA",
-				"instruction": "Arrastra la rueda (clic sostenido o flechas) para remover el suelo",
+				"instruction": "Arrastra la rueda (clic sostenido, WASD o flechas) para remover el suelo",
 				"counter": "SUELO REMOVIDO",
 				"goal_ratio": 0.7
 			},
 			"outro": [
-				{"speaker": "SPIRIT", "mode": "TX", "text": "Mi rueda removió el suelo y apareció algo muy claro."},
-				{"speaker": "CIENTIFICO", "text": "Es sílice casi pura, un 90 %. En la Tierra se forma en aguas termales, donde viven microbios."}
+				{
+					"speaker": "SPIRIT",
+					"mode": "TX",
+					"text": "DATOS RECIBIDOS."
+				},
+				{
+					"speaker": "CIENTIFICO",
+					"text": "La rueda de Spirit removió el suelo y apareció algo muy claro: sílice casi pura, un 90 %. En la Tierra se forma en aguas termales, donde viven microbios."
+				}
 			]
 		},
 		{
@@ -95,7 +145,10 @@
 			"distance_km": 7.73,
 			"signal": 70,
 			"intro": [
-				{"speaker": "CIENTIFICO", "text": "Spirit, llega el invierno y hay poca luz. Reparte la energía de tu batería entre los calefactores y los instrumentos."}
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Spirit, llega el invierno y hay poca luz. Reparte la energía de tu batería entre los calefactores y los instrumentos."
+				}
 			],
 			"minimission": {
 				"title": "MINIMISIÓN: INVIERNO DE ENERGÍA",
@@ -112,35 +165,70 @@
 		{
 			"id": "endeavour",
 			"title": "ESCENA 3B · OPPORTUNITY SIGUE",
-			"year": "2010",
+			"year": "2010-2011",
 			"objective": "LLEGAR AL CRÁTER ENDEAVOUR",
 			"rover": "OPPORTUNITY",
-			"distance_km": 20.0,
-			"verificar": "distancia aproximada de Opportunity en 2010 (valor de juego)",
+			"distance_km": 18.0,
+			"verificar": "distancias de Opportunity en 2010 (18 km) y al llegar a Endeavour en agosto de 2011 (unos 21 km): valores aproximados, confirmar con el registro de odometría de la NASA",
 			"signal": 88,
 			"intro": [
-				{"speaker": "CIENTIFICO", "text": "Opportunity, tengo noticias difíciles. En 2009, Spirit quedó atrapado en la arena, en un sitio llamado Troy."},
-				{"speaker": "CIENTIFICO", "text": "Siguió trabajando como estación fija, pero no pudo inclinar sus paneles hacia el sol en el invierno."},
-				{"speaker": "CIENTIFICO", "text": "Su última señal llegó el 22 de marzo de 2010. Intentamos contactarlo hasta 2011."},
-				{"speaker": "OPPORTUNITY", "mode": "RX", "text": "Mensaje recibido. Seguiré explorando por los dos."},
-				{"speaker": "CIENTIFICO", "text": "Tu próximo destino es el cráter Endeavour."}
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Opportunity, noticias difíciles: en 2009 Spirit quedó atrapado en la arena, en Troy, y no pudo inclinar sus paneles al Sol en invierno. Su última señal llegó el 22 de marzo de 2010; intentamos contactarlo hasta 2011."
+				},
+				{
+					"speaker": "OPPORTUNITY",
+					"mode": "RX",
+					"text": "MENSAJE RECIBIDO."
+				},
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Tu próximo destino es el cráter Endeavour, de unos 22 km de diámetro. Sus rocas son más antiguas que todo lo que has visto hasta ahora."
+				}
 			],
 			"minimission": {
 				"title": "MINIMISIÓN: RUMBO A ENDEAVOUR",
 				"instruction": "Conduce con A/D o flechas y esquiva los cráteres",
-				"marathon_km": 42.195,
-				"verificar_maraton": "el guion original decía 42,198 km; la distancia oficial de una maratón es 42,195 km",
-				"marathon_year": "2015",
-				"end_km": 42.5,
+				"end_km": 21.0,
 				"crater_hit": "¡Cráter! Rodeándolo...",
-				"match_title": "DESCUBRIMIENTOS EN ENDEAVOUR: EMPAREJA CADA HALLAZGO",
-				"match_left": ["Venas de yeso (como Homestake)", "Arcillas (Pillinger Point)"],
-				"match_right": ["Agua que circuló por grietas subterráneas", "Agua de pH neutro: el sitio más amigable para vida microbiana antigua de los que estudió"],
+				"match_title": "DESCUBRIMIENTOS: EMPAREJA CADA HALLAZGO CON LO QUE REVELÓ",
+				"match_left": [
+					"Blueberries de hematita (Opportunity)",
+					"Sílice casi pura (Spirit)",
+					"Venas de yeso, como Homestake (Endeavour)",
+					"Arcillas, en Pillinger Point (Endeavour)"
+				],
+				"match_right": [
+					"Agua ácida que estuvo en la superficie",
+					"Ambiente de aguas termales o fumarolas",
+					"Agua que circuló por grietas subterráneas",
+					"Agua de pH neutro, más amigable para la vida"
+				],
+				"match_pick": "Primero elige un hallazgo de la izquierda",
 				"match_ok": "¡Correcto!",
 				"match_bad": "No coincide, prueba otra vez"
 			},
-			"marathon": [
-				{"speaker": "CIENTIFICO", "text": "Superaste los 42,195 km. ¡Una maratón completa en Marte!"}
+			"outro": []
+		},
+		{
+			"id": "maraton",
+			"title": "ESCENA 3C · UNA MARATÓN EN MARTE",
+			"year": "2015",
+			"objective": "EXPLORAR EL BORDE DEL CRÁTER",
+			"rover": "OPPORTUNITY",
+			"distance_km": 42.195,
+			"verificar": "el guion original decía 42,198 km; la distancia oficial de una maratón es 42,195 km. Opportunity la superó en 2015 (confirmar fecha exacta)",
+			"signal": 85,
+			"intro": [
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Opportunity, llevas años recorriendo el borde de Endeavour. Acabas de pasar los 42,195 km: ¡una maratón completa en Marte!"
+				},
+				{
+					"speaker": "OPPORTUNITY",
+					"mode": "TX",
+					"text": "MARATÓN COMPLETADA. SIGO AVANZANDO."
+				}
 			],
 			"outro": []
 		},
@@ -153,7 +241,10 @@
 			"distance_km": 45.16,
 			"signal": 80,
 			"intro": [
-				{"speaker": "CIENTIFICO", "text": "Opportunity, se acerca una tormenta de polvo que cubrirá todo el planeta. Tus paneles necesitan luz."}
+				{
+					"speaker": "CIENTIFICO",
+					"text": "Opportunity, se acerca una tormenta de polvo que cubrirá todo el planeta. Tus paneles necesitan luz."
+				}
 			],
 			"minimission": {
 				"title": "MINIMISIÓN: CARRERA CONTRA LA TORMENTA",
@@ -163,22 +254,166 @@
 				"dust_label": "POLVO",
 				"shots_label": "TOMAS",
 				"fail": "La tormenta llegó antes. Volvamos a intentarlo.",
+				"assist": "Control de Misión te da más tiempo en cada intento.",
 				"note": "Simplificación: el panorama real se tomó entre el 13 de mayo y el 10 de junio de 2018."
 			},
 			"outro": [
-				{"speaker": "OPPORTUNITY", "mode": "TX", "text": "Panorama completo. Transmitiendo..."}
+				{
+					"speaker": "OPPORTUNITY",
+					"mode": "TX",
+					"text": "PANORAMA RECIBIDO. TRANSMISIÓN EN CURSO..."
+				}
 			]
 		}
 	],
 	"closing": {
 		"title": "Opportunity: última comunicación el 10 de junio de 2018.",
 		"stats": [
-			["OPPORTUNITY", "45,16 km · unos 14 años (misión planeada: 3 meses)"],
-			["SPIRIT", "7,73 km · más de 6 años · más de 124.000 imágenes"]
+			[
+				"OPPORTUNITY",
+				"45,16 km · unos 14 años (misión planeada: 3 meses)"
+			],
+			[
+				"SPIRIT",
+				"7,73 km · más de 6 años · más de 124.000 imágenes"
+			],
+			[
+				"FIN DE MISIÓN",
+				"Declarada terminada el 13 de febrero de 2019"
+			]
 		],
-		"epilogue_enabled": true,
+		"epilogue_enabled": false,
 		"epilogue": "En 2026, Perseverance superó el récord de distancia de Opportunity.",
 		"verificar_epilogo": "confirmar la fecha en que Perseverance superó los 45,16 km de Opportunity",
 		"button": "ENTER / CLIC: VOLVER AL SELECTOR"
+	},
+	"mission_hud": {
+		"briefing": {
+			"header": "MISIÓN 4 · MARTE",
+			"badge": "M4 · SPIRIT Y OPPORTUNITY",
+			"title": "SPIRIT Y OPPORTUNITY",
+			"year": "2004-2018",
+			"place": "Cráter Gusev y Meridiani Planum, Marte",
+			"equipment": "Rovers gemelos Spirit (MER-A) y Opportunity (MER-B)",
+			"narrators": "Control de Misión, con las señales de Spirit y Opportunity (mensajes imaginados, hechos reales)",
+			"objective": "Acompañar a los rovers gemelos en su búsqueda de pruebas de agua antigua en Marte.",
+			"scientist": "CONTROL DE MISIÓN"
+		},
+		"general_controls": [
+			[
+				"ENTER / CLIC",
+				"avanzar los mensajes de radio"
+			],
+			[
+				"ESC",
+				"pausa (continuar, reiniciar fase o volver)"
+			],
+			[
+				"C · O · I",
+				"controles, objetivos e información de la misión"
+			]
+		],
+		"phases": [
+			{
+				"tip": "Sigue los pasos en orden: primero el mástil, luego la antena y al final elige una ruta para bajar.",
+				"keys": [
+					[
+						"1-5",
+						"",
+						"ACTIVAR PUNTO"
+					],
+					[
+						"CLIC",
+						"",
+						"SOBRE EL PUNTO"
+					]
+				]
+			},
+			{
+				"tip": "Las blueberries son esferas pequeñas y grisáceas. Las rocas normales son más grandes y oscuras.",
+				"keys": [
+					[
+						"CLIC",
+						"",
+						"TOCAR ESFERA"
+					]
+				]
+			},
+			{
+				"tip": "Pasa la rueda por toda la zona oscura hasta que aparezca el suelo claro.",
+				"keys": [
+					[
+						"CLIC (MANTENER)",
+						"",
+						"ARRASTRAR"
+					],
+					[
+						"WASD / FLECHAS",
+						"",
+						"MOVER LA RUEDA"
+					]
+				]
+			},
+			{
+				"tip": "Reparte la energía como quieras y confirma cada día. Aquí no hay forma de ganarle al invierno.",
+				"keys": [
+					[
+						"A / D",
+						"",
+						"REPARTIR"
+					],
+					[
+						"ENTER",
+						"ui_accept",
+						"CONFIRMAR"
+					]
+				]
+			},
+			{
+				"tip": "Esquiva los cráteres para no perder tiempo. Al llegar, empareja cada hallazgo con su significado.",
+				"keys": [
+					[
+						"A",
+						"rotate_left",
+						"IZQUIERDA"
+					],
+					[
+						"D",
+						"rotate_right",
+						"DERECHA"
+					],
+					[
+						"CLIC",
+						"",
+						"EMPAREJAR"
+					]
+				]
+			},
+			{
+				"tip": "Lee el mensaje de radio y pulsa ENTER para avanzar.",
+				"keys": [
+					[
+						"ENTER / CLIC",
+						"ui_accept",
+						"AVANZAR"
+					]
+				]
+			},
+			{
+				"tip": "Toma la foto iluminada. Si el polvo llena la barra, vuelves a empezar.",
+				"keys": [
+					[
+						"CLIC",
+						"",
+						"TOMA ILUMINADA"
+					],
+					[
+						"ESP / ENTER",
+						"ui_accept",
+						"FOTO"
+					]
+				]
+			}
+		]
 	}
 }

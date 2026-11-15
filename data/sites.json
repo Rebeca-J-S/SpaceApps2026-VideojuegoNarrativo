@@ -83,7 +83,7 @@
 					"equipment": "Sonda Pioneer 10 con su placa de oro",
 					"angle": 205.0,
 					"mission_title": "LA ÚLTIMA SEÑAL",
-					"scene": "res://scenes/missions/mision_pioneer.tscn"
+					"scene": "res://scenes/missions/chapter_pioneer10.tscn"
 				},
 				{
 					"id": "pioneer11",

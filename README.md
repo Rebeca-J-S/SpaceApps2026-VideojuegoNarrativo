@@ -19,11 +19,19 @@ el espacio profundo, contada en primera persona por las propias máquinas, que t
 | `scenes/missions/mision_apolo11.tscn` | Misión 1 · Guardianes de la Tranquilidad (guion aprobado). |
 | `scenes/missions/mision_surveyor3.tscn` | Misión 2 · Huellas en el polvo (guion aprobado). |
 | `scenes/missions/mision_pioneer.tscn` | Misión 3 · La última señal (propuesta). |
-| `scenes/missions/chapter_spirit_opportunity.tscn` | Misión 4 · Capítulo Spirit y Opportunity (vista top-down, HUD propio, transmisiones TX/RX). Textos en `data/dialogos/spirit_opportunity.json`. Emite `chapter_finished`. Debug: F1-F6 saltan a cada escena, F7 al cierre. |
+| `scenes/missions/chapter_spirit_opportunity.tscn` | Misión 4 · Capítulo Spirit y Opportunity (vista top-down, HUD propio, transmisiones TX/RX). Textos en `data/dialogos/spirit_opportunity.json`. Emite `chapter_finished`. Debug: F1-F7 saltan a cada escena, F8 al cierre. |
+| `scenes/missions/chapter_pioneer10.tscn` | Capítulo Pioneer 10 (selector → Espacio profundo → Pioneer 10): lanzamiento, cinturón (esquive), Júpiter (encuadre y disparo), silencio, la placa (púlsares) y epílogo. Las cinemáticas aún no existen y muestran "CINEMÁTICA PENDIENTE". Textos en `data/dialogos/pioneer10.json`. Debug: F1-F7 saltan a cada fase. |
 
 Las misiones 1-3 siguen las mismas 6 fases (0 tutorial → 5 legado) sobre `scripts/missions/mission_base.gd`.
 La misión 4 (Marte) es un capítulo independiente: `scripts/missions/chapter_spirit_opportunity.gd`.
 ESC abre la pausa (continuar, reiniciar fase, volver al selector).
+
+## HUD común de las misiones (`scripts/components/mission_hud.gd`)
+- **Ficha de misión**: al empezar cada misión se muestra a pantalla completa y luego se minimiza en una insignia (clic en ella = ver la ficha).
+- **Tres botones de información**: `[C] CONTROLES`, `[O] OBJETIVOS`, `[I] MISIÓN` (también con las teclas C, O, I). Pausan el juego.
+- **Indicadores de controles**: las teclas de la fase actual, abajo a la izquierda; se iluminan al pulsarlas.
+- **Recordatorios del científico**: al empezar cada fase, tras un fallo o si el jugador pasa ~18 s sin actuar.
+- Los textos están en el bloque `"hud"` de cada `data/dialogos/mision_X.json` (y `"mission_hud"` en `spirit_opportunity.json`).
 
 ## Estructura
 ```
