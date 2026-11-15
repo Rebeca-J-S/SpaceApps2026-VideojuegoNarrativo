@@ -38,32 +38,18 @@
 			"name": "MARTE",
 			"kind": "mars",
 			"missions_line": "SPIRIT · OPPORTUNITY\n2004",
-			"count_label": "2 SITIOS DETECTADOS",
+			"count_label": "1 SITIO DETECTADO",
 			"sites": [
 				{
-					"id": "spirit",
-					"name": "SPIRIT",
-					"place": "Cráter Gusev",
+					"id": "spirit_opportunity",
+					"name": "SPIRIT Y OPPORTUNITY",
+					"place": "Cráter Gusev y Meridiani Planum",
 					"year": "2004",
-					"equipment": "Rover Spirit (MER-A), gemelo de Opportunity",
+					"equipment": "Rovers gemelos Spirit (MER-A) y Opportunity (MER-B)",
 					"lat": -14.6,
 					"lon": 175.5,
-					"verificar": "coordenadas aproximadas",
+					"verificar": "coordenadas aproximadas (el punto marca el cráter Gusev, donde aterrizó Spirit)",
 					"mission_title": "SPIRIT Y OPPORTUNITY",
-					"twin": "spirit",
-					"scene": "res://scenes/missions/chapter_spirit_opportunity.tscn"
-				},
-				{
-					"id": "opportunity",
-					"name": "OPPORTUNITY",
-					"place": "Meridiani Planum",
-					"year": "2004",
-					"equipment": "Rover Opportunity (MER-B), gemelo de Spirit",
-					"lat": -1.9,
-					"lon": -5.5,
-					"verificar": "coordenadas aproximadas",
-					"mission_title": "SPIRIT Y OPPORTUNITY",
-					"twin": "opportunity",
 					"scene": "res://scenes/missions/chapter_spirit_opportunity.tscn"
 				}
 			]

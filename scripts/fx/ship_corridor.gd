@@ -265,24 +265,65 @@ func _draw_wall_panels(r0: Rect2, r1: Rect2, segment: int) -> void:
 			draw_rect(Rect2(ex - 1, ey + 1, 2, 2), C_RED)
 
 
+## Ventanilla de la pared: se ve el espacio y la Luna o Marte AFUERA, recortados por el marco
+## (antes era un disco plano pintado encima del panel y parecía flotar dentro del pasillo).
 func _draw_poster(tl: Vector2, tr: Vector2, br: Vector2, bl: Vector2, is_moon: bool) -> void:
-	# Esquinas del cartel, encogidas hacia el centro del panel (orden: tl, tr, br, bl).
+	# Esquinas del marco, encogidas hacia el centro del panel (orden: tl, tr, br, bl).
 	var p_tl := tl.lerp(br, 0.18)
 	var p_br := tl.lerp(br, 0.82)
 	var p_tr := tr.lerp(bl, 0.18)
 	var p_bl := tr.lerp(bl, 0.82)
 	_quad(p_tl, p_tr, p_br, p_bl, C_POSTER)
-	_quad(p_tl.lerp(p_br, 0.1), p_tr.lerp(p_bl, 0.1), p_br.lerp(p_tl, 0.1), p_bl.lerp(p_tr, 0.1), C_POSTER_BG)
-	var center := (p_tl + p_tr + p_bl + p_br) * 0.25
-	var radius := maxf(3.0, absf(p_br.y - p_tl.y) * 0.22)
+	# Cristal: el interior de la ventanilla.
+	var q_tl := p_tl.lerp(p_br, 0.1)
+	var q_tr := p_tr.lerp(p_bl, 0.1)
+	var q_br := p_br.lerp(p_tl, 0.1)
+	var q_bl := p_bl.lerp(p_tr, 0.1)
+	_quad(q_tl, q_tr, q_br, q_bl, C_WINDOW)
+	var h_avg := ((q_bl.y - q_tl.y) + (q_br.y - q_tr.y)) * 0.5
+	var center := (q_tl + q_tr + q_br + q_bl) * 0.25 + Vector2(0.0, h_avg * 0.12)
+	var radius := h_avg * 0.36   # más chico que la ventanilla: se ve el espacio alrededor y el borde del planeta
+	# Estrellas (solo las que quedan fuera del planeta).
+	for k in 9:
+		var u := fposmod(0.17 + k * 0.618, 1.0)
+		var v := fposmod(0.08 + k * 0.382, 1.0) * 0.8
+		var sp := q_tl.lerp(q_tr, u).lerp(q_bl.lerp(q_br, u), v)
+		if sp.distance_to(center) > radius + 1.0:
+			draw_rect(Rect2(floorf(sp.x), floorf(sp.y), 1, 1), Color(1, 1, 1, 0.85))
+	# Planeta recortado por la ventanilla.
 	if is_moon:
-		draw_circle(center, radius, C_MOON)
-		draw_circle(center + Vector2(-radius * 0.3, -radius * 0.2), radius * 0.3, C_MOON_DARK)
-		draw_circle(center + Vector2(radius * 0.35, radius * 0.3), radius * 0.22, C_MOON_DARK)
+		_clipped_disc(center, radius, C_MOON, q_tl, q_tr, q_br, q_bl)
+		_clipped_disc(center + Vector2(-radius * 0.3, -radius * 0.25), radius * 0.2, C_MOON_DARK, q_tl, q_tr, q_br, q_bl)
+		_clipped_disc(center + Vector2(radius * 0.25, -radius * 0.05), radius * 0.14, C_MOON_DARK, q_tl, q_tr, q_br, q_bl)
+		_clipped_disc(center + Vector2(-radius * 0.05, radius * 0.3), radius * 0.1, C_MOON_DARK, q_tl, q_tr, q_br, q_bl)
 	else:
-		draw_circle(center, radius, C_MARS)
-		draw_circle(center + Vector2(radius * 0.25, radius * 0.1), radius * 0.35, C_MARS_DARK)
-		draw_rect(Rect2(center.x - radius * 0.4, center.y - radius, radius * 0.8, 1), C_POSTER)  # Casquete polar.
+		_clipped_disc(center, radius, C_MARS, q_tl, q_tr, q_br, q_bl)
+		_clipped_disc(center + Vector2(radius * 0.28, radius * 0.1), radius * 0.38, C_MARS_DARK, q_tl, q_tr, q_br, q_bl)
+		_clipped_disc(center + Vector2(0.0, -radius * 0.92), radius * 0.2, Color("#e8e8f0"), q_tl, q_tr, q_br, q_bl)   # casquete polar
+	# Reflejo del cristal y remaches del marco.
+	_quad(q_tl.lerp(q_tr, 0.12).lerp(q_bl.lerp(q_br, 0.12), 0.04), q_tl.lerp(q_tr, 0.3).lerp(q_bl.lerp(q_br, 0.3), 0.04),
+		q_tl.lerp(q_tr, 0.18).lerp(q_bl.lerp(q_br, 0.18), 0.96), q_tl.lerp(q_tr, 0.02).lerp(q_bl.lerp(q_br, 0.02), 0.96), Color(1, 1, 1, 0.08))
+	for corner in [p_tl, p_tr, p_br, p_bl]:
+		draw_rect(Rect2(floorf(corner.x) - 0.0, floorf(corner.y), 1, 1), C_POSTER_BG)
+
+
+## Disco recortado dentro del cuadrilátero de la ventanilla (los lados izquierdo y derecho son verticales).
+func _clipped_disc(center: Vector2, radius: float, col: Color, q_tl: Vector2, q_tr: Vector2, q_br: Vector2, q_bl: Vector2) -> void:
+	var x_lo := int(floor(minf(minf(q_tl.x, q_tr.x), minf(q_br.x, q_bl.x))))
+	var x_hi := int(ceil(maxf(maxf(q_tl.x, q_tr.x), maxf(q_br.x, q_bl.x))))
+	var span := q_tr.x - q_tl.x
+	if absf(span) < 0.001:
+		return
+	for x in range(x_lo, x_hi):
+		var t := clampf((float(x) + 0.5 - q_tl.x) / span, 0.0, 1.0)
+		var dx := float(x) + 0.5 - center.x
+		if absf(dx) >= radius:
+			continue
+		var half := sqrt(radius * radius - dx * dx)
+		var y0 := maxf(lerpf(q_tl.y, q_tr.y, t), center.y - half)
+		var y1 := minf(lerpf(q_bl.y, q_br.y, t), center.y + half)
+		if y1 > y0:
+			draw_rect(Rect2(float(x), floorf(y0), 1.0, ceilf(y1) - floorf(y0)), col)
 
 
 # =========================================================================
