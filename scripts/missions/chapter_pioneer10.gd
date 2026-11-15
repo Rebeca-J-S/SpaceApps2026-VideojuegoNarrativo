@@ -85,7 +85,12 @@ var _moon_i := 0
 var _photos: Array[bool] = []
 var _visor := Vector2(320, 150)
 var _rad := 0.0
-var _photo_stars: Array = []         # estrellas (1-3) de cada foto aceptada
+var _photo_acc: Array = []           # precisión (%) de cada foto aceptada
+var _visor_target := Vector2(320, 150)   # hacia donde apunta la mano; el visor lo sigue con retraso
+var _spike_t := 0.0                  # >0 mientras dura un pico de radiación
+var _spike_cd := 7.0                 # tiempo hasta el próximo pico
+var _spike_static := 0.0
+var _mouse_aim := false              # true si el punto de mira lo mueve el mouse (más retraso que con teclas)
 var _scanning := false               # escaneo por líneas en curso
 var _scan_t := 0.0
 var _scan_dur := 2.0
@@ -956,11 +961,16 @@ func _scene_jupiter(sc: Dictionary) -> void:
 	_moons = mm["moons"]
 	_moon_i = 0
 	_photos.clear()
-	_photo_stars.clear()
+	_photo_acc.clear()
 	for m in _moons:
 		_photos.append(false)
-		_photo_stars.append(0)
+		_photo_acc.append(0)
 	_visor = Vector2(320, 150)
+	_visor_target = _visor
+	var spike_iv: Array = mm["spike_interval"]
+	_spike_cd = randf_range(float(spike_iv[0]), float(spike_iv[1]))
+	_spike_t = 0.0
+	_spike_static = 0.0
 	_rad = 0.0
 	_flash = 0.0
 	_scanning = false
@@ -988,14 +998,31 @@ func _scene_jupiter(sc: Dictionary) -> void:
 			continue
 		var m: Dictionary = _moons[_moon_i]
 		var mv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
-		_visor = (_visor + mv * 135.0 * dt).clamp(Vector2(70, GAME_TOP + 70), Vector2(W - 70, GAME_BOTTOM - 62))
+		# La mano mueve el punto de mira y el visor lo sigue con un leve retraso (inercia de la cámara).
+		_visor_target = (_visor_target + mv * 135.0 * dt).clamp(Vector2(70, GAME_TOP + 70), Vector2(W - 70, GAME_BOTTOM - 62))
+		if mv != Vector2.ZERO:
+			_mouse_aim = false
+		var lag := float(mm["camera_lag_mouse"]) if _mouse_aim else float(mm["camera_lag"])
+		_visor = _visor.lerp(_visor_target, 1.0 - exp(-lag * dt))
 		_rad = minf(100.0, _rad + float(mm["radiation_rate"]) * dt)
+		# Picos de radiación: de vez en cuando una ráfaga llena la pantalla de estática.
+		_spike_cd -= dt
+		if _spike_t > 0.0:
+			_spike_t -= dt
+			_spike_static = randf_range(0.5, 0.8)   # estática sostenida mientras dura el pico
+			_visor += Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * float(mm["spike_jitter"])   # el foco tiembla
+			_glitch = maxf(_glitch, 0.7)
+			_shake = maxf(_shake, 2.5)
+		else:
+			if _spike_cd <= 0.0:
+				_trigger_spike(mm)
+			_spike_static = move_toward(_spike_static, 0.0, dt * 1.8)
 		_drain(float(mm["energy_per_second"]) * dt)
 		_progress = float(_photos.count(true)) / float(maxi(1, _photos.size()))
 		# La radiación se siente: la pantalla tiembla y se llena de ruido.
 		if _rad > 60.0:
 			_shake = maxf(_shake, (_rad - 60.0) / 40.0 * 2.2)
-		_static = clampf((_rad - 75.0) / 25.0, 0.0, 1.0) * 0.22
+		_static = maxf(clampf((_rad - 75.0) / 25.0, 0.0, 1.0) * 0.22, _spike_static)
 		_update_tone(_visor.distance_to(_moon_pos(m)), float(m["tol"]))
 		if _scanning:
 			var res := _scan_step(dt, m, mm)
@@ -1013,15 +1040,16 @@ func _scene_jupiter(sc: Dictionary) -> void:
 	_mode = ""
 	_scanning = false
 	_static = 0.0
+	_spike_static = 0.0
 	if _depleted:
 		return
 	_progress = float(_photos.count(true)) / float(maxi(1, _photos.size()))
 	if _moon_i >= _moons.size():
 		await toast(String(sc["reward"]), YELLOW, 2.4)
 		var total := 0
-		for st in _photo_stars:
-			total += int(st)
-		await toast(String(mm["album_summary"]) % [total, 3 * _moons.size()], RetroTheme.WHITE, 1.8)
+		for acc in _photo_acc:
+			total += int(acc)
+		await toast(String(mm["album_summary"]) % int(round(float(total) / float(maxi(1, _moons.size())))), RetroTheme.WHITE, 1.8)
 		await say(sc["outro_full"])
 	else:
 		await toast(String(mm["damaged"]), RED, 2.0)
@@ -1029,6 +1057,20 @@ func _scene_jupiter(sc: Dictionary) -> void:
 		await say(sc["outro_partial"])
 	# Io: escena cinemática (aún no existe).
 	await _cinematic_pending(String(sc["io_tag"]))
+
+
+## Pico de radiación: estática en toda la pantalla durante medio segundo y aviso en grande.
+func _trigger_spike(mm: Dictionary) -> void:
+	var iv: Array = mm["spike_interval"]
+	_spike_cd = randf_range(float(iv[0]), float(iv[1]))
+	_spike_t = float(mm["spike_seconds"])
+	_spike_static = 0.8
+	_glitch = 1.0
+	_shake = 6.0
+	_rad = minf(100.0, _rad + float(mm["spike_radiation"]))
+	# La interferencia desplaza el foco: un empujón al azar que luego hay que recuperar.
+	_visor = (_visor + Vector2.from_angle(randf() * TAU) * float(mm["spike_kick"])).clamp(Vector2(70, GAME_TOP + 70), Vector2(W - 70, GAME_BOTTOM - 62))
+	toast(String(mm["spike_text"]), RED, _spike_t + 0.4)
 
 
 func _live_quality() -> float:
@@ -1039,7 +1081,7 @@ func _live_quality() -> float:
 
 ## Empieza el escaneo: la imagen se forma línea a línea y hay que mantener la luna dentro del círculo.
 func _start_scan() -> void:
-	if _mode != "jupiter" or _scanning or _pol_active or _moon_i >= _moons.size():
+	if _mode != "jupiter" or _scanning or _pol_active or _spike_t > 0.0 or _moon_i >= _moons.size():
 		return
 	var m: Dictionary = _moons[_moon_i]
 	_scanning = true
@@ -1058,7 +1100,7 @@ func _scan_step(dt: float, m: Dictionary, mm: Dictionary) -> int:
 	var tol := float(m["tol"])
 	var mp := _moon_pos(m)
 	while _scan_lines.size() < target:
-		_scan_lines.append(_visor.distance_to(mp) <= tol)
+		_scan_lines.append(_visor.distance_to(mp) <= tol and _spike_t <= 0.0)
 	if _scan_t < _scan_dur:
 		return 0
 	_scanning = false
@@ -1075,13 +1117,13 @@ func _photo_fail(m: Dictionary, mm: Dictionary) -> void:
 ## Foto aceptada: obturador, polaroid con un dato real de la luna y estrellas por calidad.
 func _photo_ok(m: Dictionary) -> void:
 	var q := _scan_quality
-	var stars := 3 if q >= 0.9 else (2 if q >= 0.7 else 1)
+	var acc := int(round(q * 100.0))
 	_photos[_moon_i] = true
-	_photo_stars[_moon_i] = stars
+	_photo_acc[_moon_i] = acc
 	_flash = 1.0
 	_freeze = 0.1
 	_play_shutter()
-	_pol = {"i": _moon_i, "stars": stars, "q": q, "lines": _scan_lines.duplicate()}
+	_pol = {"i": _moon_i, "acc": acc, "lines": _scan_lines.duplicate()}
 	_pol_active = true
 	_pol_skip = false
 	_pol_y = 340.0
@@ -1108,8 +1150,10 @@ func _photo_ok(m: Dictionary) -> void:
 
 func _moon_pos(m: Dictionary) -> Vector2:
 	var d := float(m["drift"])
+	var sp := float(m.get("speed", 1.0))
 	var a: Array = m["anchor"]
-	return Vector2(float(a[0]) + sin(_t * 0.9) * d, float(a[1]) + cos(_t * 0.7) * d * 0.6)
+	var tt := _t * sp
+	return Vector2(float(a[0]) + sin(tt * 0.9) * d + sin(tt * 2.3) * d * 0.22, float(a[1]) + cos(tt * 0.7) * d * 0.6 + cos(tt * 1.9) * d * 0.15)
 
 
 func _axis_keys(neg_a: Key, neg_b: Key, pos_a: Key, pos_b: Key) -> float:
@@ -1210,8 +1254,8 @@ func _draw_jupiter(c: DrawNode) -> void:
 		var dy := k * 22.0
 		var wch := 2.0 * sqrt(maxf(0.0, rr * rr - dy * dy))
 		var col := Color("#d8b48a") if k % 2 == 0 else Color("#9a6a44")
-		c.draw_rect(Rect2(jc.x - wch * 0.5, jc.y + dy - 6.0, wch, 11.0), Color(col, 0.55))
-	c.draw_circle(Vector2(110, 195), 14.0, Color("#b0452a"))
+		c.draw_rect(Rect2(jc.x - wch * 0.5 + sin(c.t * 0.35 + k * 0.9) * 7.0, jc.y + dy - 6.0, wch, 11.0), Color(col, 0.55))
+	c.draw_circle(Vector2(110 + sin(c.t * 0.18) * 9.0, 195 + sin(c.t * 0.11) * 3.0), 14.0, Color("#b0452a"))
 	var mi := mini(_moon_i, _moons.size() - 1)
 	var m: Dictionary = _moons[mi]
 	var tol := float(m["tol"])
@@ -1235,6 +1279,9 @@ func _draw_jupiter(c: DrawNode) -> void:
 	c.draw_line(_visor + Vector2(-6, 0), _visor + Vector2(6, 0), vc, 1.0)
 	c.draw_line(_visor + Vector2(0, -6), _visor + Vector2(0, 6), vc, 1.0)
 	c.draw_arc(_visor, tol, 0.0, TAU, 28, Color(ac, 0.65), 1.0)
+	if _visor_target.distance_to(_visor) > 4.0:
+		c.draw_circle(_visor_target, 2.0, Color(1, 1, 1, 0.5))
+		c.draw_arc(_visor_target, 5.0, 0.0, TAU, 12, Color(1, 1, 1, 0.25), 1.0)
 	if off <= tol and _moon_i < _moons.size():
 		var pulse := 0.5 + 0.5 * sin(c.t * 9.0)
 		c.draw_arc(_visor, tol + 3.0 + pulse * 3.0, 0.0, TAU, 28, Color(ac, 0.35 + 0.3 * pulse), 1.0)
@@ -1267,8 +1314,7 @@ func _draw_jupiter(c: DrawNode) -> void:
 		c.draw_rect(slot, Color(YELLOW, 0.8) if _photos[k] else Color(1, 1, 1, 0.3), false, 1.0)
 		if _photos[k]:
 			c.draw_circle(slot.position + Vector2(16, 14), 9.0, Color(String(_moons[k]["color"])))
-			for st in 3:
-				_draw_star(c, slot.position + Vector2(7 + st * 9, 29), 3.2, YELLOW if st < int(_photo_stars[k]) else Color(1, 1, 1, 0.2))
+			c.draw_string(font, slot.position + Vector2(3, 31), "%d%%" % int(_photo_acc[k]), HORIZONTAL_ALIGNMENT_CENTER, 26, 9, _acc_color(int(_photo_acc[k])))
 		else:
 			c.draw_string(font, slot.position + Vector2(12, 22), str(k + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.4))
 	# Polaroid con el dato de la luna.
@@ -1303,13 +1349,12 @@ func _draw_scan_image(c: CanvasItem, center: Vector2, radius: float, col: Color,
 				c.draw_rect(Rect2(center.x - w + randf() * w * 2.0, y, 3, lh), Color(1, 1, 1, randf() * 0.7))
 
 
-func _draw_star(c: CanvasItem, p: Vector2, r: float, col: Color) -> void:
-	for flip: float in [0.0, PI]:
-		var pts := PackedVector2Array()
-		for k in 3:
-			var a: float = -PI * 0.5 + flip + k * TAU / 3.0
-			pts.append(p + Vector2(cos(a), sin(a)) * r)
-		c.draw_colored_polygon(pts, col)
+func _acc_color(acc: int) -> Color:
+	if acc >= 90:
+		return RetroTheme.PHOSPHOR
+	if acc >= 70:
+		return YELLOW
+	return Color("#ff9a5a")
 
 
 func _draw_polaroid(c: CanvasItem) -> void:
@@ -1326,9 +1371,9 @@ func _draw_polaroid(c: CanvasItem) -> void:
 	_draw_scan_image(c, photo.get_center(), 48.0, Color(String(m["color"])), _pol["lines"], _scan_n, float(int(_pol["i"])))
 	var ink := Color("#2a2a34")
 	c.draw_string(font, Vector2(-160, 58), String(m["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, ink)
-	c.draw_string(font, Vector2(-160, 72), "%s %d%%" % [data["scenes"][2]["minimission"]["stars_label"], int(float(_pol["q"]) * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#6a6a74"))
-	for st in 3:
-		_draw_star(c, Vector2(-30 + st * 18, -62), 7.0, Color("#e0a020") if st < int(_pol["stars"]) else Color("#bdb8a4"))
+	c.draw_string(font, Vector2(-160, 72), String(data["scenes"][2]["minimission"]["stars_label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#6a6a74"))
+	c.draw_string(font, Vector2(-40, -56), "%d%%" % int(_pol["acc"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, _acc_color(int(_pol["acc"])).darkened(0.25))
+	c.draw_string(font, Vector2(30, -56), String(data["scenes"][2]["minimission"]["stars_label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#6a6a74"))
 	c.draw_multiline_string(font, Vector2(-40, -40), String(m["fact"]), HORIZONTAL_ALIGNMENT_LEFT, 205.0, 10, -1, ink)
 	c.draw_string(font, Vector2(60, 72), "ENTER: SEGUIR", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#8a8a94"))
 	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -1680,7 +1725,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_mode = ""
 		"jupiter":
 			if event is InputEventMouseMotion:
-				_visor = get_local_mouse_position().clamp(Vector2(70, GAME_TOP + 70), Vector2(W - 70, GAME_BOTTOM - 62))
+				_mouse_aim = true
+				_visor_target = get_local_mouse_position().clamp(Vector2(70, GAME_TOP + 70), Vector2(W - 70, GAME_BOTTOM - 62))
 			elif click or event.is_action_pressed("ui_accept"):
 				_start_scan()
 		"polaroid":
