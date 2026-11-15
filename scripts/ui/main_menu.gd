@@ -141,12 +141,8 @@ func _update_site_tooltip() -> void:
 		if index >= 0 and not found:
 			found = true
 			var info := p.get_site_info(index)
-			var state := tr("SILENCIOSO")
-			if info["status"] == "active":
-				state = tr("ACTIVO")
-			elif info["status"] == "focus":
-				state = tr("MISIÓN JUGABLE")
-			var text := "%s  [%s]\n%s" % [info["name"], state, info["info"]]
+			var state := tr("BLOQUEADO") if bool(info.get("locked", false)) else tr("MISIÓN JUGABLE")
+			var text := "%s  [%s]\n%s · %s" % [info["name"], state, info.get("place", ""), info.get("year", "")]
 			if site_tooltip_label.text != text:
 				site_tooltip_label.text = text
 				site_tooltip.reset_size()

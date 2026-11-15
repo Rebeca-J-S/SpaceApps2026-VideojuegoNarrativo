@@ -118,5 +118,8 @@
 	"Laser Ranging Retro-Reflector · Activo en 2026": "Laser Ranging Retro-Reflector · Active in 2026",
 	"Mars Exploration Rover · Inactivo": "Mars Exploration Rover · Inactive",
 	"Primera nave en cruzar el cinturón de asteroides": "First spacecraft to cross the asteroid belt",
-	"Primera nave en visitar Saturno": "First spacecraft to visit Saturn"
+	"Primera nave en visitar Saturno": "First spacecraft to visit Saturn",
+	"BLOQUEADO": "LOCKED",
+	"%s · %s\n%s\n\n[BLOQUEADO] Este artefacto todavía no tiene misión. Próximamente.": "%s · %s\n%s\n\n[LOCKED] This artifact doesn't have a mission yet. Coming soon.",
+	"  ·  BLOQUEADO": "  ·  LOCKED"
 }
