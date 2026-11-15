@@ -29,6 +29,9 @@ var busy_check: Callable = func() -> bool: return false
 var reminder_callback: Callable = Callable()
 ## Si es > 0, la ficha inicial se minimiza sola pasado ese tiempo (ENTER / clic siguen adelantándola).
 var briefing_auto_seconds := 0.0
+## Si tiene tamaño, la ficha inicial se centra dentro de este rectángulo (el área de juego de la misión).
+## Con el valor por defecto (vacío) la ficha queda donde estaba antes, en (70, 70).
+var briefing_area := Rect2()
 
 var _data: Dictionary = {}
 var _phase_titles: Array = []
@@ -132,6 +135,9 @@ func show_briefing() -> void:
 	_badge.hide()
 	_buttons.hide()
 	_build_card()
+	if briefing_area.size != Vector2.ZERO:
+		await get_tree().process_frame   # espera a que el panel calcule su tamaño real
+		_card.position = (briefing_area.position + (briefing_area.size - _card.size) * 0.5).round()
 	_card_wait = true
 	var waited := 0.0
 	while _card_wait:

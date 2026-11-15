@@ -85,6 +85,20 @@ var _moon_i := 0
 var _photos: Array[bool] = []
 var _visor := Vector2(320, 150)
 var _rad := 0.0
+var _photo_stars: Array = []         # estrellas (1-3) de cada foto aceptada
+var _scanning := false               # escaneo por líneas en curso
+var _scan_t := 0.0
+var _scan_dur := 2.0
+var _scan_n := 30
+var _scan_lines: Array = []          # true = línea nítida, false = línea dañada
+var _scan_quality := 0.0
+var _freeze := 0.0                   # pausa breve al disparar ("hit stop")
+var _pol_active := false
+var _pol_skip := false
+var _pol_y := 340.0
+var _pol: Dictionary = {}
+var _tone: AudioStreamPlayer
+var _shutter: AudioStreamPlayer
 # Silencio
 var _sil_year := 1976.0
 var _sil_log: Array = []
@@ -226,6 +240,9 @@ func _build() -> void:
 	_obj_tag.text = String(data["hud"]["objective"])
 	_obj_val = _label(Vector2(200, 4), Vector2(432, 16), 11, YELLOW)
 	_obj_val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# Sin datos todavía (ficha inicial): no se muestran las etiquetas vacías.
+	_year_tag.hide()
+	_obj_tag.hide()
 
 	# Título e instrucción de la fase (dentro del área de juego).
 	_mm_title = _label(Vector2(8, GAME_TOP + 22), Vector2(420, 14), 11, YELLOW)
@@ -290,6 +307,7 @@ func _build() -> void:
 	mission_hud.buttons_pos = Vector2(W - 6, GAME_TOP + 3)
 	mission_hud.reminder_pos = Vector2(8, GAME_TOP + 54)
 	mission_hud.briefing_auto_seconds = 7.0
+	mission_hud.briefing_area = Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP)   # ficha centrada en el área de juego
 	mission_hud.keys_pos = Vector2(8, GAME_BOTTOM - 17)
 	mission_hud.busy_check = func() -> bool: return dialog.is_active() or _toast.visible
 	mission_hud.reminder_callback = func(t: String) -> void: dialog.show_hint("CONTROLADORA", t)
@@ -938,58 +956,23 @@ func _scene_jupiter(sc: Dictionary) -> void:
 	_moons = mm["moons"]
 	_moon_i = 0
 	_photos.clear()
+	_photo_stars.clear()
 	for m in _moons:
 		_photos.append(false)
+		_photo_stars.append(0)
 	_visor = Vector2(320, 150)
 	_rad = 0.0
 	_flash = 0.0
+	_scanning = false
+	_scan_lines = []
+	_scan_t = 0.0
+	_scan_n = int(mm["scan_lines"])
+	_freeze = 0.0
+	_pol_active = false
+	_pol_skip = false
 	_stars()
-	_layer(func(c: DrawNode) -> void:
-		# Júpiter, enorme, a la izquierda (bandas).
-		var jc := Vector2(-40, 150)
-		var rr := 200.0
-		c.draw_circle(jc, rr, Color("#b98a5e"))
-		for k in range(-8, 9):
-			var dy := k * 22.0
-			var wch := 2.0 * sqrt(maxf(0.0, rr * rr - dy * dy))
-			var col := Color("#d8b48a") if k % 2 == 0 else Color("#9a6a44")
-			c.draw_rect(Rect2(jc.x - wch * 0.5, jc.y + dy - 6.0, wch, 11.0), Color(col, 0.55))
-		c.draw_circle(Vector2(110, 195), 14.0, Color("#b0452a"))
-		if _moon_i < _moons.size():
-			var m: Dictionary = _moons[_moon_i]
-			var mp := _moon_pos(m)
-			var rad := float(m["radius"])
-			c.draw_circle(mp, rad, Color(String(m["color"])))
-			c.draw_circle(mp + Vector2(-rad * 0.35, -rad * 0.2), rad * 0.18, Color(0, 0, 0, 0.18))
-			c.draw_circle(mp + Vector2(rad * 0.3, rad * 0.35), rad * 0.12, Color(0, 0, 0, 0.18))
-			c.draw_arc(mp, rad, 0.0, TAU, 28, Color(1, 1, 1, 0.25), 1.0)
-		# Visor: marco con esquinas, cruz central y círculo de tolerancia.
-		var tol := float(_moons[mini(_moon_i, _moons.size() - 1)]["tol"])
-		var h := 58.0
-		var vc := Color(YELLOW, 0.9)
-		for sx in [-1.0, 1.0]:
-			for sy in [-1.0, 1.0]:
-				var corner := _visor + Vector2(sx * h, sy * h)
-				c.draw_line(corner, corner - Vector2(sx * 14.0, 0.0), vc, 2.0)
-				c.draw_line(corner, corner - Vector2(0.0, sy * 14.0), vc, 2.0)
-		c.draw_line(_visor + Vector2(-6, 0), _visor + Vector2(6, 0), vc, 1.0)
-		c.draw_line(_visor + Vector2(0, -6), _visor + Vector2(0, 6), vc, 1.0)
-		c.draw_arc(_visor, tol, 0.0, TAU, 24, Color(RetroTheme.PHOSPHOR, 0.55), 1.0)
-		# Medidor de radiación y fotos tomadas.
-		MissionBase.draw_bar(c, Rect2(440, GAME_TOP + 62, 180, 8), _rad / 100.0, RED if _rad > 70.0 else Color("#d08a4a"), String(mm["radiation"]))
-		var font := ThemeDB.fallback_font
-		for k in _photos.size():
-			var box := Rect2(8 + k * 22, GAME_TOP + 64, 18, 14)
-			c.draw_rect(box, Color(YELLOW, 0.85) if _photos[k] else Color(0, 0, 0, 0.5))
-			c.draw_rect(box, Color(1, 1, 1, 0.5), false, 1.0)
-			c.draw_string(font, box.position + Vector2(3, 11), str(k + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.SPACE if _photos[k] else RetroTheme.WHITE)
-		if _flash > 0.0:
-			c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 1, 1, _flash * 0.6))
-		# Ruido de radiación.
-		if _rad > 55.0:
-			for i in int((_rad - 55.0) * 6.0):
-				c.draw_rect(Rect2(randf() * W, GAME_TOP + randf() * 244.0, 2, 1), Color(1, 1, 1, 0.5))
-	)
+	_setup_jupiter_audio()
+	_layer(_draw_jupiter)
 	if not _retry:
 		await say(sc["intro"])
 	_mm_title.text = String(mm["title"])
@@ -997,21 +980,48 @@ func _scene_jupiter(sc: Dictionary) -> void:
 	while _moon_i < _moons.size() and _rad < 100.0 and not _depleted:
 		await get_tree().process_frame
 		if get_tree().paused:
+			_stop_tone()
 			continue
 		var dt := get_process_delta_time()
+		if _freeze > 0.0:
+			_freeze -= dt   # pausa breve al disparar
+			continue
+		var m: Dictionary = _moons[_moon_i]
 		var mv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
 		_visor = (_visor + mv * 135.0 * dt).clamp(Vector2(70, GAME_TOP + 70), Vector2(W - 70, GAME_BOTTOM - 62))
 		_rad = minf(100.0, _rad + float(mm["radiation_rate"]) * dt)
 		_drain(float(mm["energy_per_second"]) * dt)
-		_progress = (float(_photos.count(true)) + 0.0) / float(maxi(1, _photos.size()))
-		var moon_name := "" if _moon_i >= _moons.size() else String(_moons[_moon_i]["name"])
-		_mm_info.text = "%s · %d/%d  %s" % [mm["instruction"], _photos.count(true), _photos.size(), moon_name]
+		_progress = float(_photos.count(true)) / float(maxi(1, _photos.size()))
+		# La radiación se siente: la pantalla tiembla y se llena de ruido.
+		if _rad > 60.0:
+			_shake = maxf(_shake, (_rad - 60.0) / 40.0 * 2.2)
+		_static = clampf((_rad - 75.0) / 25.0, 0.0, 1.0) * 0.22
+		_update_tone(_visor.distance_to(_moon_pos(m)), float(m["tol"]))
+		if _scanning:
+			var res := _scan_step(dt, m, mm)
+			if res == 1:
+				await _photo_ok(m)
+			elif res == -1:
+				_photo_fail(m, mm)
+		if _moon_i < _moons.size():
+			var cur: Dictionary = _moons[_moon_i]
+			if _scanning:
+				_mm_info.text = "%s %s · %s %d%%" % [mm["scanning"], cur["name"], mm["stars_label"], int(_live_quality() * 100.0)]
+			else:
+				_mm_info.text = "%s · %d/%d  %s" % [mm["instruction"], _photos.count(true), _photos.size(), cur["name"]]
+	_stop_tone()
 	_mode = ""
+	_scanning = false
+	_static = 0.0
 	if _depleted:
 		return
 	_progress = float(_photos.count(true)) / float(maxi(1, _photos.size()))
 	if _moon_i >= _moons.size():
-		await toast(String(sc["reward"]), YELLOW, 2.6)
+		await toast(String(sc["reward"]), YELLOW, 2.4)
+		var total := 0
+		for st in _photo_stars:
+			total += int(st)
+		await toast(String(mm["album_summary"]) % [total, 3 * _moons.size()], RetroTheme.WHITE, 1.8)
 		await say(sc["outro_full"])
 	else:
 		await toast(String(mm["damaged"]), RED, 2.0)
@@ -1019,6 +1029,81 @@ func _scene_jupiter(sc: Dictionary) -> void:
 		await say(sc["outro_partial"])
 	# Io: escena cinemática (aún no existe).
 	await _cinematic_pending(String(sc["io_tag"]))
+
+
+func _live_quality() -> float:
+	if _scan_lines.is_empty():
+		return 0.0
+	return float(_scan_lines.count(true)) / float(_scan_lines.size())
+
+
+## Empieza el escaneo: la imagen se forma línea a línea y hay que mantener la luna dentro del círculo.
+func _start_scan() -> void:
+	if _mode != "jupiter" or _scanning or _pol_active or _moon_i >= _moons.size():
+		return
+	var m: Dictionary = _moons[_moon_i]
+	_scanning = true
+	_scan_t = 0.0
+	_scan_lines = []
+	_scan_dur = float(m["scan"])
+	_flash = 0.5
+	_freeze = 0.06
+	_play_shutter()
+
+
+## Avanza el escaneo. Devuelve 0 mientras sigue, 1 si la foto salió bien y -1 si salió arruinada.
+func _scan_step(dt: float, m: Dictionary, mm: Dictionary) -> int:
+	_scan_t += dt
+	var target := mini(_scan_n, int(_scan_t / _scan_dur * float(_scan_n)))
+	var tol := float(m["tol"])
+	var mp := _moon_pos(m)
+	while _scan_lines.size() < target:
+		_scan_lines.append(_visor.distance_to(mp) <= tol)
+	if _scan_t < _scan_dur:
+		return 0
+	_scanning = false
+	_scan_quality = _live_quality()
+	return 1 if _scan_quality >= float(mm["min_quality"]) else -1
+
+
+func _photo_fail(m: Dictionary, mm: Dictionary) -> void:
+	_rad = minf(100.0, _rad + float(m["miss"]))
+	_shake = 5.0
+	toast(String(mm["scan_bad"]), RED, 1.2)
+
+
+## Foto aceptada: obturador, polaroid con un dato real de la luna y estrellas por calidad.
+func _photo_ok(m: Dictionary) -> void:
+	var q := _scan_quality
+	var stars := 3 if q >= 0.9 else (2 if q >= 0.7 else 1)
+	_photos[_moon_i] = true
+	_photo_stars[_moon_i] = stars
+	_flash = 1.0
+	_freeze = 0.1
+	_play_shutter()
+	_pol = {"i": _moon_i, "stars": stars, "q": q, "lines": _scan_lines.duplicate()}
+	_pol_active = true
+	_pol_skip = false
+	_pol_y = 340.0
+	_mode = "polaroid"
+	_mm_info.text = String(m["name"])
+	_stop_tone()
+	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "_pol_y", 62.0, 0.45)
+	await tw.finished
+	var held := 0.0
+	while held < 3.8 and not _pol_skip:
+		await get_tree().process_frame
+		if not get_tree().paused:
+			held += get_process_delta_time()
+	var tw2 := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw2.tween_property(self, "_pol_y", 350.0, 0.3)
+	await tw2.finished
+	_pol_active = false
+	_mode = "jupiter"
+	_moon_i += 1
+	_scan_lines = []
+	_scan_t = 0.0
 
 
 func _moon_pos(m: Dictionary) -> Vector2:
@@ -1033,20 +1118,220 @@ func _axis_keys(neg_a: Key, neg_b: Key, pos_a: Key, pos_b: Key) -> float:
 	return p - n
 
 
-func _shoot() -> void:
-	if _moon_i >= _moons.size():
+func _align_color(off: float, tol: float) -> Color:
+	if off <= tol:
+		return RetroTheme.PHOSPHOR
+	if off <= tol * 1.8:
+		return YELLOW
+	return Color("#ff7a5a")
+
+
+# --- sonido generado por código (sin archivos): tono de enfoque y obturador ---
+func _setup_jupiter_audio() -> void:
+	_tone = AudioStreamPlayer.new()
+	_tone.stream = _make_tone()
+	_tone.volume_db = -30.0
+	world.add_child(_tone)
+	_shutter = AudioStreamPlayer.new()
+	_shutter.stream = _make_noise(0.14)
+	_shutter.volume_db = -10.0
+	world.add_child(_shutter)
+
+
+## Más agudo cuanto más cerca está la luna del centro del visor.
+func _update_tone(off: float, tol: float) -> void:
+	if not is_instance_valid(_tone):
 		return
-	var m: Dictionary = _moons[_moon_i]
+	var near := 1.0 if off <= tol else clampf(1.0 - (off - tol) / (tol * 3.0), 0.0, 1.0)
+	if near <= 0.03:
+		_stop_tone()
+		return
+	_tone.pitch_scale = lerpf(0.7, 1.9, near)
+	_tone.volume_db = lerpf(-36.0, -24.0, near)
+	if not _tone.playing:
+		_tone.play()
+
+
+func _stop_tone() -> void:
+	if is_instance_valid(_tone) and _tone.playing:
+		_tone.stop()
+
+
+func _play_shutter() -> void:
+	if is_instance_valid(_shutter):
+		_shutter.pitch_scale = randf_range(0.9, 1.1)
+		_shutter.play()
+
+
+func _make_tone() -> AudioStreamWAV:
+	var count := 2000   # 40 ciclos exactos de 50 muestras: el bucle no tiene saltos
+	var bytes := PackedByteArray()
+	bytes.resize(count)
+	for i in count:
+		bytes[i] = int(sin(TAU * float(i) / 50.0) * 26.0) & 0xFF
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_8_BITS
+	wav.mix_rate = 22050
+	wav.stereo = false
+	wav.data = bytes
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = count
+	return wav
+
+
+func _make_noise(seconds: float) -> AudioStreamWAV:
+	var rate := 22050
+	var count := int(rate * seconds)
+	var bytes := PackedByteArray()
+	bytes.resize(count)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1973
+	for i in count:
+		var env := pow(1.0 - float(i) / count, 2.0)
+		bytes[i] = int(rng.randf_range(-1.0, 1.0) * 70.0 * env) & 0xFF
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_8_BITS
+	wav.mix_rate = rate
+	wav.stereo = false
+	wav.data = bytes
+	return wav
+
+
+# --- dibujo ---
+func _draw_jupiter(c: DrawNode) -> void:
 	var mm: Dictionary = data["scenes"][2]["minimission"]
-	if _visor.distance_to(_moon_pos(m)) <= float(m["tol"]):
-		_photos[_moon_i] = true
-		_moon_i += 1
-		_flash = 1.0
-		toast(String(mm["photo_ok"]) % String(m["name"]), YELLOW, 1.0)
-	else:
-		_rad = minf(100.0, _rad + float(m["miss"]))
-		_shake = 5.0
-		toast(String(mm["photo_bad"]), RED, 0.7)
+	var font := ThemeDB.fallback_font
+	# Júpiter, enorme, a la izquierda (bandas).
+	var jc := Vector2(-40, 150)
+	var rr := 200.0
+	c.draw_circle(jc, rr, Color("#b98a5e"))
+	for k in range(-8, 9):
+		var dy := k * 22.0
+		var wch := 2.0 * sqrt(maxf(0.0, rr * rr - dy * dy))
+		var col := Color("#d8b48a") if k % 2 == 0 else Color("#9a6a44")
+		c.draw_rect(Rect2(jc.x - wch * 0.5, jc.y + dy - 6.0, wch, 11.0), Color(col, 0.55))
+	c.draw_circle(Vector2(110, 195), 14.0, Color("#b0452a"))
+	var mi := mini(_moon_i, _moons.size() - 1)
+	var m: Dictionary = _moons[mi]
+	var tol := float(m["tol"])
+	var mp := _moon_pos(m)
+	var off := _visor.distance_to(mp)
+	if _moon_i < _moons.size():
+		var rad := float(m["radius"])
+		c.draw_circle(mp, rad, Color(String(m["color"])))
+		c.draw_circle(mp + Vector2(-rad * 0.35, -rad * 0.2), rad * 0.18, Color(0, 0, 0, 0.18))
+		c.draw_circle(mp + Vector2(rad * 0.3, rad * 0.35), rad * 0.12, Color(0, 0, 0, 0.18))
+		c.draw_arc(mp, rad, 0.0, TAU, 28, Color(1, 1, 1, 0.25), 1.0)
+	# Visor: cambia de color al acercarse (rojo, amarillo, verde) y "engancha" al centrarse.
+	var h := 58.0
+	var ac := _align_color(off, tol)
+	var vc := Color(ac, 0.95)
+	for sx in [-1.0, 1.0]:
+		for sy in [-1.0, 1.0]:
+			var corner := _visor + Vector2(sx * h, sy * h)
+			c.draw_line(corner, corner - Vector2(sx * 14.0, 0.0), vc, 2.0)
+			c.draw_line(corner, corner - Vector2(0.0, sy * 14.0), vc, 2.0)
+	c.draw_line(_visor + Vector2(-6, 0), _visor + Vector2(6, 0), vc, 1.0)
+	c.draw_line(_visor + Vector2(0, -6), _visor + Vector2(0, 6), vc, 1.0)
+	c.draw_arc(_visor, tol, 0.0, TAU, 28, Color(ac, 0.65), 1.0)
+	if off <= tol and _moon_i < _moons.size():
+		var pulse := 0.5 + 0.5 * sin(c.t * 9.0)
+		c.draw_arc(_visor, tol + 3.0 + pulse * 3.0, 0.0, TAU, 28, Color(ac, 0.35 + 0.3 * pulse), 1.0)
+		if not _scanning:
+			c.draw_string(font, _visor + Vector2(-26, h + 12), "ENFOCADO", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, ac)
+	# Barrido del escaneo dentro del visor.
+	if _scanning:
+		var sy2 := _visor.y - h + (_scan_t / _scan_dur) * h * 2.0
+		c.draw_rect(Rect2(_visor.x - h, sy2 - 1.0, h * 2.0, 3.0), Color(0.5, 1.0, 1.0, 0.8))
+		c.draw_rect(Rect2(_visor.x - h, sy2 - 7.0, h * 2.0, 6.0), Color(0.5, 1.0, 1.0, 0.18))
+	# Medidor de radiación.
+	MissionBase.draw_bar(c, Rect2(440, GAME_TOP + 62, 180, 8), _rad / 100.0, RED if _rad > 70.0 else Color("#d08a4a"), String(mm["radiation"]))
+	# Panel de la foto que se está formando.
+	var pr := Rect2(500, 106, 122, 130)
+	c.draw_rect(pr, Color(0.01, 0.03, 0.04, 0.9))
+	c.draw_rect(pr, Color(RetroTheme.PHOSPHOR, 0.7), false, 1.0)
+	c.draw_string(font, pr.position + Vector2(5, 11), "FOTO", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, RetroTheme.WHITE)
+	var pc := pr.position + Vector2(61, 70)
+	var mcol := Color(String(m["color"]))
+	_draw_scan_image(c, pc, 46.0, mcol, _scan_lines, _scan_n, float(mi))
+	if _scanning:
+		var ly := pc.y - 46.0 + (_scan_t / _scan_dur) * 92.0
+		c.draw_rect(Rect2(pr.position.x + 3, ly - 1.0, pr.size.x - 6, 2.0), Color(0.5, 1.0, 1.0, 0.9))
+		c.draw_string(font, pr.position + Vector2(5, 125), "%d%%" % int(_live_quality() * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, YELLOW)
+	# Álbum: una ficha por foto, con sus estrellas.
+	c.draw_string(font, Vector2(8, GAME_TOP + 66), String(mm["album"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, RetroTheme.WHITE)
+	for k in _photos.size():
+		var slot := Rect2(8 + k * 36, GAME_TOP + 70, 32, 36)
+		c.draw_rect(slot, Color(0, 0, 0, 0.55))
+		c.draw_rect(slot, Color(YELLOW, 0.8) if _photos[k] else Color(1, 1, 1, 0.3), false, 1.0)
+		if _photos[k]:
+			c.draw_circle(slot.position + Vector2(16, 14), 9.0, Color(String(_moons[k]["color"])))
+			for st in 3:
+				_draw_star(c, slot.position + Vector2(7 + st * 9, 29), 3.2, YELLOW if st < int(_photo_stars[k]) else Color(1, 1, 1, 0.2))
+		else:
+			c.draw_string(font, slot.position + Vector2(12, 22), str(k + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.4))
+	# Polaroid con el dato de la luna.
+	if _pol_active:
+		_draw_polaroid(c)
+	if _flash > 0.0:
+		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 1, 1, _flash * 0.6))
+	# Ruido de radiación.
+	if _rad > 55.0:
+		for i in int((_rad - 55.0) * 6.0):
+			c.draw_rect(Rect2(randf() * W, GAME_TOP + randf() * 244.0, 2, 1), Color(1, 1, 1, 0.5))
+
+
+## Imagen de la luna formada línea a línea: las líneas fuera de encuadre salen corruptas.
+func _draw_scan_image(c: CanvasItem, center: Vector2, radius: float, col: Color, lines: Array, n: int, seed_v: float) -> void:
+	var lh := radius * 2.0 / float(maxi(1, n))
+	for j in lines.size():
+		var y := center.y - radius + j * lh
+		var dy := y + lh * 0.5 - center.y
+		var w := sqrt(maxf(0.0, radius * radius - dy * dy))
+		if w <= 0.5:
+			continue
+		if bool(lines[j]):
+			var shade := 1.0 - 0.38 * absf(dy) / radius + 0.07 * sin(j * 1.7 + seed_v)
+			c.draw_rect(Rect2(center.x - w, y, w * 2.0, lh + 0.6), Color(col.r * shade, col.g * shade, col.b * shade))
+			if (j + int(seed_v) * 3) % 7 == 0:
+				c.draw_rect(Rect2(center.x - w * 0.3 + sin(seed_v + j) * w * 0.4, y, lh * 2.5, lh), Color(0, 0, 0, 0.22))
+		else:
+			var shift := sin(j * 12.9 + seed_v * 7.0) * radius * 0.35
+			c.draw_rect(Rect2(center.x - w + shift, y, w * 2.0, lh + 0.6), Color(0.5, 0.56, 0.68, 0.55))
+			for k in 5:
+				c.draw_rect(Rect2(center.x - w + randf() * w * 2.0, y, 3, lh), Color(1, 1, 1, randf() * 0.7))
+
+
+func _draw_star(c: CanvasItem, p: Vector2, r: float, col: Color) -> void:
+	for flip: float in [0.0, PI]:
+		var pts := PackedVector2Array()
+		for k in 3:
+			var a: float = -PI * 0.5 + flip + k * TAU / 3.0
+			pts.append(p + Vector2(cos(a), sin(a)) * r)
+		c.draw_colored_polygon(pts, col)
+
+
+func _draw_polaroid(c: CanvasItem) -> void:
+	var font := ThemeDB.fallback_font
+	var m: Dictionary = _moons[int(_pol["i"])]
+	var center := Vector2(320, _pol_y + 80.0)
+	c.draw_set_transform(center, -0.035, Vector2.ONE)
+	var card := Rect2(-170, -80, 340, 160)
+	c.draw_rect(card.grow(3), Color(0, 0, 0, 0.5))
+	c.draw_rect(card, Color("#ece7d6"))
+	c.draw_rect(card, Color("#8a8470"), false, 1.0)
+	var photo := Rect2(-160, -70, 112, 112)
+	c.draw_rect(photo, Color("#0a0e18"))
+	_draw_scan_image(c, photo.get_center(), 48.0, Color(String(m["color"])), _pol["lines"], _scan_n, float(int(_pol["i"])))
+	var ink := Color("#2a2a34")
+	c.draw_string(font, Vector2(-160, 58), String(m["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, ink)
+	c.draw_string(font, Vector2(-160, 72), "%s %d%%" % [data["scenes"][2]["minimission"]["stars_label"], int(float(_pol["q"]) * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#6a6a74"))
+	for st in 3:
+		_draw_star(c, Vector2(-30 + st * 18, -62), 7.0, Color("#e0a020") if st < int(_pol["stars"]) else Color("#bdb8a4"))
+	c.draw_multiline_string(font, Vector2(-40, -40), String(m["fact"]), HORIZONTAL_ALIGNMENT_LEFT, 205.0, 10, -1, ink)
+	c.draw_string(font, Vector2(60, 72), "ENTER: SEGUIR", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("#8a8a94"))
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 # =========================================================================
@@ -1397,7 +1682,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event is InputEventMouseMotion:
 				_visor = get_local_mouse_position().clamp(Vector2(70, GAME_TOP + 70), Vector2(W - 70, GAME_BOTTOM - 62))
 			elif click or event.is_action_pressed("ui_accept"):
-				_shoot()
+				_start_scan()
+		"polaroid":
+			if click or event.is_action_pressed("ui_accept"):
+				_pol_skip = true
 		"plate":
 			if event is InputEventMouseMotion:
 				_cursor = get_local_mouse_position().clamp(MAP.position, MAP.end)
