@@ -64,6 +64,16 @@ NEAR Shoemaker, Kepler). Los que tienen `"locked": true` (o no tienen `scene`) s
 ficha dice "BLOQUEADO". Hoy solo se juegan **Apolo 11** y **Pioneer 10**. Para habilitar uno, quita
 `"locked": true` y pon su `"scene"` (el capítulo de Spirit y Opportunity ya existe: basta con quitar `locked`).
 
+## Cuaderno de insignias
+- Cada equipo del desafío tiene una insignia (`data/badges.json`: nombre, descripción, enlace de referencia
+  NASA, icono y número de piezas). Cada **fase terminada** de una misión gana una pieza; al terminar todas,
+  la insignia se completa. En la misión aparece un aviso breve con la pieza nueva (`BadgeToast`).
+- El cuaderno se abre desde **Archivo científico → CUADERNO DE INSIGNIAS**: una libreta con las 13
+  insignias (completas, a medias o bloqueadas). Clic o ENTER en una abre su ficha con la insignia grande,
+  su estado, la descripción y el botón **ABRIR ENLACE** a la página de la NASA.
+- Las piezas ganadas se guardan en `user://progreso.cfg` (sección `insignias`). El dibujo de cada insignia
+  está en `scripts/components/badge_art.gd` (PLACEHOLDER: se puede sustituir por sprites).
+
 ## Datos y precisión
 - Todos los textos están en `data/`. Las entradas con `"verificar"` son datos por confirmar con las
   fuentes oficiales; las de `"propuesta": true` son añadidos que no están en el guion aprobado.
