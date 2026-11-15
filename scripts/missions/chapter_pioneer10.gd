@@ -62,10 +62,15 @@ var _mode := ""
 var _hl_rect := Rect2()
 
 # Lanzamiento
-var _rk_y := 215.0
+var _alt := 0.0              # altura ganada por el cohete (unidades del mundo del lanzamiento)
+var _cheer := 0.0            # 0 = el público espera, 1 = salta de alegría
+var _rumble := 0.0           # segundos de temblor tras el encendido
+var _launch_stars: Starfield
 var _rk_state := 0           # 0 en la plataforma, 1 ascendiendo, 2 separada
 var _stage_y := 0.0
 var _probe_show := 0.0
+var _cruise := 0.0           # segundos de crucero tras la separación: la sonda nunca se detiene
+var _recede := 0.0           # el planeta se va alejando hacia abajo
 # Cinturón
 var _ship := Vector2(110, 144)
 var _asteroids: Array = []        # cada asteroide es un Dictionary (posición, radio, velocidad, color...)
@@ -381,11 +386,12 @@ func _layer(fn: Callable) -> DrawNode:
 	return d
 
 
-func _stars(drift: Vector2 = Vector2.ZERO, count: int = 130) -> void:
+func _stars(drift: Vector2 = Vector2.ZERO, count: int = 130) -> Starfield:
 	var s := Starfield.new()
 	s.star_count = count
 	s.drift = drift
 	world.add_child(s)
+	return s
 
 
 func _banner(text: String) -> void:
@@ -418,6 +424,12 @@ func _process(delta: float) -> void:
 	_t += delta
 	_flash = maxf(0.0, _flash - delta * 3.0)
 	_glitch = maxf(0.0, _glitch - delta * 3.5)
+	if _rk_state == 2:
+		_cruise += delta
+		_recede = _cruise * 4.0
+	if _rumble > 0.0:
+		_rumble -= delta
+		_shake = maxf(_shake, 2.2 + _rumble)
 	if _static_decay > 0.0:
 		_static = maxf(0.0, _static - _static_decay * delta)
 	if _shake > 0.0:
@@ -540,50 +552,42 @@ func _cinematic_pending(tag: String) -> void:
 # FASE 0 · Lanzamiento (tutorial)
 # =========================================================================
 func _scene_launch(sc: Dictionary) -> void:
-	_rk_y = 218.0
+	_alt = 0.0
+	_cheer = 0.0
+	_rumble = 0.0
+	_cruise = 0.0
+	_recede = 0.0
 	_rk_state = 0
 	_stage_y = 0.0
 	_probe_show = 0.0
-	_stars()
-	_layer(func(c: DrawNode) -> void:
-		# Suelo y torre.
-		c.draw_rect(Rect2(0, 236, W, 40), Color("#1a1a24"))
-		c.draw_rect(Rect2(0, 236, W, 2), Color("#33364a"))
-		c.draw_rect(Rect2(350, 150, 6, 90), Color("#4a4c60"))
-		for k in 5:
-			c.draw_rect(Rect2(345, 160 + k * 16, 16, 2), Color("#4a4c60"))
-		var x := 320.0
-		if _rk_state < 2:
-			# Cohete Atlas-Centaur: etapa inferior, etapa superior y cofia.
-			c.draw_rect(Rect2(x - 8, _rk_y - 58, 16, 58), Color("#d8d8e0"))
-			c.draw_rect(Rect2(x - 8, _rk_y - 38, 16, 4), Color("#c0532a"))
-			c.draw_rect(Rect2(x - 6, _rk_y - 88, 12, 30), Color("#e8e8f0"))
-			c.draw_colored_polygon(PackedVector2Array([Vector2(x - 6, _rk_y - 88), Vector2(x + 6, _rk_y - 88), Vector2(x, _rk_y - 102)]), Color("#c0532a"))
-			if _rk_state == 1:
-				var fl := 14.0 + 8.0 * sin(c.t * 40.0)
-				c.draw_colored_polygon(PackedVector2Array([Vector2(x - 7, _rk_y), Vector2(x + 7, _rk_y), Vector2(x, _rk_y + fl + 14)]), Color("#ffb347"))
-				c.draw_colored_polygon(PackedVector2Array([Vector2(x - 4, _rk_y), Vector2(x + 4, _rk_y), Vector2(x, _rk_y + fl)]), Color("#fff4c0"))
-		else:
-			# Separación: la etapa baja cae y la sonda sigue sola.
-			c.draw_rect(Rect2(x - 8, _stage_y, 16, 58), Color("#8a8ea6"))
-			PioneerArt.draw_pioneer(c, Vector2(x + 40.0 * _probe_show, 110.0 - 30.0 * _probe_show), -0.5, 1.6)
-		if _flash > 0.0:
-			c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 0.9, 0.7, _flash * 0.3))
-	)
+	_launch_stars = _stars()
+	_layer(_draw_launch)
 	if not _retry:
 		await say(sc["intro"])
-	for label in sc["countdown"]:
+	var countdown: Array = sc["countdown"]
+	for i in countdown.size():
 		_flash = 0.4
-		await toast(String(label), YELLOW, 0.85)
+		if i == 2:
+			create_tween().tween_property(self, "_cheer", 0.4, 1.0)   # el público se emociona
+		await toast(String(countdown[i]), YELLOW, 0.85)
+	# Despegue: el cohete sube, el mundo se aleja y el planeta se curva.
 	_rk_state = 1
+	_rumble = 2.4
+	_flash = 0.8
+	create_tween().tween_property(self, "_cheer", 1.0, 0.5)
+	_mm_info.text = String(sc["cheer"])
 	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw.tween_property(self, "_rk_y", 150.0, 3.2)
+	tw.tween_property(self, "_alt", 760.0, 7.0)
+	create_tween().tween_property(_launch_stars, "drift:y", 38.0, 6.0)   # las estrellas bajan: la nave sube
 	await tw.finished
+	_mm_info.text = ""
+	# Separación en el espacio, con la Tierra abajo.
 	_rk_state = 2
-	_stage_y = 100.0
+	_stage_y = 175.0
 	var tw2 := create_tween().set_parallel()
-	tw2.tween_property(self, "_stage_y", 300.0, 1.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw2.tween_property(self, "_probe_show", 1.0, 2.0)
+	tw2.tween_property(self, "_stage_y", 330.0, 2.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw2.tween_property(self, "_probe_show", 1.0, 2.2)
+	create_tween().tween_property(_launch_stars, "drift", Vector2(-18.0, 3.0), 2.5)
 	await tw2.finished
 	await say(sc["separation"])
 	# Tutorial del HUD: se resalta cada elemento mientras se explica.
@@ -595,6 +599,144 @@ func _scene_launch(sc: Dictionary) -> void:
 		await say([step])
 	_hl_rect = Rect2()
 	await toast(String(sc["closing_text"]), RetroTheme.WHITE, 3.4)
+
+
+## Zoom de la cámara: se aleja del suelo a medida que el cohete gana altura.
+func _zoom_s() -> float:
+	return 1.0 if _alt <= 43.0 else 91.0 / (48.0 + _alt)
+
+
+func _rocket_base_y() -> float:
+	return 218.0 - _alt if _alt <= 43.0 else 175.0
+
+
+## Arco superior de un planeta de radio r con su "techo" en y_top (la curva que se ve).
+func _planet_arc(y_top: float, r: float, step: float = 10.0) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var cy := y_top + r
+	var x := -40.0
+	while x <= 680.0:
+		pts.append(Vector2(x, cy - sqrt(maxf(0.0, r * r - (x - 320.0) * (x - 320.0)))))
+		x += step
+	return pts
+
+
+## Relleno del planeta en columnas (evita polígonos enormes que Godot no logra triangular).
+func _fill_planet(c: CanvasItem, y_top: float, r: float, col: Color) -> void:
+	var cy := y_top + r
+	var x := -40.0
+	while x < 680.0:
+		var y := cy - sqrt(maxf(0.0, r * r - (x + 2.0 - 320.0) * (x + 2.0 - 320.0)))
+		c.draw_rect(Rect2(x, y, 4.0, 400.0 - y), col)
+		x += 4.0
+
+
+func _draw_launch(c: DrawNode) -> void:
+	var s := _zoom_s()
+	var piv := Vector2(320, 266)
+	var y_h := piv.y - (piv.y - 236.0) * s + _recede
+	var r_scr := lerpf(520.0, 12000.0, pow(s, 3.0))
+	# Halo de la atmósfera sobre el borde del planeta (más visible cuanto más lejos).
+	var halo := lerpf(1.0, 0.25, s)
+	for k in 4:
+		c.draw_polyline(_planet_arc(y_h - (k + 1) * 2.5, r_scr + (k + 1) * 2.5), Color(0.3, 0.55, 1.0, halo * 0.12), 3.0)
+	# El suelo del lanzamiento se convierte en el planeta visto desde arriba.
+	_fill_planet(c, y_h, r_scr, Color("#0d1712").lerp(Color("#0a1830"), 1.0 - s))
+	c.draw_polyline(_planet_arc(y_h, r_scr), Color(0.45, 0.7, 1.0, halo * 0.75), 2.0)
+	# --- Mundo del lanzamiento (se escala hacia el pie de la pantalla) ---
+	c.draw_set_transform(piv - piv * s + Vector2(0.0, _recede), 0.0, Vector2(s, s))
+	if _rk_state == 1 and _alt < 220.0:
+		# Resplandor del motor sobre la plataforma.
+		var g := 1.0 - _alt / 220.0
+		for k in 4:
+			c.draw_circle(Vector2(320, 236), 40.0 + k * 34.0, Color(1.0, 0.6, 0.2, 0.05 * g))
+	# Plataforma, torre y reflectores.
+	c.draw_rect(Rect2(296, 232, 48, 6), Color("#3a3c4c"))
+	c.draw_rect(Rect2(312, 218, 16, 14), Color("#2a2c3a"))
+	c.draw_rect(Rect2(350, 150, 6, 88), Color("#4a4c60"))
+	for k in 5:
+		c.draw_rect(Rect2(345, 160 + k * 16, 16, 2), Color("#4a4c60"))
+	for lx in [250.0, 430.0]:
+		c.draw_rect(Rect2(lx, 206, 2, 32), Color("#3a3c4c"))
+		c.draw_circle(Vector2(lx + 1, 205), 3.0, Color("#ffe9a0"))
+		c.draw_circle(Vector2(lx + 1, 205), 9.0, Color(1, 0.9, 0.6, 0.12))
+	# Estela de humo: una columna de nubes desde la plataforma hasta el cohete.
+	if _rk_state >= 1:
+		var n := int(_alt / 8.0)
+		for k in n:
+			var age := _alt - k * 8.0
+			var wy := 218.0 - k * 8.0
+			var wx := 320.0 + sin(k * 1.3) * (2.0 + age * 0.03)
+			var rad := 4.0 + age * 0.045
+			var warm := clampf(1.0 - age / 160.0, 0.0, 1.0)
+			c.draw_circle(Vector2(wx, wy), rad, Color(0.62 + 0.3 * warm, 0.6 + 0.12 * warm, 0.62, 0.30 - 0.18 * (age / maxf(_alt, 1.0))))
+	# Público festejando.
+	for i in 18:
+		var left := i < 10
+		var px := (70.0 + i * 17.0) if left else (440.0 + (i - 10) * 21.0)
+		_draw_person(c, px, 241.0 + (i % 3) * 3.0, i)
+	# Confeti.
+	if _cheer > 0.7:
+		for k in 46:
+			var cx := 60.0 + fmod(k * 53.0, 520.0)
+			var cy2 := 150.0 + fmod(c.t * (24.0 + k % 5 * 6.0) + k * 17.0, 90.0)
+			var confetti: Array = [Color("#ff5a4a"), Color("#ffd24a"), Color("#80f2ff"), Color("#7aff9a"), Color("#ffffff")]
+			var col: Color = confetti[k % 5]
+			c.draw_rect(Rect2(cx + sin(c.t * 3.0 + k) * 6.0, cy2, 2, 2), Color(col, 0.9))
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# --- Cohete (en pantalla, sin escalar) ---
+	var x := 320.0
+	var by := _rocket_base_y()
+	if _rk_state < 2:
+		c.draw_rect(Rect2(x - 8, by - 58, 16, 58), Color("#d8d8e0"))
+		c.draw_rect(Rect2(x - 8, by - 38, 16, 4), Color("#c0532a"))
+		c.draw_rect(Rect2(x - 6, by - 88, 12, 30), Color("#e8e8f0"))
+		c.draw_colored_polygon(PackedVector2Array([Vector2(x - 6, by - 88), Vector2(x + 6, by - 88), Vector2(x, by - 102)]), Color("#c0532a"))
+		if _rk_state == 1:
+			var fl := 16.0 + 8.0 * sin(c.t * 40.0) + minf(_alt, 300.0) * 0.06
+			c.draw_colored_polygon(PackedVector2Array([Vector2(x - 8, by), Vector2(x + 8, by), Vector2(x, by + fl + 16)]), Color("#ffb347"))
+			c.draw_colored_polygon(PackedVector2Array([Vector2(x - 4, by), Vector2(x + 4, by), Vector2(x, by + fl)]), Color("#fff4c0"))
+			c.draw_circle(Vector2(x, by + 6), 14.0, Color(1.0, 0.7, 0.3, 0.12))
+	else:
+		# Separación: la etapa inferior cae y la sonda sigue sola.
+		c.draw_rect(Rect2(x - 8, _stage_y, 16, 58), Color("#8a8ea6"))
+		var pp := Vector2(x + 90.0 * _probe_show + _cruise * 9.0, 150.0 - 45.0 * _probe_show - _cruise * 1.5)
+		PioneerArt.draw_pioneer(c, pp, -0.5 + sin(c.t * 0.8) * 0.04, 1.6)
+	if _flash > 0.0:
+		c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), Color(1, 0.9, 0.7, _flash * 0.3))
+
+
+## Una persona del público: salta y levanta los brazos según `_cheer`; algunas llevan bandera.
+func _draw_person(c: CanvasItem, x: float, y: float, i: int) -> void:
+	var cheer := _cheer
+	var ph := i * 1.7
+	var hop := absf(sin(_t * 7.0 + ph)) * 7.0 * cheer
+	var sway := sin(_t * 1.6 + ph) * 0.6 * (1.0 - cheer)
+	var by := y - hop
+	var shirt: Color = [Color("#e8e8f0"), Color("#ff9a7a"), Color("#80b4ff"), Color("#ffd24a"), Color("#7aff9a"), Color("#d0a0ff")][i % 6]
+	var skin: Color = [Color("#f0c8a0"), Color("#c89870"), Color("#8a5a3a")][i % 3]
+	var pants := Color("#2a2c44")
+	c.draw_rect(Rect2(x - 2 + sway, by - 5, 1.6, 5), pants)
+	c.draw_rect(Rect2(x + 0.6 + sway, by - 5, 1.6, 5), pants)
+	c.draw_rect(Rect2(x - 2.6 + sway, by - 11, 5.2, 6), shirt)
+	c.draw_circle(Vector2(x + sway, by - 13.6), 2.3, skin)
+	# Brazos: abajo mientras esperan, arriba (y ondeando) cuando festejan.
+	var up := lerpf(2.0, -7.5, cheer)
+	var wave := sin(_t * 9.0 + ph) * 1.8 * cheer
+	c.draw_line(Vector2(x - 2.6 + sway, by - 10), Vector2(x - 5.0 + sway - wave, by - 10 + up), shirt, 1.4)
+	c.draw_line(Vector2(x + 2.6 + sway, by - 10), Vector2(x + 5.0 + sway + wave, by - 10 + up), shirt, 1.4)
+	if i % 5 == 0:
+		# Bandera.
+		var fx := x + 5.0 + sway + wave
+		var ft := by - 10 + up
+		c.draw_line(Vector2(fx, ft), Vector2(fx, ft - 10), Color("#c8ccd8"), 1.0)
+		# Bandera de Estados Unidos: franjas rojas y blancas y cantón azul con estrellas.
+		for k in 7:
+			c.draw_rect(Rect2(fx + 0.5, ft - 10 + k, 8, 1), Color("#d8342a") if k % 2 == 0 else Color("#ffffff"))
+		c.draw_rect(Rect2(fx + 0.5, ft - 10, 3.5, 4), Color("#2a3f9a"))
+		c.draw_rect(Rect2(fx + 1.0, ft - 9.5, 1, 1), Color("#ffffff"))
+		c.draw_rect(Rect2(fx + 2.5, ft - 8.0, 1, 1), Color("#ffffff"))
+		c.draw_rect(Rect2(fx + 1.0, ft - 7.0, 1, 1), Color("#ffffff"))
 
 
 # =========================================================================

@@ -30,6 +30,7 @@
 			"energy": 100,
 			"show_progress": false,
 			"countdown": ["T-5", "T-4", "T-3", "T-2", "T-1", "¡DESPEGUE!"],
+			"cheer": "El equipo celebra el despegue",
 			"intro": [
 				{"speaker": "CONTROLADORA", "text": "Centro de seguimiento de Goldstone, California. 2 de marzo de 1972: despega la Pioneer 10, rumbo a Júpiter."}
 			],
