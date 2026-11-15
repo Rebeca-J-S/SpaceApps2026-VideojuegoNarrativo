@@ -1,5 +1,7 @@
 {
 	"_nota": "Catálogo inglés: \"texto fuente en español\": \"English text\". Si cambias un texto en español (JSON o código), actualiza aquí su clave; si falta, el juego lo muestra en español y avisa por consola (solo en depuración). Un valor vacío (\"\") oculta el texto en inglés (p. ej. la traducción 'sub' de una frase que ya está en inglés).",
+	"TIERRA": "EARTH",
+	"SEÑAL": "SIGNAL",
 	"La controladora es un personaje imaginado.\nLa nave, las fechas y los hechos son reales.": "The flight controller is an imagined character.\nThe spacecraft, the dates and the facts are real.",
 	"CONTROLADORA": "CONTROLLER",
 	"ENERGÍA RTG": "RTG POWER",

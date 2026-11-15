@@ -21,7 +21,7 @@ const MARS_GRAVITY := 3.71          # m/s²
 # --- Panel de CONTROLES del menú (BBCode) ---
 const CONTROLS_BBCODE := """[color=#ffb347]GENERAL[/color]
 » ENTER / CLIC : avanzar diálogos y confirmar
-» ESC : pausa (continuar o volver al selector)
+» ESC o botón de tres puntos : menú de pausa (sonido, ayuda y salir)
 » C · O · I : controles, objetivos e información de la misión
 » L o botón EN | ES : cambiar el idioma (en los menús)
 
