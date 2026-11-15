@@ -1,8 +1,7 @@
 {
-	"_nota": "Capítulo PIONEER 10. El jugador es una controladora de vuelo (personaje imaginado) en Goldstone, California; la protagonista es la nave. La controladora nunca habla por la nave. Los hechos vienen de fuentes de la NASA. Las entradas 'verificar' son valores por confirmar. La Fase 3 (tormenta) ya tiene su cinemática; la de Io todavía muestra 'CINEMÁTICA PENDIENTE'.",
+	"_nota": "Capítulo PIONEER 10. El jugador es una controladora de vuelo (personaje imaginado) en Goldstone, California; la protagonista es la nave. La controladora nunca habla por la nave. Los hechos vienen de fuentes de la NASA. Las entradas 'verificar' son valores por confirmar. La Fase 3 (tormenta) tiene su cinemática.",
 	"disclaimer": "La controladora es un personaje imaginado.\nLa nave, las fechas y los hechos son reales.",
 	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
-	"cinematic_pending": "CINEMÁTICA PENDIENTE",
 	"speakers": {
 		"CONTROLADORA": {"name": "CONTROLADORA", "radio": false, "color": "#ffb347", "portrait": "controladora"},
 		"PIONEER": {"name": "PIONEER 10", "radio": true, "color": "#80f2ff", "portrait": "pioneer10"}
@@ -134,7 +133,6 @@
 			"outro_partial": [
 				{"speaker": "CONTROLADORA", "text": "La radiación venció a la cámara, pero guardamos las fotos que alcanzamos a tomar."}
 			],
-			"io_tag": "IO",
 			"outro": []
 		},
 		{

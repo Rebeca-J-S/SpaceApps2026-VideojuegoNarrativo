@@ -540,7 +540,7 @@ func _speaker_color(key: String) -> Color:
 
 
 # =========================================================================
-# Aviso inicial y pantalla de cinemática pendiente
+# Aviso inicial
 # =========================================================================
 func _disclaimer() -> void:
 	_set_year("")
@@ -562,24 +562,6 @@ func _disclaimer() -> void:
 	await wait_click_or_accept(4.0)
 	panel.queue_free()
 	h.queue_free()
-	l.queue_free()
-
-
-## Marcador de posición para las cinemáticas que todavía no existen: solo un mensaje en pantalla.
-func _cinematic_pending(tag: String) -> void:
-	var panel := ColorRect.new()
-	panel.color = Color.BLACK
-	panel.position = Vector2(0, GAME_TOP)
-	panel.size = Vector2(W, GAME_BOTTOM - GAME_TOP)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui_layer.add_child(panel)
-	var l := _label(Vector2(0, 100), Vector2(W, 30), 22, RetroTheme.AMBER, ui_layer)
-	l.text = String(data["cinematic_pending"])
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# `tag` identifica qué cinemática falta (queda en el JSON); en pantalla solo va el mensaje.
-	await wait(0.3)
-	await wait_click_or_accept(3.0)
-	panel.queue_free()
 	l.queue_free()
 
 
@@ -1067,8 +1049,6 @@ func _scene_jupiter(sc: Dictionary) -> void:
 		await toast(String(mm["damaged"]), RED, 2.0)
 		_drain(float(mm["damaged_energy_cost"]))
 		await say(sc["outro_partial"])
-	# Io: escena cinemática (aún no existe).
-	await _cinematic_pending(String(sc["io_tag"]))
 
 
 ## Pico de radiación: estática en toda la pantalla durante medio segundo y aviso en grande.
