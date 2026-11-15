@@ -59,7 +59,7 @@
 			"name": "MARTE",
 			"kind": "mars",
 			"missions_line": "SOJOURNER · VIKING · SPIRIT\nPHOENIX · INSIGHT · INGENUITY",
-			"count_label": "6 SITIOS · BLOQUEADOS",
+			"count_label": "6 SITIOS · 1 JUGABLE",
 			"sites": [
 				{
 					"id": "spirit_opportunity",
@@ -71,8 +71,7 @@
 					"lon": 175.5,
 					"verificar": "coordenadas aproximadas (el punto marca el cráter Gusev, donde aterrizó Spirit)",
 					"mission_title": "SPIRIT Y OPPORTUNITY",
-					"scene": "res://scenes/missions/chapter_spirit_opportunity.tscn",
-					"locked": true
+					"scene": "res://scenes/missions/chapter_spirit_opportunity.tscn"
 				},
 				{
 					"id": "sojourner",
