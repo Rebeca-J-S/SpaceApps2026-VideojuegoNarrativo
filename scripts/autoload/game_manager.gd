@@ -14,12 +14,13 @@ extends Node
 const SAVE_PATH := "user://progreso.cfg"
 const SITES_PATH := "res://data/sites.json"
 const ARCHIVE_PATH := "res://data/archive.json"
+const BADGES_PATH := "res://data/badges.json"
 const PLANET_SELECT_SCENE := "res://scenes/ui/planet_select.tscn"
 const I18N_DIR := "res://data/i18n/en/"
 ## Archivos del catálogo inglés (lista fija: en una exportación no conviene listar carpetas).
-const I18N_FILES := ["ui", "sites", "archive", "intro", "apolo11", "spirit_opportunity", "pioneer10"]
+const I18N_FILES := ["ui", "sites", "archive", "intro", "apolo11", "spirit_opportunity", "pioneer10", "badges"]
 ## Claves de los JSON que son identificadores (no se traducen).
-const I18N_SKIP_KEYS := ["id", "speaker", "portrait", "mode", "scene", "color", "kind", "twin", "action", "missions", "mission", "sections"]
+const I18N_SKIP_KEYS := ["id", "speaker", "portrait", "mode", "scene", "color", "kind", "twin", "action", "missions", "mission", "sections", "link", "site", "icon", "body"]
 
 signal language_changed(lang: String)
 
@@ -37,6 +38,10 @@ const INPUT_ACTIONS := {
 var current_site: Dictionary = {}
 
 var _completed: Dictionary = {}
+## Insignias: id -> piezas ganadas (índices de fase).
+var _badges: Dictionary = {}
+
+signal badge_piece_unlocked(badge_id: String, index: int, total: int)
 var _cache: Dictionary = {}
 var _start_phase := 0
 
@@ -177,6 +182,45 @@ func get_archive() -> Dictionary:
 	return load_json(ARCHIVE_PATH)
 
 
+# -------------------------------------------------------------------------
+# Cuaderno de insignias: cada fase completada de una misión gana una pieza.
+# -------------------------------------------------------------------------
+func get_badges() -> Array:
+	var data: Dictionary = load_json(BADGES_PATH)
+	return data.get("badges", [])
+
+
+func find_badge(badge_id: String) -> Dictionary:
+	for b in get_badges():
+		if b["id"] == badge_id:
+			return b
+	return {}
+
+
+## Índices de las piezas ganadas de una insignia.
+func badge_pieces(badge_id: String) -> Array:
+	return _badges.get(badge_id, [])
+
+
+func is_badge_complete(badge_id: String) -> bool:
+	var b := find_badge(badge_id)
+	return not b.is_empty() and badge_pieces(badge_id).size() >= int(b["pieces"])
+
+
+## Gana la pieza `index` de la insignia. Devuelve true si es nueva.
+func unlock_badge_piece(badge_id: String, index: int) -> bool:
+	var got: Array = _badges.get(badge_id, []).duplicate()
+	if index in got:
+		return false
+	got.append(index)
+	got.sort()
+	_badges[badge_id] = got
+	_save()
+	var b := find_badge(badge_id)
+	badge_piece_unlocked.emit(badge_id, index, int(b.get("pieces", 6)))
+	return true
+
+
 ## Busca un sitio por id en todos los destinos.
 func find_site(site_id: String) -> Dictionary:
 	for dest in get_destinations():
@@ -203,6 +247,8 @@ func _save() -> void:
 	for id in _completed.keys():
 		cfg.set_value("misiones", id, true)
 	cfg.set_value("ajustes", "idioma", lang)
+	for id in _badges.keys():
+		cfg.set_value("insignias", id, _badges[id])
 	cfg.save(SAVE_PATH)
 
 
@@ -211,6 +257,11 @@ func _load_progress() -> void:
 	if cfg.load(SAVE_PATH) != OK:
 		return
 	lang = String(cfg.get_value("ajustes", "idioma", "en"))
+	if cfg.has_section("insignias"):
+		for id in cfg.get_section_keys("insignias"):
+			var v: Variant = cfg.get_value("insignias", id, [])
+			if v is Array:
+				_badges[id] = v
 	if cfg.has_section("misiones"):
 		for id in cfg.get_section_keys("misiones"):
 			_completed[id] = bool(cfg.get_value("misiones", id, false))

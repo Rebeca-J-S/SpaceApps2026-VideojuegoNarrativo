@@ -1,0 +1,135 @@
+{
+	"_nota": "Cuaderno de insignias. Cada insignia tiene 'pieces' piezas: una por fase de su misión (se ganan al terminar cada fase). 'site' enlaza con data/sites.json; 'icon' elige el dibujo (scripts/components/badge_art.gd); 'body' el fondo (moon, mars, deep).",
+	"badges": [
+		{
+			"id": "apolo11",
+			"site": "apolo11",
+			"body": "moon",
+			"icon": "lm",
+			"pieces": 6,
+			"name": "MÓDULOS LUNARES APOLO",
+			"link": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-059C",
+			"desc": "Las etapas de descenso de los módulos lunares (como el Eagle del Apolo 11) se quedaron en la Luna: sirvieron de plataforma de lanzamiento para volver."
+		},
+		{
+			"id": "lrv",
+			"site": "lrv",
+			"body": "moon",
+			"icon": "lrv",
+			"pieces": 6,
+			"name": "VEHÍCULOS LUNARES (LRV)",
+			"link": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1971-063C",
+			"desc": "Tres \"autos lunares\" eléctricos conducidos por astronautas. Quedaron estacionados para siempre en la Luna."
+		},
+		{
+			"id": "alsep",
+			"site": "alsep",
+			"body": "moon",
+			"icon": "alsep",
+			"pieces": 6,
+			"name": "PAQUETES CIENTÍFICOS ALSEP",
+			"link": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-099C",
+			"desc": "Paquetes de experimentos de superficie del Apolo (sismómetros, retrorreflectores...) que siguieron haciendo ciencia cuando los astronautas se fueron."
+		},
+		{
+			"id": "surveyor",
+			"site": "surveyor",
+			"body": "moon",
+			"icon": "surveyor",
+			"pieces": 6,
+			"name": "MÓDULOS SURVEYOR",
+			"link": "https://science.nasa.gov/mission/surveyor-3/",
+			"desc": "Sondas robóticas enviadas en los años 60 para demostrar que era posible alunizar con suavidad."
+		},
+		{
+			"id": "sojourner",
+			"site": "sojourner",
+			"body": "mars",
+			"icon": "sojourner",
+			"pieces": 6,
+			"name": "ROVER SOJOURNER",
+			"link": "https://science.nasa.gov/mission/mars-pathfinder/",
+			"desc": "El primer rover en Marte (1997), llevado por el módulo Pathfinder. Hoy está estacionado para siempre."
+		},
+		{
+			"id": "spirit_opportunity",
+			"site": "spirit_opportunity",
+			"body": "mars",
+			"icon": "twins",
+			"pieces": 7,
+			"name": "SPIRIT Y OPPORTUNITY",
+			"link": "https://science.nasa.gov/mission/mars-exploration-rovers-spirit-and-opportunity/",
+			"desc": "Rovers gemelos que funcionaron durante años. Los dos son hoy monumentos inactivos de la exploración de Marte."
+		},
+		{
+			"id": "viking",
+			"site": "viking",
+			"body": "mars",
+			"icon": "viking",
+			"pieces": 6,
+			"name": "MÓDULOS VIKING 1 Y 2",
+			"link": "https://science.nasa.gov/mission/viking-1/",
+			"desc": "Los primeros módulos de EE. UU. que funcionaron con éxito en Marte (1976). Siguen exactamente donde aterrizaron."
+		},
+		{
+			"id": "phoenix_insight",
+			"site": "phoenix_insight",
+			"body": "mars",
+			"icon": "insight",
+			"pieces": 6,
+			"name": "PHOENIX E INSIGHT",
+			"link": "https://science.nasa.gov/mission/insight/",
+			"desc": "Phoenix excavó en busca de hielo de agua; InSight escuchó los martemotos. Los dos terminaron quedándose sin energía."
+		},
+		{
+			"id": "ingenuity",
+			"site": "ingenuity",
+			"body": "mars",
+			"icon": "heli",
+			"pieces": 6,
+			"name": "HELICÓPTERO INGENUITY",
+			"link": "https://science.nasa.gov/mission/mars-2020-perseverance/ingenuity-mars-helicopter/",
+			"desc": "El primer aparato que voló en otro planeta. Sus palas se dañaron y quedó en tierra como un artefacto inmóvil."
+		},
+		{
+			"id": "pioneer10",
+			"site": "pioneer10",
+			"body": "deep",
+			"icon": "pioneer",
+			"pieces": 7,
+			"name": "PIONEER 10 Y 11",
+			"link": "https://science.nasa.gov/mission/pioneer-10/",
+			"desc": "Las primeras sondas de espacio profundo que exploraron los planetas exteriores. Hoy se alejan en silencio del sistema solar."
+		},
+		{
+			"id": "dawn",
+			"site": "dawn",
+			"body": "deep",
+			"icon": "dawn",
+			"pieces": 6,
+			"name": "SONDA DAWN",
+			"link": "https://science.nasa.gov/mission/dawn/",
+			"desc": "Cartografió Vesta y Ceres. Se quedó sin combustible y sigue en una órbita perpetua, sin energía, alrededor de Ceres."
+		},
+		{
+			"id": "near",
+			"site": "near",
+			"body": "deep",
+			"icon": "near",
+			"pieces": 6,
+			"name": "NEAR SHOEMAKER",
+			"link": "https://science.nasa.gov/mission/near-shoemaker/",
+			"desc": "La primera nave en orbitar un asteroide y posarse en él. Descansa en la superficie de 433 Eros."
+		},
+		{
+			"id": "kepler",
+			"site": "kepler",
+			"body": "deep",
+			"icon": "kepler",
+			"pieces": 6,
+			"name": "TELESCOPIO KEPLER",
+			"link": "https://science.nasa.gov/mission/kepler/",
+			"desc": "Revolucionario telescopio cazador de exoplanetas. Se quedó sin combustible y va a la deriva en una órbita que sigue a la Tierra."
+		}
+	]
+}

@@ -18,6 +18,7 @@ signal chapter_finished
 const PioneerArt := preload("res://scripts/missions/mision_pioneer.gd")
 const DATA_PATH := "res://data/dialogos/pioneer10.json"
 const MISSION_ID := "pioneer"          # id de progreso (desbloquea las fichas de Pioneer en el Archivo)
+const BADGE_ID := "pioneer10"           # insignia del cuaderno (data/badges.json)
 const W := 640.0
 const GAME_TOP := 22.0
 const GAME_BOTTOM := 266.0
@@ -151,11 +152,16 @@ var _reveal_done := false
 var _buzz: AudioStreamPlayer
 
 
+var _badge_toast: BadgeToast
+
+
 func _ready() -> void:
 	theme = RetroTheme.build()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	data = GameManager.load_json(DATA_PATH)
 	_build()
+	_badge_toast = BadgeToast.new()
+	add_child(_badge_toast)
 	await get_tree().process_frame
 	_run_chapter()
 
@@ -174,11 +180,20 @@ func _run_chapter() -> void:
 	var first := maxi(start - 1, 0)
 	for i in range(first, scenes.size()):
 		await _run_scene(scenes[i], i, start > 0 and i == first)
+		_award_badge_piece(i)
 	mission_hud.mark_all_done()
 	chapter_finished.emit()
 	if auto_return:
 		GameManager.mark_completed(MISSION_ID)
 		GameManager.go_to_planet_select()
+
+
+
+## Cuaderno de insignias: cada fase terminada gana una pieza de la insignia de la misión.
+func _award_badge_piece(index: int) -> void:
+	var b := GameManager.find_badge(BADGE_ID)
+	if not b.is_empty() and GameManager.unlock_badge_piece(BADGE_ID, index):
+		_badge_toast.show_piece(b, GameManager.badge_pieces(BADGE_ID), index)
 
 
 func _run_scene(sc: Dictionary, index: int, jumped: bool) -> void:

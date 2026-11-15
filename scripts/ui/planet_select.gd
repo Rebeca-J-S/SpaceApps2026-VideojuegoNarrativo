@@ -32,7 +32,7 @@ var _radar_t := -1.0
 
 var _site_panel: PanelContainer
 var _site_title: Label
-var _site_buttons: HBoxContainer
+var _site_buttons: HFlowContainer
 var _site_info: Label
 var _start_btn: Button
 var _panel_dest := -1
@@ -151,7 +151,8 @@ func _build_site_panel() -> void:
 	var box := VBoxContainer.new()
 	_site_panel.add_child(box)
 	_site_title = _label("", 14, RetroTheme.AMBER, Vector2.ZERO, Vector2.ZERO, box)
-	_site_buttons = HBoxContainer.new()
+	_site_buttons = HFlowContainer.new()
+	_site_buttons.custom_minimum_size = Vector2(320, 0)
 	box.add_child(_site_buttons)
 	_site_info = _label("", 11, RetroTheme.WHITE, Vector2.ZERO, Vector2.ZERO, box)
 	_site_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -186,7 +187,14 @@ func _label(text: String, font_size: int, color: Color, pos: Vector2, sz: Vector
 	return l
 
 
+## Un sitio está bloqueado si lo dice el JSON ("locked": true) o si no tiene escena.
+func _is_locked(site: Dictionary) -> bool:
+	return bool(site.get("locked", false)) or String(site.get("scene", "")) == ""
+
+
 func _mission_id_for(site: Dictionary) -> String:
+	if _is_locked(site):
+		return ""
 	var scene := String(site.get("scene", ""))
 	if scene.contains("apolo11"):
 		return "apolo11"
@@ -297,6 +305,8 @@ func _open_site_panel(dest_index: int, site_index: int) -> void:
 	for i in sites.size():
 		var b := Button.new()
 		b.text = String(sites[i]["name"])
+		if _is_locked(sites[i]):
+			b.modulate = Color(1, 1, 1, 0.5)          # sitio bloqueado: visible pero apagado
 		b.toggle_mode = true
 		b.button_group = group
 		b.toggled.connect(_on_site_toggled.bind(i))
@@ -306,7 +316,10 @@ func _open_site_panel(dest_index: int, site_index: int) -> void:
 	var chosen := _site_buttons.get_child(site_index) as Button
 	chosen.button_pressed = true
 	_show_site(site_index)
-	_start_btn.grab_focus()
+	if _start_btn.disabled:
+		chosen.grab_focus()
+	else:
+		_start_btn.grab_focus()
 
 
 func _on_site_toggled(on: bool, i: int) -> void:
@@ -317,6 +330,11 @@ func _on_site_toggled(on: bool, i: int) -> void:
 func _show_site(i: int) -> void:
 	_panel_site = i
 	var site: Dictionary = _destinations[_panel_dest]["sites"][i]
+	_start_btn.disabled = _is_locked(site)
+	if _is_locked(site):
+		_site_info.text = tr("%s · %s\n%s\n\n[BLOQUEADO] Este artefacto todavía no tiene misión. Próximamente.") % [
+			site["place"], site["year"], site["equipment"]]
+		return
 	var done := GameManager.is_completed(_mission_id_for(site))
 	_site_info.text = tr("%s · %s\n%s\n\nMISIÓN: \"%s\"%s") % [
 		site["place"], site["year"], site["equipment"], site.get("mission_title", ""),
@@ -333,6 +351,8 @@ func _close_site_panel() -> void:
 # =========================================================================
 func _on_start_pressed() -> void:
 	if _busy or _panel_site < 0:
+		return
+	if _is_locked(_destinations[_panel_dest]["sites"][_panel_site]):
 		return
 	_busy = true
 	_site_panel.hide()

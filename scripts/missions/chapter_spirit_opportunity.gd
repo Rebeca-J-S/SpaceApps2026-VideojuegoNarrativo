@@ -16,6 +16,7 @@ signal chapter_finished
 
 const DATA_PATH := "res://data/dialogos/spirit_opportunity.json"
 const MISSION_ID := "gemelas"          # id de progreso (desbloquea las fichas en el Archivo)
+const BADGE_ID := "spirit_opportunity"           # insignia del cuaderno (data/badges.json)
 const W := 640.0
 const GAME_TOP := 22.0
 const GAME_BOTTOM := 266.0
@@ -77,11 +78,16 @@ var _flash := 0.0
 var _wrong_text := ""
 
 
+var _badge_toast: BadgeToast
+
+
 func _ready() -> void:
 	theme = RetroTheme.build()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	data = GameManager.load_json(DATA_PATH)
 	_build()
+	_badge_toast = BadgeToast.new()
+	add_child(_badge_toast)
 	await get_tree().process_frame
 	_run_chapter()
 
@@ -105,12 +111,21 @@ func _run_chapter() -> void:
 			if not bool(sc.get("enabled", true)):
 				continue
 			await _run_scene(sc, i)
+			_award_badge_piece(i)
 	mission_hud.mark_all_done()
 	await _closing()
 	chapter_finished.emit()
 	if auto_return:
 		GameManager.mark_completed(MISSION_ID)
 		GameManager.go_to_planet_select()
+
+
+
+## Cuaderno de insignias: cada fase terminada gana una pieza de la insignia de la misión.
+func _award_badge_piece(index: int) -> void:
+	var b := GameManager.find_badge(BADGE_ID)
+	if not b.is_empty() and GameManager.unlock_badge_piece(BADGE_ID, index):
+		_badge_toast.show_piece(b, GameManager.badge_pieces(BADGE_ID), index)
 
 
 func _run_scene(sc: Dictionary, index: int) -> void:

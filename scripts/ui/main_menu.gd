@@ -141,12 +141,8 @@ func _update_site_tooltip() -> void:
 		if index >= 0 and not found:
 			found = true
 			var info := p.get_site_info(index)
-			var state := tr("SILENCIOSO")
-			if info["status"] == "active":
-				state = tr("ACTIVO")
-			elif info["status"] == "focus":
-				state = tr("MISIÓN JUGABLE")
-			var text := "%s  [%s]\n%s" % [info["name"], state, info["info"]]
+			var state := tr("BLOQUEADO") if bool(info.get("locked", false)) else tr("MISIÓN JUGABLE")
+			var text := "%s  [%s]\n%s · %s" % [info["name"], state, info.get("place", ""), info.get("year", "")]
 			if site_tooltip_label.text != text:
 				site_tooltip_label.text = text
 				site_tooltip.reset_size()
@@ -251,7 +247,22 @@ func _build_section_tabs() -> void:
 		tab.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tab.toggled.connect(_on_section_toggled.bind(section))
 		section_tabs.add_child(tab)
+	# Cuaderno de insignias: se abre como una libreta encima del archivo.
+	var nb := Button.new()
+	nb.text = tr("CUADERNO DE INSIGNIAS")
+	nb.add_theme_font_size_override("font_size", 12)
+	nb.add_theme_color_override("font_color", RetroTheme.AMBER)
+	nb.pressed.connect(_open_badge_notebook.bind(nb))
+	section_tabs.add_child(nb)
 	(section_tabs.get_child(0) as Button).button_pressed = true
+
+
+func _open_badge_notebook(from: Button) -> void:
+	var notebook := BadgeNotebook.new()
+	add_child(notebook)
+	notebook.closed.connect(func() -> void:
+		if is_instance_valid(from):
+			from.grab_focus())
 
 
 func _make_toggle(text: String, group: ButtonGroup, font_size: int) -> Button:
