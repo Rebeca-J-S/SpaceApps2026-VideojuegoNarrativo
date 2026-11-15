@@ -4,11 +4,11 @@
 	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
 	"cinematic_pending": "CINEMÁTICA PENDIENTE",
 	"speakers": {
-		"JPL": {
+		"CONTROL": {
 			"name": "CONTROL (JPL)",
 			"radio": false,
 			"color": "#ffb347",
-			"portrait": "jpl"
+			"portrait": "control"
 		},
 		"CIENCIA": {
 			"name": "EQUIPO DE CIENCIA",
@@ -56,15 +56,15 @@
 			"cinematic_tag": "ATERRIZAJE DE LOS GEMELOS",
 			"intro": [
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Enero de 2004. Spirit aterrizó en el cráter Gusev y, tres semanas después, Opportunity en Meridiani Planum: dos rovers gemelos en lados opuestos de Marte."
 				},
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Nadie los conduce en directo. Cada día marciano, o «sol», el equipo planifica las tareas, las envía y espera los resultados."
 				},
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Tu primer trabajo: encajar las tareas de un sol sin pasarte de energía."
 				}
 			],
@@ -275,7 +275,7 @@
 					"mode": "TX"
 				},
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Funcionó. Spirit y Opportunity estaban pensados para unos 90 soles, tres meses. Aún no sabíamos cuánto durarían."
 				}
 			],
@@ -397,7 +397,7 @@
 			"cinematic_tag": "OPPORTUNITY ATRAPADA EN LA DUNA",
 			"intro": [
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "26 de abril de 2005. Opportunity se hundió en una duna de arena blanda, «Purgatory». Pasará varias semanas atrapada."
 				},
 				{
@@ -465,7 +465,7 @@
 					"text": "Salió. Después de aquello, el software del rover aprendió a detener la marcha si las ruedas patinan demasiado."
 				},
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Ensayar en la Tierra y actuar con calma en Marte: así se evitan errores que allí no tienen arreglo."
 				}
 			],
@@ -624,11 +624,11 @@
 			},
 			"outro": [
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Seguimos intentando recuperar el contacto hasta el 25 de mayo de 2011."
 				},
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Spirit recorrió 7,73 km, trabajó más de seis años y envió más de 124.000 imágenes. Su misión planeada era de tres meses."
 				}
 			],
@@ -643,7 +643,7 @@
 			"objective": "LLEGAR AL CRÁTER ENDEAVOUR",
 			"intro": [
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Opportunity siguió sola. Su nueva meta: Endeavour, un cráter de unos 22 km de diámetro con rocas más antiguas que todo lo visto hasta entonces."
 				},
 				{
@@ -763,7 +763,7 @@
 			"cinematic_tag": "TORMENTA GLOBAL DE POLVO",
 			"intro": [
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Mayo de 2018. Una tormenta de polvo cubre todo Marte y tapa el Sol. Opportunity está en el valle Perseverance, en el borde de Endeavour."
 				},
 				{
@@ -828,11 +828,11 @@
 					"mode": "TX"
 				},
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "10 de junio de 2018, sol 5.111: llega esta imagen, oscura y con ruido, y se corta antes de terminar. Fue su último mensaje."
 				},
 				{
-					"speaker": "JPL",
+					"speaker": "CONTROL",
 					"text": "Enviamos más de mil comandos para recuperar el contacto. El 13 de febrero de 2019 la misión se dio por terminada."
 				}
 			],

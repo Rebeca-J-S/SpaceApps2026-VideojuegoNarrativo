@@ -334,7 +334,7 @@ func _build() -> void:
 	mission_hud.briefing_area = Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP)
 	mission_hud.keys_pos = Vector2(8, GAME_BOTTOM - 17)
 	mission_hud.busy_check = func() -> bool: return dialog.is_active() or _toast.visible
-	mission_hud.reminder_callback = func(t: String) -> void: dialog.show_hint("JPL", t)
+	mission_hud.reminder_callback = func(t: String) -> void: dialog.show_hint("CONTROL", t)
 	var titles: Array = []
 	for sc in data["scenes"]:
 		titles.append(String(sc["title"]))
@@ -2241,6 +2241,7 @@ func _act_storm(sc: Dictionary) -> void:
 		await toast(String(_st_cfg["msg_low"]), RED, 2.6)
 	_input_cb = Callable()
 	_st_heat_mouse = false
+	mission_hud.clear_guidance()
 	sfx("win")
 	await toast(String(_st_cfg["done"]) + "  " + tr("ESTRELLAS: %d / 3") % _st_stars, GREEN, 2.4)
 	await _last_message(sc)

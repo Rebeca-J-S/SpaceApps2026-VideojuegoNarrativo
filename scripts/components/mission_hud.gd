@@ -97,6 +97,15 @@ func set_phase(index: int, title: String, objective: String, fallback_controls: 
 	_keys_view.queue_redraw()
 
 
+## Quita las teclas y las pautas de la fase (cuando el minijuego ya terminó y solo quedan escenas).
+func clear_guidance() -> void:
+	_keys = []
+	_tip = ""
+	_tip_pending = false
+	_idle = -9999.0
+	_keys_view.queue_redraw()
+
+
 func set_objective(text: String) -> void:
 	_objective = text
 
