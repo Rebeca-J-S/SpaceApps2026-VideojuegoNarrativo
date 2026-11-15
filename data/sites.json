@@ -5,8 +5,8 @@
 			"id": "luna",
 			"name": "LUNA",
 			"kind": "moon",
-			"missions_line": "APOLO 11 · 1969\nSURVEYOR 3 · 1967",
-			"count_label": "2 SITIOS DETECTADOS",
+			"missions_line": "APOLO 11 · 1969\nEAGLE (LM-5)",
+			"count_label": "1 SITIO DETECTADO",
 			"sites": [
 				{
 					"id": "apolo11",
@@ -30,6 +30,7 @@
 					"verificar": "coordenadas aproximadas (NSSDCA: 3.01 S, 23.42 O)",
 					"mission_title": "HUELLAS EN EL POLVO",
 					"scene": "res://scenes/missions/mision_surveyor3.tscn"
+					"scene": "res://scenes/missions/mision_apolo11.tscn"
 				}
 			]
 		},

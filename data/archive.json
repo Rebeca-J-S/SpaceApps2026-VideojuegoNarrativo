@@ -101,39 +101,6 @@
 					]
 				],
 				"voice": "No necesita baterías. Cada pulso láser que llega desde la Tierra lo devuelve por el mismo camino, y así se mide la distancia a la Luna."
-			},
-			{
-				"tab": "SURVEYOR 3",
-				"name": "SONDA SURVEYOR 3",
-				"id": "Lander robótico · Visitada por el Apolo 12",
-				"mission": "surveyor3",
-				"facts": [
-					[
-						"Lanzamiento",
-						"17 abr 1967 (Atlas-Centaur)"
-					],
-					[
-						"Alunizaje",
-						"20 abr 1967, Oceanus Procellarum"
-					],
-					[
-						"Fotos enviadas",
-						"Más de 6,300"
-					],
-					[
-						"Primicia",
-						"Primer brazo excavador en otro mundo"
-					],
-					[
-						"Último contacto",
-						"4 de mayo de 1967"
-					],
-					[
-						"Reencuentro",
-						"Apolo 12, noviembre de 1969"
-					]
-				],
-				"voice": "Comprobó que el suelo lunar era firme para los astronautas. Dos años y medio después, el Apolo 12 alunizó a su lado y se llevó su cámara de vuelta a la Tierra."
 			}
 		],
 		"MARTE": [
@@ -265,10 +232,6 @@
 		{
 			"speaker": "ETAPA DE DESCENSO EAGLE",
 			"text": "La etapa de descenso del Eagle sigue en la Luna desde 1969, en el Mar de la Tranquilidad."
-		},
-		{
-			"speaker": "SURVEYOR 3",
-			"text": "La Surveyor 3 llegó a la Luna antes que los humanos y comprobó que el suelo podía sostenerlos."
 		},
 		{
 			"speaker": "PIONEER 10",

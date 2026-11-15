@@ -55,7 +55,7 @@ offset_bottom = 252.0
 theme_override_colors/font_color = Color(0.82, 0.84, 0.9, 1)
 theme_override_font_sizes/font_size = 10
 text = "LA LUNA
-Apolo 11 · Surveyor 3"
+Apolo 11 · Eagle"
 horizontal_alignment = 1
 
 [node name="Mars" type="ColorRect" parent="."]
