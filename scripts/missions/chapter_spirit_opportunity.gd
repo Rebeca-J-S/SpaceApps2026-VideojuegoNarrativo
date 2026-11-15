@@ -183,7 +183,8 @@ func _scene_evidences(sc: Dictionary) -> Array:
 		out.append(ev)
 	var mm: Dictionary = sc.get("minimission", {})
 	for tg in mm.get("targets", []):
-		out.append((tg as Dictionary)["evidence"])
+		if (tg as Dictionary).has("evidence"):
+			out.append((tg as Dictionary)["evidence"])
 	return out
 
 
@@ -986,10 +987,19 @@ func _pl_color(b: Dictionary) -> Color:
 
 
 # =========================================================================
-# FASE 1 · Detective del agua
+# FASE 1 · Detective del agua (explorar el afloramiento + tablero de hipótesis)
 # =========================================================================
 var _wd_hover := -1
-var _wd_focus := 0
+var _wd_hover_poi := -1
+var _wd_x := 20.0
+var _wd_goto := -1.0
+var _wd_revealed: Dictionary = {}
+var _wd_alive: Dictionary = {}
+var _wd_scan_t := 0.0
+var _wd_snd := 0.0
+const WD_VIEW := Rect2(12, 108, 616, 68)
+const WD_POI_Y := 152.0
+const WD_ROVER_Y := 172.0
 
 
 func _act_water(sc: Dictionary) -> void:
@@ -997,136 +1007,217 @@ func _act_water(sc: Dictionary) -> void:
 	_wd_cfg = sc["minimission"]
 	_mm_title.text = String(_wd_cfg["title"])
 	_mm_info.text = String(_wd_cfg["info"])
-	_wd_energy = float(_wd_cfg["energy"])
-	_wd_sel = 0
-	_wd_used = {}
-	_wd_solved = {}
-	_wd_log = ""
-	_wd_stage = "pick"
-	_wd_hover = -1
-	_wd_focus = 0
+	_wd_reset_all()
 	_bar_name = tr("ENERGÍA")
 	_bar_show = true
 	_tele_fn = func() -> Array:
 		_bar_val = _wd_energy / float(_wd_cfg["energy"]) * 100.0
-		return [[tr("MEDICIONES"), "%d" % int(_wd_energy / float(_wd_cfg["cost"]))], [tr("EVIDENCIAS"), "%d / %d" % [_wd_solved.size(), (_wd_cfg["targets"] as Array).size()]]]
+		var alive := 0
+		for k in _wd_alive:
+			if bool(_wd_alive[k]):
+				alive += 1
+		return [[tr("MEDICIONES"), "%d" % int(_wd_energy / 8.0)], [tr("HIPÓTESIS"), "%d / %d" % [alive, _wd_alive.size()]]]
 	_layer(_draw_water)
 	_input_cb = _water_input
 	while _wd_stage != "done":
 		await get_tree().process_frame
+		if get_tree().paused:
+			continue
+		_water_step(get_process_delta_time())
 	_input_cb = Callable()
 	await say(sc["outro"])
 
 
-func _wd_card_rect(i: int) -> Rect2:
-	return Rect2(12, 92.0 + float(i) * 66.0, 300, 60)
+func _wd_reset_all() -> void:
+	_wd_energy = float(_wd_cfg["energy"])
+	_wd_x = 20.0
+	_wd_goto = -1.0
+	_wd_used = {}
+	_wd_solved = {}
+	_wd_revealed = {}
+	_wd_log = ""
+	_wd_stage = "pick"
+	_wd_hover = -1
+	_wd_hover_poi = -1
+	_wd_alive = {}
+	for h in _wd_cfg["hypotheses"]:
+		_wd_alive[String((h as Dictionary)["id"])] = true
 
 
 func _wd_tool_rect(j: int) -> Rect2:
-	return Rect2(326, 92.0 + float(j) * 31.0, 302, 28)
+	return Rect2(12.0 + float(j) * 124.0, 210, 120, 34)
 
 
-func _wd_opt_rect(j: int) -> Rect2:
-	return Rect2(326, 104.0 + float(j) * 34.0, 302, 30)
+func _wd_poi_rect(tg: Dictionary) -> Rect2:
+	return Rect2(float(tg["x"]) - 18.0, WD_POI_Y - 24.0, 36, 34)
 
 
-## Qué hay bajo el puntero: 0.. tarjetas, 100.. instrumentos, 200.. respuestas.
-func _wd_hit(p: Vector2) -> int:
-	if _wd_stage == "pick":
-		for i in (_wd_cfg["targets"] as Array).size():
-			if _wd_card_rect(i).has_point(p):
-				return i
-		for j in (_wd_cfg["tools"] as Array).size():
-			if _wd_tool_rect(j).has_point(p):
-				return 100 + j
-	elif _wd_stage == "quiz":
-		for j in (_wd_cfg["options"] as Array).size():
-			if _wd_opt_rect(j).has_point(p):
-				return 200 + j
+func _wd_poi_at(p: Vector2) -> int:
+	var targets: Array = _wd_cfg["targets"]
+	for i in targets.size():
+		if _wd_poi_rect(targets[i]).has_point(p):
+			return i
 	return -1
 
 
-func _water_input(event: InputEvent, click: bool) -> void:
+## Muestra a menos de `range` píxeles del rover (la más cercana) o -1.
+func _wd_nearest() -> int:
+	var best := -1
+	var bd := float(_wd_cfg["range"])
 	var targets: Array = _wd_cfg["targets"]
+	for i in targets.size():
+		var d := absf(float((targets[i] as Dictionary)["x"]) - _wd_x)
+		if d <= bd:
+			bd = d
+			best = i
+	return best
+
+
+func _water_step(delta: float) -> void:
+	_wd_scan_t = maxf(0.0, _wd_scan_t - delta)
+	if _wd_mg != "":
+		_wd_mg_update(delta)
+		return
+	if _wd_stage != "pick":
+		return
+	var dir := _axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT)
+	if dir != 0.0:
+		_wd_goto = -1.0
+	elif _wd_goto >= 0.0:
+		if absf(_wd_goto - _wd_x) < 3.0:
+			_wd_goto = -1.0
+		else:
+			dir = signf(_wd_goto - _wd_x)
+	if dir == 0.0:
+		return
+	var mv := dir * float(_wd_cfg["speed"]) * delta
+	var nx := clampf(_wd_x + mv, 20.0, 620.0)
+	_wd_energy -= absf(nx - _wd_x) / 80.0 * float(_wd_cfg["drive_cost"])
+	_wd_x = nx
+	_wd_snd -= delta
+	if _wd_snd <= 0.0:
+		_wd_snd = 0.3
+		sfx("motor", 1.0, -17.0)
+	if _wd_energy <= 0.0:
+		_wd_no_energy()
+
+
+func _wd_no_energy() -> void:
+	_wd_energy = float(_wd_cfg["energy"])
+	_wd_used = {}
+	_wd_x = 20.0
+	_wd_goto = -1.0
+	_wd_log = ""
+	_say_msg(String(_wd_cfg["no_energy"]), RED, 2.8)
+	sfx("lose")
+
+
+func _water_input(event: InputEvent, click: bool) -> void:
+	if _wd_mg != "":
+		_wd_mg_input(event, click)
+		return
+	if _wd_stage != "pick":
+		return
 	if event is InputEventMouseMotion:
-		var h := _wd_hit(get_local_mouse_position())
-		if h != _wd_hover and h >= 0:
+		var p := get_local_mouse_position()
+		var h := -1
+		for j in (_wd_cfg["tools"] as Array).size():
+			if _wd_tool_rect(j).has_point(p):
+				h = j
+		var hp := _wd_poi_at(p)
+		if (h != _wd_hover and h >= 0) or (hp != _wd_hover_poi and hp >= 0):
 			sfx("hover")
 		_wd_hover = h
-		if h >= 200:
-			_wd_focus = h - 200
-		return
-	if _wd_stage == "pick":
-		if click:
-			var h := _wd_hit(get_local_mouse_position())
-			if h >= 100:
-				_water_use(h - 100)
-			elif h >= 0:
-				_wd_sel = h
-				sfx("select")
-		elif event is InputEventKey and event.pressed and not event.echo:
-			var k := int(event.physical_keycode)
-			if k >= KEY_1 and k <= KEY_4:
-				_water_use(k - KEY_1)
-			elif k == KEY_UP or k == KEY_W:
-				_wd_sel = (_wd_sel + targets.size() - 1) % targets.size()
-				sfx("select")
-			elif k == KEY_DOWN or k == KEY_S:
-				_wd_sel = (_wd_sel + 1) % targets.size()
-				sfx("select")
-	elif _wd_stage == "quiz":
-		var n := (_wd_cfg["options"] as Array).size()
-		if click:
-			var h := _wd_hit(get_local_mouse_position())
-			if h >= 200:
-				_water_answer(h - 200)
-		elif event is InputEventKey and event.pressed and not event.echo:
-			var k := int(event.physical_keycode)
-			if k >= KEY_1 and k <= KEY_3:
-				_water_answer(k - KEY_1)
-			elif k == KEY_UP or k == KEY_W:
-				_wd_focus = (_wd_focus + n - 1) % n
-				sfx("hover")
-			elif k == KEY_DOWN or k == KEY_S:
-				_wd_focus = (_wd_focus + 1) % n
-				sfx("hover")
-			elif k == KEY_ENTER or k == KEY_KP_ENTER or k == KEY_SPACE:
-				_water_answer(_wd_focus)
+		_wd_hover_poi = hp
+	elif click:
+		var p := get_local_mouse_position()
+		for j in (_wd_cfg["tools"] as Array).size():
+			if _wd_tool_rect(j).has_point(p):
+				_water_use(j)
+				return
+		if WD_VIEW.has_point(p) or _wd_poi_at(p) >= 0:
+			var hp := _wd_poi_at(p)
+			_wd_goto = float((_wd_cfg["targets"] as Array)[hp]["x"]) if hp >= 0 else clampf(p.x, 20.0, 620.0)
+			sfx("click")
+	elif event is InputEventKey and event.pressed and not event.echo:
+		var k := int(event.physical_keycode)
+		if k >= KEY_1 and k <= KEY_5:
+			_water_use(k - KEY_1)
 
 
 func _water_use(j: int) -> void:
-	var tools: Array = _wd_cfg["tools"]
-	var targets: Array = _wd_cfg["targets"]
-	var tg: Dictionary = targets[_wd_sel]
-	var tid := String(tg["id"])
-	if _wd_solved.has(tid):
+	if _wd_stage != "pick" or _wd_mg != "":
 		return
-	var tool_id := String((tools[j] as Dictionary)["id"])
-	var used: Array = _wd_used.get(tid, [])
-	if used.has(tool_id):
-		_wd_log = tr("Ya usaste ese instrumento en esta muestra.")
+	var tools: Array = _wd_cfg["tools"]
+	var tl: Dictionary = tools[j]
+	var tool_id := String(tl["id"])
+	var cost := float(tl["cost"])
+	# Pancam: revela las muestras cercanas (se puede usar en cualquier sitio).
+	if tool_id == "pancam":
+		if _wd_energy < cost:
+			_wd_no_energy()
+			return
+		_wd_energy -= cost
+		sfx("scan")
+		var ok_p := await _wd_minigame("pancam", {})
+		if not ok_p:
+			_wd_log = String(_wd_cfg["mg_fail"])
+			_wd_log_col = RED
+			return
+		_wd_scan_t = 0.7
+		var n := 0
+		for tg in _wd_cfg["targets"]:
+			if absf(float((tg as Dictionary)["x"]) - _wd_x) <= float(_wd_cfg["scan_range"]) and not _wd_revealed.has(String(tg["id"])):
+				_wd_revealed[String(tg["id"])] = true
+				n += 1
+		_wd_log = String(_wd_cfg["msg_scanned"]) % n if n > 0 else String(_wd_cfg["msg_nothing"])
+		_wd_log_col = CYAN if n > 0 else GRAY_DIM
+		return
+	var ti := _wd_nearest()
+	if ti < 0:
+		_wd_log = String(_wd_cfg["msg_far"])
 		_wd_log_col = GRAY_DIM
 		sfx("error")
 		return
-	if _wd_energy < float(_wd_cfg["cost"]):
-		_wd_energy = float(_wd_cfg["energy"])
-		_wd_used = {}
-		_wd_log = ""
-		_say_msg(String(_wd_cfg["no_energy"]), RED, 2.8)
-		sfx("lose")
+	var tg: Dictionary = (_wd_cfg["targets"] as Array)[ti]
+	var tid := String(tg["id"])
+	if not _wd_revealed.has(tid):
+		_wd_log = String(_wd_cfg["msg_scan"])
+		_wd_log_col = GRAY_DIM
+		sfx("error")
 		return
-	_wd_energy -= float(_wd_cfg["cost"])
-	sfx({"mi": "scan", "moss": "scan", "apxs": "chirp", "rat": "grind"}.get(tool_id, "click"))
+	if _wd_solved.has(tid):
+		_wd_log = String(_wd_cfg["msg_done"])
+		_wd_log_col = GRAY_DIM
+		sfx("error")
+		return
+	var used: Array = _wd_used.get(tid, [])
+	if used.has(tool_id):
+		_wd_log = String(_wd_cfg["msg_used"])
+		_wd_log_col = GRAY_DIM
+		sfx("error")
+		return
+	if _wd_energy < cost:
+		_wd_no_energy()
+		return
+	_wd_energy -= cost
 	var needs: Array = tg["needs"]
 	var useful := needs.has(tool_id)
 	var text := String((tg["results"] as Dictionary)[tool_id])
 	if bool(tg["ordered"]) and tool_id == "apxs" and not used.has("rat"):
+		# Con polvo encima no hay micro-reto que valga: la lectura sale inútil.
 		text = String(tg["dusty"])
 		useful = false
+	else:
+		var ok := await _wd_minigame(tool_id, tg)
+		if not ok:
+			_wd_log = String(_wd_cfg["mg_fail"])
+			_wd_log_col = RED
+			return
 	_wd_log = text
 	_wd_log_col = GREEN if useful else GRAY_DIM
 	if not useful:
-		await wait(0.35)
+		await wait(0.2)
 		sfx("error")
 		return
 	used.append(tool_id)
@@ -1135,31 +1226,494 @@ func _water_use(j: int) -> void:
 	for n in needs:
 		if not used.has(n):
 			done = false
-	await wait(0.35)
-	sfx("ok")
-	if done:
-		_wd_solved[tid] = true
+	if not done:
+		return
+	_wd_solved[tid] = true
+	if tg.has("evidence"):
 		_add_evidence(tg["evidence"])
+	var outs: Array = tg["rules_out"]
+	var ruled := false
+	for h in outs:
+		if bool(_wd_alive.get(String(h), false)):
+			_wd_alive[String(h)] = false
+			ruled = true
+	sfx("win" if ruled else "tick")
+	_wd_log = String(_wd_cfg["done_target"]) + " · " + String(tg["why"])
+	_wd_log_col = YEL if ruled else GRAY
+	var alive := 0
+	for k in _wd_alive:
+		if bool(_wd_alive[k]):
+			alive += 1
+	if alive == 1:
+		_wd_stage = "concl"
+		await wait(1.2)
 		sfx("win")
-		_wd_log = String(_wd_cfg["done_target"]) + " · " + String((tg["evidence"] as Dictionary)["text"])
-		_wd_log_col = YEL
-		for i in targets.size():
-			if not _wd_solved.has(String((targets[i] as Dictionary)["id"])):
-				_wd_sel = i
-		if _wd_solved.size() == targets.size():
-			_wd_stage = "quiz"
-			_wd_log = ""
-
-
-func _water_answer(j: int) -> void:
-	if j == int(_wd_cfg["correct"]):
-		_say_msg(String(_wd_cfg["right"]), GREEN, 2.5)
+		await toast(String(_wd_cfg["conclusion"]), GREEN, 3.2)
 		_wd_stage = "done"
-		sfx("win")
-		await toast(String(_wd_cfg["right"]), GREEN, 1.6)
+
+
+# ---- Micro-retos de los instrumentos (cada uno imita cómo funciona el instrumento)
+var _wd_mg := ""
+var _wd_mg_t := 0.0
+var _wd_mg_ok := false
+var _wd_mg_prog := 0.0
+var _wd_mg_d := 1.0
+var _wd_mg_limit := 12.0
+var _wd_mg_a: Dictionary = {}
+const MG := Rect2(12, 108, 616, 100)
+
+
+func _wd_minigame(id: String, tg: Dictionary) -> bool:
+	_wd_mg_d = 1.0 + 0.25 * float(_wd_solved.size())
+	_wd_mg_t = 0.0
+	_wd_mg_prog = 0.0
+	_wd_mg_ok = false
+	_wd_mg_a = {"tg": String(tg.get("id", ""))}
+	match id:
+		"pancam":
+			_wd_mg_limit = 16.0
+			var marks: Array = []
+			for f in 3:
+				for k in 2:
+					marks.append({"x": randf_range(40.0, 600.0), "y": randf_range(136.0, 160.0), "f": f, "found": false})
+			_wd_mg_a.merge({"filter": 0, "marks": marks, "found": 0})
+		"mi":
+			_wd_mg_limit = 14.0
+			_wd_mg_a.merge({"f": randf(), "target": 0.5, "phase": randf() * TAU})
+		"moss":
+			_wd_mg_limit = 16.0
+			_wd_mg_a.merge({"c": Vector2(320, 150), "shake": Vector2.ZERO, "gust": 0.0, "gust_t": 1.5, "tpos": Vector2(320, 150), "cross": Vector2(320, 150)})
+		"apxs":
+			_wd_mg_limit = 30.0
+			var kinds: Array = []
+			for i in 6:
+				kinds.append(true)
+			for i in 5:
+				kinds.append(false)
+			kinds.shuffle()
+			var peaks: Array = []
+			for i in kinds.size():
+				peaks.append({"x": 660.0 + float(i) * 62.0, "target": kinds[i], "used": false, "h": randf_range(26.0, 44.0)})
+			_wd_mg_a.merge({"peaks": peaks, "hits": 0, "miss": 0})
+		"rat":
+			_wd_mg_limit = 14.0
+			_wd_mg_a.merge({"p": 0.0, "zone": 0.5, "heat": 0.0, "phase": randf() * TAU})
+	_wd_mg = id
+	while _wd_mg != "":
+		await get_tree().process_frame
+	return _wd_mg_ok
+
+
+func _wd_mg_end(ok: bool) -> void:
+	_wd_mg_ok = ok
+	_wd_mg = ""
+	sfx("ok" if ok else "lose")
+
+
+func _wd_mg_input(event: InputEvent, click: bool) -> void:
+	match _wd_mg:
+		"pancam":
+			if click:
+				_mg_pancam_click(get_local_mouse_position())
+			elif event is InputEventKey and event.pressed and not event.echo:
+				var k := int(event.physical_keycode)
+				if k == KEY_Q or k == KEY_LEFT:
+					_mg_pancam_filter(-1)
+				elif k == KEY_E or k == KEY_RIGHT:
+					_mg_pancam_filter(1)
+		"mi":
+			if event is InputEventMouseMotion:
+				_wd_mg_a["f"] = clampf((get_local_mouse_position().x - 24.0) / 592.0, 0.0, 1.0)
+		"moss":
+			if event is InputEventMouseMotion:
+				_wd_mg_a["c"] = get_local_mouse_position().clamp(Vector2(40, 132), Vector2(600, 176))
+		"apxs":
+			if click or (event is InputEventKey and event.pressed and not event.echo and (event.physical_keycode == KEY_ENTER or event.physical_keycode == KEY_SPACE or event.physical_keycode == KEY_KP_ENTER)):
+				_mg_apxs_press()
+
+
+func _mg_pancam_filter(dir: int) -> void:
+	_wd_mg_a["filter"] = (int(_wd_mg_a["filter"]) + dir + 3) % 3
+	sfx("select")
+
+
+func _mg_pancam_click(p: Vector2) -> void:
+	for i in 3:
+		if Rect2(24.0 + float(i) * 110.0, 168, 104, 16).has_point(p):
+			_wd_mg_a["filter"] = i
+			sfx("select")
+			return
+	for m in _wd_mg_a["marks"]:
+		var md: Dictionary = m
+		if not bool(md["found"]) and int(md["f"]) == int(_wd_mg_a["filter"]) and Vector2(float(md["x"]), float(md["y"])).distance_to(p) < 14.0:
+			md["found"] = true
+			_wd_mg_a["found"] = int(_wd_mg_a["found"]) + 1
+			_wd_mg_prog = float(_wd_mg_a["found"]) / 6.0
+			sfx("ping")
+			var left := 0
+			for m2 in _wd_mg_a["marks"]:
+				if int((m2 as Dictionary)["f"]) == int(_wd_mg_a["filter"]) and not bool((m2 as Dictionary)["found"]):
+					left += 1
+			if left == 0 and int(_wd_mg_a["found"]) < 6:
+				_wd_mg_a["switch_t"] = 0.5
+			return
+	_wd_mg_t += 0.6
+	sfx("tick")
+
+
+func _mg_apxs_press() -> void:
+	var best := -1
+	var bd := 16.0
+	var peaks: Array = _wd_mg_a["peaks"]
+	for i in peaks.size():
+		var pk: Dictionary = peaks[i]
+		var d := absf(float(pk["x"]) - 160.0)
+		if not bool(pk["used"]) and d < bd:
+			bd = d
+			best = i
+	if best >= 0 and bool((peaks[best] as Dictionary)["target"]):
+		(peaks[best] as Dictionary)["used"] = true
+		_wd_mg_a["hits"] = int(_wd_mg_a["hits"]) + 1
+		_wd_mg_prog = float(_wd_mg_a["hits"]) / 4.0
+		sfx("ping")
 	else:
-		_say_msg(String(_wd_cfg["wrong"]), RED, 2.8)
+		if best >= 0:
+			(peaks[best] as Dictionary)["used"] = true
+		_wd_mg_a["miss"] = int(_wd_mg_a["miss"]) + 1
 		sfx("error")
+
+
+func _wd_mg_update(delta: float) -> void:
+	_wd_mg_t += delta
+	var a := _wd_mg_a
+	var d := _wd_mg_d
+	match _wd_mg:
+		"pancam":
+			if int(a["found"]) >= 6:
+				_wd_mg_end(true)
+				return
+			if float(a.get("switch_t", 0.0)) > 0.0:
+				a["switch_t"] = float(a["switch_t"]) - delta
+				if float(a["switch_t"]) <= 0.0:
+					# Salta al siguiente filtro que aún tenga destellos por encontrar.
+					for k in range(1, 4):
+						var nf := (int(a["filter"]) + k) % 3
+						var pending := false
+						for m3 in a["marks"]:
+							if int((m3 as Dictionary)["f"]) == nf and not bool((m3 as Dictionary)["found"]):
+								pending = true
+						if pending:
+							a["filter"] = nf
+							sfx("select")
+							break
+		"mi":
+			var f: float = a["f"]
+			f = clampf(f + _axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT) * 0.6 * delta, 0.0, 1.0)
+			a["f"] = f
+			# Los primeros 2 s el punto de enfoque está quieto; después deriva despacio.
+			var drift := maxf(0.0, _wd_mg_t - 2.0)
+			var target := 0.5 + 0.22 * sin(drift * 0.3 * (1.0 + (d - 1.0) * 0.5) + float(a["phase"]))
+			a["target"] = target
+			var sharp := clampf(1.0 - absf(f - target) / 0.24, 0.0, 1.0)
+			a["sharp"] = sharp
+			if sharp >= 0.8:
+				_wd_mg_prog += delta / 1.1
+			else:
+				_wd_mg_prog = maxf(0.0, _wd_mg_prog - delta * 0.5)
+			if _wd_mg_prog >= 1.0:
+				_wd_mg_end(true)
+				return
+		"moss":
+			var c: Vector2 = a["c"]
+			var kv := Vector2(_axis_keys(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT), _axis_keys(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
+			c = (c + kv * 120.0 * delta).clamp(Vector2(40, 132), Vector2(600, 176))
+			a["c"] = c
+			var gust: float = maxf(0.0, float(a["gust"]) - delta * 0.7)
+			var gt: float = float(a["gust_t"]) - delta
+			if gt <= 0.0:
+				gust = 1.0
+				gt = randf_range(2.0, 3.5)
+				sfx("whoosh", 1.0, -16.0)
+			a["gust"] = gust
+			a["gust_t"] = gt
+			var amp := 4.0 + gust * 14.0
+			var sh := Vector2(sin(_wd_mg_t * 17.0), cos(_wd_mg_t * 13.0)) * amp
+			a["shake"] = sh
+			var cross := c + sh
+			a["cross"] = cross
+			var tpos := Vector2(320.0 + 70.0 * sin(_wd_mg_t * 0.5 * d), 154.0 + 14.0 * sin(_wd_mg_t * 0.9 * d))
+			a["tpos"] = tpos
+			if cross.distance_to(tpos) < 22.0:
+				_wd_mg_prog += delta / (3.2 * sqrt(d))
+			else:
+				_wd_mg_prog = maxf(0.0, _wd_mg_prog - delta * 0.4)
+			if _wd_mg_prog >= 1.0:
+				_wd_mg_end(true)
+				return
+		"apxs":
+			var speed := 85.0 * (1.0 + (d - 1.0) * 0.5)
+			var peaks: Array = a["peaks"]
+			var alive := 0
+			for pk in peaks:
+				var p: Dictionary = pk
+				p["x"] = float(p["x"]) - speed * delta
+				if float(p["x"]) > 10.0:
+					alive += 1
+			if int(a["miss"]) >= 3:
+				_wd_mg_end(false)
+				return
+			if int(a["hits"]) >= 4:
+				_wd_mg_end(true)
+				return
+			if alive == 0:
+				_wd_mg_end(false)
+				return
+		"rat":
+			var held := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_key_pressed(KEY_ENTER) or Input.is_key_pressed(KEY_SPACE)
+			var p: float = a["p"]
+			p = clampf(p + (1.1 if held else -0.9) * delta, 0.0, 1.0)
+			a["p"] = p
+			var zone := 0.5 + 0.2 * sin(_wd_mg_t * 0.9 * d + float(a["phase"]))
+			a["zone"] = zone
+			var heat: float = a["heat"]
+			heat = clampf(heat + (0.8 if p > 0.88 else -0.5) * delta, 0.0, 1.0)
+			a["heat"] = heat
+			if absf(p - zone) < 0.12 / sqrt(d):
+				_wd_mg_prog += delta / 3.5
+				if int(_wd_mg_t * 8.0) % 3 == 0:
+					sfx("tick", 0.6, -18.0)
+			else:
+				_wd_mg_prog = maxf(0.0, _wd_mg_prog - delta * 0.2)
+			if heat >= 1.0:
+				_say_msg(String(_wd_cfg["mg_hot"]), RED, 2.0)
+				_wd_mg_end(false)
+				return
+			if _wd_mg_prog >= 1.0:
+				_wd_mg_end(true)
+				return
+	if _wd_mg_t >= _wd_mg_limit:
+		var ok := false
+		if _wd_mg == "pancam":
+			ok = int(a["found"]) >= 5
+		_wd_mg_end(ok)
+
+
+func _draw_mg(c: CanvasItem) -> void:
+	var a := _wd_mg_a
+	c.draw_rect(MG, Color("#0e0a08"))
+	c.draw_rect(MG, GOLD, false, 2.0)
+	var tools: Array = _wd_cfg["tools"]
+	var tname := ""
+	for tl in tools:
+		if String((tl as Dictionary)["id"]) == _wd_mg:
+			tname = String((tl as Dictionary)["name"])
+	_txt(c, Vector2(MG.position.x + 8, MG.position.y + 12), tname, 10, GOLD, 200)
+	_txt(c, Vector2(MG.position.x + 112, MG.position.y + 12), String((_wd_cfg["mg"] as Dictionary)[_wd_mg]), 8, GRAY, 296)
+	var tl_left := clampf(1.0 - _wd_mg_t / _wd_mg_limit, 0.0, 1.0)
+	c.draw_rect(Rect2(420, 112, 200, 5), Color(0, 0, 0, 0.6))
+	c.draw_rect(Rect2(420, 112, 200.0 * tl_left, 5), RED if tl_left < 0.25 else CYAN)
+	c.draw_rect(Rect2(24, 196, 592, 6), Color(0, 0, 0, 0.6))
+	c.draw_rect(Rect2(24, 196, 592.0 * clampf(_wd_mg_prog, 0.0, 1.0), 6), GREEN)
+	c.draw_rect(Rect2(24, 196, 592, 6), GRAY_DIM, false, 1.0)
+	var area := Rect2(24, 128, 592, 62)
+	match _wd_mg:
+		"pancam":
+			var flt := int(a["filter"])
+			var tints := [Color(0, 0, 0, 0), Color(1, 0.2, 0.1, 0.18), Color(0.5, 0.1, 0.8, 0.28)]
+			c.draw_rect(area, MARS.darkened(0.2))
+			c.draw_rect(area, tints[flt])
+			var rng := RandomNumberGenerator.new()
+			rng.seed = 77
+			for i in 60:
+				c.draw_rect(Rect2(area.position.x + floorf(rng.randf() * area.size.x), area.position.y + floorf(rng.randf() * 36.0), 2, 1), MARS_DARK)
+			for m in a["marks"]:
+				var md: Dictionary = m
+				if int(md["f"]) != flt:
+					continue
+				var mp := Vector2(float(md["x"]), float(md["y"]))
+				if bool(md["found"]):
+					c.draw_arc(mp, 9.0, 0, TAU, 14, GREEN, 2.0)
+				else:
+					var pl := 0.5 + 0.5 * sin(_t * 8.0 + mp.x)
+					c.draw_line(mp - Vector2(5, 0), mp + Vector2(5, 0), Color(1, 1, 0.8, 0.5 + pl * 0.5), 1.0)
+					c.draw_line(mp - Vector2(0, 5), mp + Vector2(0, 5), Color(1, 1, 0.8, 0.5 + pl * 0.5), 1.0)
+			var names := [tr("VISIBLE"), tr("ROJO"), tr("INFRARROJO")]
+			for i in 3:
+				var r := Rect2(24.0 + float(i) * 110.0, 168, 104, 16)
+				_box(c, r, Color("#4a3020") if i == flt else Color("#2a1c16"), YEL if i == flt else GRAY_DIM, "%d  %s" % [i + 1, String(names[i])], 8, Color.WHITE)
+			_txt(c, Vector2(380, 180), tr("DESTELLOS") + " %d / 6" % int(a["found"]), 9, YEL, 230, HORIZONTAL_ALIGNMENT_RIGHT)
+		"mi":
+			var sharp: float = float(a.get("sharp", 0.0))
+			c.draw_rect(Rect2(24, 128, 200, 62), Color("#16120e"))
+			var blur := (1.0 - sharp) * 7.0
+			var offs := [Vector2.ZERO] if blur < 0.6 else [Vector2(-blur, 0), Vector2(blur, 0), Vector2(0, -blur * 0.5), Vector2(0, blur * 0.5)]
+			for o in offs:
+				c.draw_set_transform(Vector2(124, 164) + (o as Vector2), 0.0, Vector2(2.6, 2.6))
+				_draw_poi(c, String(a["tg"]), Vector2.ZERO, true)
+			c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			c.draw_rect(Rect2(24, 128, 200, 62), Color(0.1, 0.07, 0.05, (1.0 - sharp) * 0.35))
+			c.draw_rect(Rect2(24, 128, 200, 62), GRAY_DIM, false, 1.0)
+			# Rueda de enfoque.
+			_txt(c, Vector2(250, 142), tr("ENFOQUE"), 9, GRAY)
+			c.draw_rect(Rect2(250, 150, 360, 8), Color(0, 0, 0, 0.6))
+			c.draw_rect(Rect2(250, 150, 360, 8), GRAY_DIM, false, 1.0)
+			c.draw_rect(Rect2(250.0 + 360.0 * float(a["f"]) - 3.0, 145, 6, 18), Color.WHITE)
+			_txt(c, Vector2(250, 178), tr("NITIDEZ"), 9, GRAY)
+			c.draw_rect(Rect2(300, 170, 310, 8), Color(0, 0, 0, 0.6))
+			c.draw_rect(Rect2(300, 170, 310.0 * sharp, 8), GREEN if sharp >= 0.8 else YEL)
+			c.draw_line(Vector2(300.0 + 310.0 * 0.8, 167), Vector2(300.0 + 310.0 * 0.8, 181), Color.WHITE, 2.0)
+			if sharp < 0.6:
+				var dirx := float(a["target"]) - float(a["f"])
+				_txt(c, Vector2(250.0 + 360.0 * float(a["f"]) - 20.0, 144), "<<" if dirx < 0.0 else ">>", 10, YEL, 40, HORIZONTAL_ALIGNMENT_CENTER)
+		"moss":
+			c.draw_rect(area, Color("#2a1c16"))
+			for i in 10:
+				c.draw_line(Vector2(area.position.x + float(i) * 60.0, area.position.y), Vector2(area.position.x + float(i) * 60.0, area.end.y), Color(1, 1, 1, 0.05), 1.0)
+			var tpos: Vector2 = a.get("tpos", Vector2(320, 150))
+			var cross: Vector2 = a.get("cross", Vector2(320, 150))
+			var inside := cross.distance_to(tpos) < 22.0
+			c.draw_arc(tpos, 22.0, 0, TAU, 28, GREEN if inside else YEL, 2.0)
+			c.draw_line(cross - Vector2(10, 0), cross + Vector2(10, 0), Color.WHITE, 1.0)
+			c.draw_line(cross - Vector2(0, 10), cross + Vector2(0, 10), Color.WHITE, 1.0)
+			if float(a.get("gust", 0.0)) > 0.3:
+				_txt(c, Vector2(24, 140), tr("RÁFAGA"), 9, RED)
+		"apxs":
+			c.draw_rect(area, Color("#10140e"))
+			c.draw_line(Vector2(24, 186), Vector2(616, 186), GRAY_DIM, 1.0)
+			c.draw_line(Vector2(160, 128), Vector2(160, 190), YEL, 2.0)
+			for pk in a["peaks"]:
+				var p: Dictionary = pk
+				var px := float(p["x"])
+				if px < 24.0 or px > 616.0:
+					continue
+				var h := float(p["h"])
+				var col := (GREEN if bool(p["target"]) else GRAY_DIM)
+				if bool(p["used"]):
+					col = Color(col, 0.3)
+				c.draw_colored_polygon(PackedVector2Array([Vector2(px - 9, 186), Vector2(px, 186.0 - h), Vector2(px + 9, 186)]), col)
+			_txt(c, Vector2(30, 140), tr("ACIERTOS") + " %d/4   " % int(a["hits"]) + tr("ERRORES") + " %d/3" % int(a["miss"]), 9, YEL, 300)
+		"rat":
+			var p: float = float(a.get("p", 0.0))
+			var zone: float = float(a.get("zone", 0.5))
+			var gx := 24.0
+			var gw := 360.0
+			_txt(c, Vector2(gx, 140), tr("PRESIÓN"), 9, GRAY)
+			c.draw_rect(Rect2(gx, 146, gw, 14), Color(0, 0, 0, 0.6))
+			var zw := 0.12 / sqrt(_wd_mg_d)
+			c.draw_rect(Rect2(gx + gw * (zone - zw), 146, gw * zw * 2.0, 14), Color(GREEN, 0.45))
+			c.draw_rect(Rect2(gx + gw * 0.88, 146, gw * 0.12, 14), Color(RED, 0.35))
+			c.draw_rect(Rect2(gx, 146, gw, 14), GRAY_DIM, false, 1.0)
+			c.draw_rect(Rect2(gx + gw * p - 3.0, 142, 6, 22), Color.WHITE)
+			_txt(c, Vector2(gx, 178), tr("CALOR"), 9, GRAY)
+			c.draw_rect(Rect2(gx + 40, 170, 200, 8), Color(0, 0, 0, 0.6))
+			c.draw_rect(Rect2(gx + 40, 170, 200.0 * float(a.get("heat", 0.0)), 8), RED)
+			# Roca con polvo que se va limpiando.
+			var rr := Rect2(440, 134, 160, 50)
+			c.draw_rect(rr, Color("#6a4a3a"))
+			c.draw_rect(Rect2(rr.position.x, rr.position.y, rr.size.x, rr.size.y), Color(0.85, 0.6, 0.4, 1.0 - clampf(_wd_mg_prog, 0.0, 1.0)))
+			c.draw_rect(rr, GRAY_DIM, false, 1.0)
+			if absf(p - zone) < zw and p > 0.05:
+				for i in 5:
+					c.draw_rect(Rect2(rr.position.x + 40.0 + randf() * 80.0, rr.position.y + 10.0 + randf() * 30.0, 2, 2), YEL)
+
+
+func _draw_water(c: DrawNode) -> void:
+	if _wd_cfg.is_empty():
+		return
+	c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), PANEL)
+	# Tablero de hipótesis: cada una se tacha cuando una prueba la descarta.
+	_txt(c, Vector2(12, 80), String(_wd_cfg["hyp_title"]), 8, GOLD)
+	var hyps: Array = _wd_cfg["hypotheses"]
+	var only_agua := _wd_stage == "concl" or _wd_stage == "done"
+	for i in hyps.size():
+		var h: Dictionary = hyps[i]
+		var r := Rect2(12.0 + float(i) * 206.0, 84, 200, 22)
+		var alive := bool(_wd_alive.get(String(h["id"]), true))
+		var win := only_agua and alive
+		var pulse := 0.5 + 0.5 * sin(_t * 6.0)
+		c.draw_rect(r, Color("#16281a") if win else (Color("#2a1c16") if alive else Color("#140c0a")))
+		c.draw_rect(r, YEL.lerp(Color.WHITE, pulse) if win else (GOLD if alive else Color("#5a3030")), false, 2.0 if win else 1.0)
+		_txt(c, Vector2(r.position.x, r.position.y + 15), String(h["name"]), 10, GREEN if win else (Color.WHITE if alive else GRAY_DIM), r.size.x, HORIZONTAL_ALIGNMENT_CENTER)
+		if not alive:
+			c.draw_line(r.position + Vector2(6, 11), r.position + Vector2(r.size.x - 6, 11), RED, 2.0)
+	# Afloramiento: cielo, borde del cráter lejano y suelo.
+	c.draw_rect(WD_VIEW, SKY_LOW)
+	c.draw_rect(Rect2(WD_VIEW.position, Vector2(WD_VIEW.size.x, 22)), SKY_TOP)
+	var rim := PackedVector2Array([Vector2(12, 134), Vector2(90, 124), Vector2(180, 130), Vector2(290, 120), Vector2(420, 128), Vector2(520, 122), Vector2(628, 130), Vector2(628, 140), Vector2(12, 140)])
+	c.draw_colored_polygon(rim, MARS_DARK)
+	c.draw_rect(Rect2(12, 140, 616, 36), MARS)
+	c.draw_rect(Rect2(12, 140, 616, 2), MARS_LIGHT)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12
+	for i in 70:
+		c.draw_rect(Rect2(12.0 + floorf(rng.randf() * 612.0), 144.0 + floorf(rng.randf() * 30.0), 2, 1), MARS_DARK if i % 2 == 0 else MARS_LIGHT)
+	var near := _wd_nearest()
+	var targets: Array = _wd_cfg["targets"]
+	for i in targets.size():
+		var tg: Dictionary = targets[i]
+		var px := float(tg["x"])
+		var rev := _wd_revealed.has(String(tg["id"]))
+		var solved := _wd_solved.has(String(tg["id"]))
+		_draw_poi(c, String(tg["id"]), Vector2(px, WD_POI_Y), rev)
+		if solved:
+			c.draw_arc(Vector2(px, WD_POI_Y - 6), 15.0, 0, TAU, 20, GREEN, 2.0)
+		if rev:
+			_txt(c, Vector2(px - 50, WD_POI_Y - 28), String(tg["name"]), 7, GRAY, 100, HORIZONTAL_ALIGNMENT_CENTER)
+		else:
+			_txt(c, Vector2(px - 10, WD_POI_Y - 20), "?", 12, YEL, 20, HORIZONTAL_ALIGNMENT_CENTER)
+		if i == _wd_hover_poi:
+			c.draw_rect(_wd_poi_rect(tg), Color.WHITE, false, 1.0)
+		if i == near and _wd_stage == "pick":
+			c.draw_line(Vector2(px - 14, WD_POI_Y + 12), Vector2(px + 14, WD_POI_Y + 12), YEL, 2.0)
+			_txt(c, Vector2(px - 40, WD_POI_Y + 22), tr("EN RANGO"), 7, YEL, 80, HORIZONTAL_ALIGNMENT_CENTER)
+	_draw_rover_side(c, Vector2(_wd_x, WD_ROVER_Y), 1.2, 0.0, _wd_x * 0.2, SILVER)
+	if _wd_scan_t > 0.0:
+		var f := 1.0 - _wd_scan_t / 0.7
+		c.draw_arc(Vector2(_wd_x, WD_ROVER_Y - 14), float(_wd_cfg["scan_range"]) * f, PI, TAU, 40, Color(CYAN, 1.0 - f), 2.0)
+	# Resultado de la lectura.
+	var lr := Rect2(12, 180, 616, 26)
+	c.draw_rect(lr, Color("#120c0a"))
+	c.draw_rect(lr, GRAY_DIM, false, 1.0)
+	_txt(c, Vector2(18, 196), tr("LECTURA"), 8, GRAY_DIM, 60)
+	var shown := _wd_log if _wd_log != "" else tr("SIN LECTURA TODAVÍA")
+	c.draw_multiline_string(ThemeDB.fallback_font, Vector2(70, 191), shown, HORIZONTAL_ALIGNMENT_LEFT, 552, 9, 2, _wd_log_col if _wd_log != "" else GRAY_DIM)
+	# Instrumentos.
+	var tools: Array = _wd_cfg["tools"]
+	for j in tools.size():
+		var t: Dictionary = tools[j]
+		var r := _wd_tool_rect(j)
+		var hov := _wd_hover == j
+		var tid := ""
+		if near >= 0:
+			tid = String((targets[near] as Dictionary)["id"])
+		var was_used := tid != "" and (_wd_used.get(tid, []) as Array).has(String(t["id"]))
+		c.draw_rect(r, Color("#4a3020") if hov else (Color("#1a1210") if was_used else Color("#2a1c16")))
+		c.draw_rect(r, Color.WHITE if hov else (GRAY_DIM if was_used else GOLD), false, 2.0 if hov else 1.0)
+		_txt(c, Vector2(r.position.x + 5, r.position.y + 13), String(t["name"]), 9, GRAY_DIM if was_used else GOLD, r.size.x - 8)
+		_txt(c, Vector2(r.position.x + 5, r.position.y + 26), String(t["q"]), 8, GRAY, r.size.x - 8)
+		_txt(c, Vector2(r.position.x, r.position.y + 13), "-%d" % int(t["cost"]), 8, GRAY_DIM, r.size.x - 5, HORIZONTAL_ALIGNMENT_RIGHT)
+	if _wd_mg != "":
+		_draw_mg(c)
+	_draw_msg(c, 112)
+
+
+## Dibujo de cada muestra (sin escanear se ve como una roca gris).
+func _draw_poi(c: CanvasItem, id: String, p: Vector2, rev: bool) -> void:
+	if not rev:
+		c.draw_circle(p + Vector2(0, -4), 7.0, Color("#6a5a50"))
+		return
+	match id:
+		"esferas":
+			for k in 8:
+				c.draw_circle(p + Vector2(-9.0 + float(k % 4) * 6.0, -8.0 + float(k / 4) * 6.0), 2.5, Color("#7a8ac8"))
+		"capas":
+			for k in 4:
+				c.draw_rect(Rect2(p.x - 13, p.y - 14 + float(k) * 5.0, 26, 4), MARS_DARK.lerp(MARS_LIGHT, float(k) / 4.0))
+		"basalto":
+			c.draw_circle(p + Vector2(0, -6), 10.0, Color("#2a2428"))
+			c.draw_circle(p + Vector2(-3, -9), 4.0, Color("#4a4048"))
+		"arena":
+			c.draw_colored_polygon(PackedVector2Array([p + Vector2(-14, 4), p + Vector2(-5, -8), p + Vector2(5, -8), p + Vector2(14, 4)]), Color("#d8a878"))
 
 
 ## Opción de respuesta resaltada si el ratón o las flechas están sobre ella.
@@ -1171,69 +1725,6 @@ func _draw_option(c: CanvasItem, r: Rect2, number: int, text: String, focused: b
 	_txt(c, Vector2(r.position.x + 6, r.position.y + r.size.y * 0.5 + 4), "%d" % number, 11, GOLD)
 	c.draw_multiline_string(ThemeDB.fallback_font, Vector2(r.position.x + 22, r.position.y + 12), text, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 28, size, 2, Color.WHITE)
 
-
-func _draw_water(c: DrawNode) -> void:
-	if _wd_cfg.is_empty():
-		return
-	c.draw_rect(Rect2(0, GAME_TOP, W, GAME_BOTTOM - GAME_TOP), PANEL)
-	var targets: Array = _wd_cfg["targets"]
-	var tools: Array = _wd_cfg["tools"]
-	var cur: Dictionary = targets[_wd_sel]
-	var cur_used: Array = _wd_used.get(String(cur["id"]), [])
-	if _wd_stage == "quiz" or _wd_stage == "done":
-		_txt(c, Vector2(326, 86), String(_wd_cfg["question"]), 10, YEL, 302)
-		var opts: Array = _wd_cfg["options"]
-		for j in opts.size():
-			_draw_option(c, _wd_opt_rect(j), j + 1, String(opts[j]), _wd_stage == "quiz" and j == _wd_focus)
-	else:
-		_txt(c, Vector2(12, 86), tr("1 · ELIGE UNA MUESTRA"), 9, GOLD)
-		_txt(c, Vector2(326, 86), tr("2 · USA UN INSTRUMENTO"), 9, GOLD)
-		for j in tools.size():
-			var t: Dictionary = tools[j]
-			var r := _wd_tool_rect(j)
-			var was_used := cur_used.has(String(t["id"]))
-			var hov := _wd_hover == 100 + j
-			c.draw_rect(r, Color("#4a3020") if hov else (Color("#1a1210") if was_used else Color("#2a1c16")))
-			c.draw_rect(r, Color.WHITE if hov else (GRAY_DIM if was_used else GOLD), false, 2.0 if hov else 1.0)
-			_txt(c, Vector2(r.position.x + 6, r.position.y + 11), String(t["name"]), 10, GRAY_DIM if was_used else GOLD, r.size.x - 70)
-			_txt(c, Vector2(r.position.x + 6, r.position.y + 23), String(t["q"]), 8, GRAY, r.size.x - 8)
-			_txt(c, Vector2(r.position.x, r.position.y + 11), tr("YA USADO") if was_used else "-%d" % int(_wd_cfg["cost"]), 8, GREEN if was_used else GRAY_DIM, r.size.x - 6, HORIZONTAL_ALIGNMENT_RIGHT)
-	for i in targets.size():
-		var tg: Dictionary = targets[i]
-		var r := _wd_card_rect(i)
-		var tid := String(tg["id"])
-		var solved := _wd_solved.has(tid)
-		var sel := i == _wd_sel
-		var hov := _wd_hover == i
-		c.draw_rect(r, Color("#16281a") if solved else (Color("#4a3020") if (hov or sel) else Color("#2a1c16")))
-		c.draw_rect(r, GREEN if solved else (GOLD if sel else (Color.WHITE if hov else GRAY_DIM)), false, 2.0 if sel else 1.0)
-		if sel and _wd_stage == "pick":
-			c.draw_colored_polygon(PackedVector2Array([Vector2(r.position.x - 9, r.position.y + 26), Vector2(r.position.x - 3, r.position.y + 30), Vector2(r.position.x - 9, r.position.y + 34)]), GOLD)
-		if tid == "esferas":
-			for k in 7:
-				c.draw_circle(Vector2(r.position.x + 22 + float(k % 4) * 8.0, r.position.y + 22 + float(k / 4) * 10.0), 3.0, Color("#7a8ac8") if not solved else CYAN)
-		else:
-			for k in 5:
-				c.draw_rect(Rect2(r.position.x + 8, r.position.y + 8 + float(k) * 8.0, 34.0, 5), MARS_DARK.lerp(MARS_LIGHT, float(k) / 5.0))
-		_txt(c, Vector2(r.position.x + 52, r.position.y + 14), String(tg["name"]), 10, Color.WHITE, r.size.x - 56)
-		c.draw_multiline_string(ThemeDB.fallback_font, Vector2(r.position.x + 52, r.position.y + 26), String(tg["desc"]), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 56, 8, 2, GRAY)
-		# Pistas: cada "?" se convierte en el nombre del instrumento cuando se consigue.
-		var used: Array = _wd_used.get(tid, [])
-		var needs: Array = tg["needs"]
-		_txt(c, Vector2(r.position.x + 52, r.position.y + 55), tr("PISTAS"), 8, GRAY_DIM)
-		var xx := r.position.x + 92
-		for n in needs:
-			var done := used.has(n)
-			_box(c, Rect2(xx, r.position.y + 46, 44, 12), Color("#1a3a1c") if done else Color("#1a1210"), GREEN if done else GRAY_DIM, String(n).to_upper() if done else "?", 8, GREEN if done else GRAY_DIM)
-			xx += 48.0
-	# Resultado de la lectura.
-	var lr := Rect2(12, 220, 616, 28)
-	c.draw_rect(lr, Color("#120c0a"))
-	c.draw_rect(lr, GRAY_DIM, false, 1.0)
-	_txt(c, Vector2(18, 231), tr("3 · LEE EL RESULTADO"), 8, GRAY_DIM, 120)
-	var shown := _wd_log if _wd_log != "" else tr("SIN LECTURA TODAVÍA")
-	c.draw_multiline_string(ThemeDB.fallback_font, Vector2(140, 231), shown, HORIZONTAL_ALIGNMENT_LEFT, 482, 10, 2, _wd_log_col if _wd_log != "" else GRAY_DIM)
-	_draw_msg(c, 200)
 
 
 # =========================================================================

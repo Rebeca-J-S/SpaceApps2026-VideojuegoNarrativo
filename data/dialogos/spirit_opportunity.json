@@ -293,42 +293,90 @@
 				},
 				{
 					"speaker": "CIENCIA",
-					"text": "Opportunity lleva instrumentos que responden preguntas distintas. Elige bien: cada medición gasta energía."
+					"text": "Hay tres explicaciones posibles para lo que vemos: solo viento y polvo, un origen volcánico o agua líquida."
+				},
+				{
+					"speaker": "CIENCIA",
+					"text": "Explora el afloramiento, mide con los instrumentos y descarta hipótesis. Cada medición gasta energía."
 				}
 			],
 			"minimission": {
 				"title": "MINIJUEGO: DETECTIVE DEL AGUA",
-				"info": "Elige una muestra, usa un instrumento (clic o 1-4) y lee el resultado. Hacen falta 2 pistas",
-				"energy": 60,
-				"cost": 10,
+				"info": "Camina (A/D o clic), acércate a una muestra y usa un instrumento (1-5): supera su micro-reto",
+				"mg": {
+					"pancam": "Q/E o clic: cambia de filtro. Clic en los destellos ocultos (6)",
+					"mi": "Mueve el ratón (o A/D) para enfocar y mantén la imagen nítida",
+					"moss": "Mantén el visor dentro del círculo (ratón o WASD): el viento lo sacude",
+					"apxs": "ENTER o clic cuando un pico verde cruce la línea; ignora los grises",
+					"rat": "Mantén clic/ENTER: presión en la banda verde, sin sobrecalentar"
+				},
+				"mg_fail": "LECTURA FALLIDA: REPITE LA MEDICIÓN",
+				"mg_hot": "SOBRECALENTAMIENTO",
+				"energy": 90,
+				"range": 28.0,
+				"scan_range": 150.0,
+				"speed": 130.0,
+				"drive_cost": 1.0,
+				"hyp_title": "HIPÓTESIS: ¿QUÉ PASÓ AQUÍ?",
 				"no_energy": "SIN ENERGÍA: SE REINICIA LA JORNADA",
-				"inconclusive": "Lectura poco clara: no responde a esa pregunta.",
-				"done_target": "OBJETIVO RESUELTO",
+				"done_target": "MUESTRA ANALIZADA",
+				"msg_far": "NO HAY NADA CERCA: ACÉRCATE A UNA MUESTRA",
+				"msg_scan": "PRIMERO ESCANEA CON LA PANCAM",
+				"msg_nothing": "LA PANCAM NO VE NADA NUEVO AQUÍ",
+				"msg_scanned": "LA PANCAM ENCUENTRA %d MUESTRA(S)",
+				"msg_used": "Ya usaste ese instrumento en esta muestra.",
+				"msg_done": "Esta muestra ya está analizada.",
+				"conclusion": "SOLO QUEDA UNA EXPLICACIÓN: HUBO AGUA LÍQUIDA, SALADA Y ÁCIDA",
+				"hypotheses": [
+					{
+						"id": "viento",
+						"name": "SOLO VIENTO Y POLVO"
+					},
+					{
+						"id": "volcan",
+						"name": "ORIGEN VOLCÁNICO"
+					},
+					{
+						"id": "agua",
+						"name": "AGUA LÍQUIDA"
+					}
+				],
 				"tools": [
 					{
+						"id": "pancam",
+						"name": "1 PANCAM",
+						"q": "Escanea los alrededores",
+						"cost": 4
+					},
+					{
 						"id": "mi",
-						"name": "1 MI · MICROSCOPIO",
-						"q": "¿Qué forma tiene?"
+						"name": "2 MICROSCOPIO",
+						"q": "Forma y textura",
+						"cost": 8
 					},
 					{
 						"id": "moss",
-						"name": "2 MÖSSBAUER",
-						"q": "¿Qué mineral de hierro es?"
+						"name": "3 MÖSSBAUER",
+						"q": "Mineral de hierro",
+						"cost": 10
 					},
 					{
 						"id": "apxs",
-						"name": "3 APXS",
-						"q": "¿Qué elementos hay?"
+						"name": "4 APXS",
+						"q": "Elementos químicos",
+						"cost": 10
 					},
 					{
 						"id": "rat",
-						"name": "4 RAT · ABRASIVO",
-						"q": "Lima el polvo y deja ver la roca."
+						"name": "5 RAT",
+						"q": "Lima el polvo",
+						"cost": 12
 					}
 				],
 				"targets": [
 					{
 						"id": "esferas",
+						"x": 95,
 						"name": "ESFERAS EN EL SUELO",
 						"desc": "Pequeñas esferas azuladas, las «blueberries».",
 						"needs": [
@@ -342,6 +390,10 @@
 							"apxs": "Mucho hierro, pero no dice en qué mineral. No es concluyente.",
 							"rat": "No hace falta limar unas esferas sueltas."
 						},
+						"rules_out": [
+							"viento"
+						],
+						"why": "Esferas casi perfectas de hematita: se forman cuando el agua circula por la roca. El viento solo no las explica.",
 						"evidence": {
 							"id": "hematita",
 							"title": "ESFERAS DE HEMATITA",
@@ -349,7 +401,26 @@
 						}
 					},
 					{
+						"id": "basalto",
+						"x": 215,
+						"name": "ROCA OSCURA Y LISA",
+						"desc": "Una roca oscura de superficie lisa.",
+						"needs": [
+							"apxs"
+						],
+						"ordered": false,
+						"results": {
+							"mi": "Granos finos y oscuros, de aspecto volcánico.",
+							"moss": "Hierro en minerales típicos de roca volcánica.",
+							"apxs": "Composición de basalto: una roca volcánica muy común en Marte.",
+							"rat": "Bajo el polvo, la misma roca oscura."
+						},
+						"rules_out": [],
+						"why": "Basalto: roca volcánica común. Existe, pero no explica las esferas ni las sales."
+					},
+					{
 						"id": "capas",
+						"x": 340,
 						"name": "ROCA CON CAPAS",
 						"desc": "Un afloramiento con capas finas, cubierto de polvo.",
 						"needs": [
@@ -364,22 +435,35 @@
 							"rat": "El abrasivo dejó al descubierto roca fresca."
 						},
 						"dusty": "Solo mide el polvo: lectura inútil. Antes hay que usar el abrasivo.",
+						"rules_out": [
+							"volcan"
+						],
+						"why": "Sales de sulfato: quedan cuando un charco o un mar salado se evapora. No es lava ni ceniza.",
 						"evidence": {
 							"id": "sales",
 							"title": "SALES DE SULFATO",
 							"text": "Las sales quedan cuando un charco o un mar salado se evapora."
 						}
+					},
+					{
+						"id": "arena",
+						"x": 480,
+						"name": "ARENA SUELTA",
+						"desc": "Arena fina acumulada por el viento.",
+						"needs": [
+							"mi"
+						],
+						"ordered": false,
+						"results": {
+							"mi": "Granos de arena sueltos y redondeados por el viento.",
+							"moss": "Hierro en minerales comunes en la arena.",
+							"apxs": "Composición parecida a la del basalto triturado.",
+							"rat": "No hay roca que limar: es arena suelta."
+						},
+						"rules_out": [],
+						"why": "Arena del viento: el viento existe, pero no explica lo demás."
 					}
-				],
-				"question": "¿Qué cuentan estas pruebas sobre Meridiani?",
-				"options": [
-					"Hubo agua líquida hace mucho: salada y ácida.",
-					"Solo hubo viento y polvo.",
-					"Todo es hielo seco: nunca hubo agua."
-				],
-				"correct": 0,
-				"right": "Correcto: aquí hubo agua, aunque era salada y ácida.",
-				"wrong": "Mira otra vez las dos pruebas: esferas de hematita y sales."
+				]
 			},
 			"outro": [
 				{
@@ -929,22 +1013,22 @@
 				]
 			},
 			{
-				"tip": "Cada instrumento responde una pregunta distinta. Si hay polvo, primero el abrasivo.",
+				"tip": "Cada instrumento es un reto distinto: filtros, enfoque, pulso firme, ritmo y presión. Cada lectura puede descartar una hipótesis. Si hay polvo, primero el abrasivo.",
 				"keys": [
 					[
-						"CLIC",
+						"A / D",
 						"",
-						"ELEGIR / USAR"
+						"MOVER"
 					],
 					[
-						"1-4",
+						"1-5",
 						"",
 						"INSTRUMENTO"
 					],
 					[
-						"↑ / ↓",
+						"RATÓN",
 						"",
-						"MUESTRA"
+						"EN EL RETO"
 					]
 				]
 			},
