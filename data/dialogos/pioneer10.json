@@ -1,0 +1,244 @@
+{
+	"_nota": "Capítulo PIONEER 10. El jugador es una controladora de vuelo (personaje imaginado) en Goldstone, California; la protagonista es la nave. La controladora nunca habla por la nave. Los hechos vienen de fuentes de la NASA. Las entradas 'verificar' son valores por confirmar. Las cinemáticas todavía no existen: se muestra la pantalla 'CINEMÁTICA PENDIENTE'.",
+	"disclaimer": "La controladora es un personaje imaginado.\nLa nave, las fechas y los hechos son reales.",
+	"continue_hint": "ENTER / CLIC PARA CONTINUAR",
+	"cinematic_pending": "CINEMÁTICA PENDIENTE",
+	"speakers": {
+		"CONTROLADORA": {"name": "CONTROLADORA", "radio": false, "color": "#ffb347", "portrait": "controladora"},
+		"PIONEER": {"name": "PIONEER 10", "radio": true, "color": "#80f2ff", "portrait": "pioneer10"}
+	},
+	"hud": {
+		"year": "AÑO",
+		"objective": "OBJETIVO",
+		"energy": "ENERGÍA RTG",
+		"progress": "PROGRESO",
+		"shield": "ESCUDO",
+		"in_transit": "SEÑAL EN TRÁNSITO",
+		"debug": "DEBUG · F1-F7: SALTAR FASE",
+		"pause_title": "PAUSA",
+		"pause_continue": "CONTINUAR",
+		"pause_exit": "VOLVER AL SELECTOR",
+		"energy_out": "ENERGÍA AGOTADA. Reintentando la fase con una reserva mínima.",
+		"button_back": "ENTER / CLIC: VOLVER AL SELECTOR"
+	},
+	"scenes": [
+		{
+			"id": "lanzamiento",
+			"title": "FASE 0 · LANZAMIENTO",
+			"year": "1972",
+			"objective": "LEER EL HUD Y LA ENERGÍA",
+			"energy": 100,
+			"show_progress": false,
+			"countdown": ["T-5", "T-4", "T-3", "T-2", "T-1", "¡DESPEGUE!"],
+			"intro": [
+				{"speaker": "CONTROLADORA", "text": "Centro de seguimiento de Goldstone, California. 2 de marzo de 1972: despega la Pioneer 10, rumbo a Júpiter."}
+			],
+			"separation": [
+				{"speaker": "CONTROLADORA", "text": "La Pioneer 10 se separa del cohete Atlas-Centaur. Desde ahora viaja sola."}
+			],
+			"tutorial": [
+				{"target": "year", "speaker": "CONTROLADORA", "text": "Arriba a la izquierda está el AÑO. Este viaje durará décadas."},
+				{"target": "objective", "speaker": "CONTROLADORA", "text": "Arriba a la derecha, el OBJETIVO de cada fase."},
+				{"target": "energy", "speaker": "CONTROLADORA", "text": "Abajo, la ENERGÍA del RTG, la batería nuclear de la nave. Baja con el tiempo y con cada fase, y no se puede recargar."}
+			],
+			"closing_text": "Diseñada para 21 meses.\nNadie sabe todavía lo que va a durar.",
+			"outro": []
+		},
+		{
+			"id": "cinturon",
+			"title": "FASE 1 · CINTURÓN DE ASTEROIDES",
+			"year": "1972-1973",
+			"objective": "CRUZAR EL CINTURÓN",
+			"energy": 100,
+			"show_progress": true,
+			"intro": [
+				{"speaker": "CONTROLADORA", "text": "La Pioneer 10 entra al cinturón de asteroides. No podemos corregir su rumbo en tiempo real: la guiaremos con maniobras de último momento. Ayúdala a no chocar con ninguno."}
+			],
+			"minimission": {
+				"title": "MINIJUEGO: ESQUIVA LOS ASTEROIDES",
+				"instruction": "Sube y baja (W / S o flechas) para pasar por los huecos",
+				"counter": "LUZ ZODIACAL",
+				"hit": "¡IMPACTO!",
+				"shield_out": "ESCUDO AGOTADO: PIERDES TIEMPO DE VUELO Y ENERGÍA",
+				"seconds": 40.0,
+				"energy_per_second": 0.2,
+				"shield_max": 5
+			},
+			"reward": "Primera nave en atravesar el cinturón de asteroides.",
+			"outro": [
+				{"speaker": "CONTROLADORA", "text": "Lo logramos. Había menos asteroides de lo esperado."}
+			]
+		},
+		{
+			"id": "jupiter",
+			"title": "FASE 2 · JÚPITER Y SUS LUNAS",
+			"year": "1973-1974",
+			"objective": "FOTOGRAFIAR TRES LUNAS",
+			"energy": 90,
+			"show_progress": true,
+			"verificar": "Texto del guion del equipo (lunas fotografiadas, fallo del fotopolarímetro en Io y 'primera nave en fotografiar Ganímedes de cerca'): confirmar con fuentes NASA.",
+			"intro": [
+				{"speaker": "PIONEER", "mode": "TX", "text": "AQUÍ PIONEER 10. JÚPITER A LA VISTA."},
+				{"speaker": "CONTROLADORA", "text": "La radiación de Júpiter daña los instrumentos. Hay que decidir qué fotografiar antes de que la cámara falle."}
+			],
+			"minimission": {
+				"title": "MINIJUEGO: ENCUADRE Y DISPARO",
+				"instruction": "Mueve el visor (WASD / flechas) y dispara (ENTER / clic) con la luna centrada",
+				"radiation": "RADIACIÓN",
+				"photo_ok": "¡%s CAPTURADA!",
+				"photo_bad": "ENCUADRE FALLIDO",
+				"damaged": "INSTRUMENTO DAÑADO POR LA RADIACIÓN",
+				"radiation_rate": 1.7,
+				"energy_per_second": 0.3,
+				"damaged_energy_cost": 6.0,
+				"moons": [
+					{"name": "CALISTO", "anchor": [420, 135], "radius": 40.0, "tol": 18.0, "drift": 10.0, "miss": 8.0, "color": "#8a7a68"},
+					{"name": "GANÍMEDES", "anchor": [255, 175], "radius": 34.0, "tol": 11.0, "drift": 16.0, "miss": 12.0, "color": "#a89c8c"},
+					{"name": "EUROPA", "anchor": [390, 190], "radius": 26.0, "tol": 6.0, "drift": 20.0, "miss": 25.0, "color": "#d8d2c4"}
+				]
+			},
+			"reward": "Primera nave en fotografiar Ganímedes de cerca.",
+			"outro_full": [
+				{"speaker": "CONTROLADORA", "text": "Tenemos las tres lunas antes de que la radiación venciera a la cámara."}
+			],
+			"outro_partial": [
+				{"speaker": "CONTROLADORA", "text": "La radiación venció a la cámara, pero guardamos las fotos que alcanzamos a tomar."}
+			],
+			"io_tag": "IO",
+			"outro": []
+		},
+		{
+			"id": "tormenta",
+			"title": "FASE 3 · TORMENTA Y MAGNETOSFERA",
+			"year": "1973-1974",
+			"objective": "SUPERAR LA TORMENTA",
+			"energy": 80,
+			"show_progress": false,
+			"energy_cost": 4.0,
+			"cinematic_tag": "TORMENTA SOLAR Y MAGNETOSFERA",
+			"cinematic_notes": "Para la cinemática futura: tormenta solar registrada junto con la Pioneer 9 y temperatura que sube cien veces al entrar en la magnetosfera de Júpiter; única acción del jugador: apuntar la antena.",
+			"intro": [],
+			"outro": [
+				{"speaker": "CONTROLADORA", "text": "La nave superó el susto, aunque la energía bajó un poco."}
+			]
+		},
+		{
+			"id": "silencio",
+			"title": "FASE 4 · EL SILENCIO",
+			"year": "1976-2003",
+			"objective": "MANTENER EL ENLACE",
+			"energy": 76,
+			"show_progress": false,
+			"energy_end": 12.0,
+			"seconds": 26.0,
+			"year_start": 1976,
+			"year_end": 2002,
+			"events": [
+				{"year": 1976, "text": "Cruza la órbita de Saturno", "link": "ENLACE ESTABLE"},
+				{"year": 1983, "text": "Cruza la órbita de Neptuno", "link": "ENLACE DÉBIL"},
+				{"year": 1997, "text": "Fin del contacto rutinario (presupuesto)", "link": "ENLACE INTERMITENTE"},
+				{"year": 1998, "text": "La Voyager 1 la supera en distancia", "link": "RESPUESTA PARCIAL"},
+				{"year": 2002, "text": "Última telemetría", "link": "SIN RESPUESTA CLARA"}
+			],
+			"intro": [
+				{"speaker": "CONTROLADORA", "text": "Pasan los años. La Pioneer 10 sigue alejándose y su energía cae. Seguimos enviando comandos."}
+			],
+			"final": [
+				{"speaker": "CONTROLADORA", "text": "Enero de 2003. Llega la última señal de la Pioneer 10. Tardó 11 horas y 20 minutos en cruzar el espacio hasta nosotros."}
+			],
+			"final_text": "Última posición calculada:\na unas 80 veces la distancia entre la Tierra y el Sol.",
+			"verificar": "Distancia y hora de la última señal (enero de 2003) del guion del equipo: confirmar con la NASA.",
+			"outro": []
+		},
+		{
+			"id": "placa",
+			"title": "FASE 5 · LA PLACA",
+			"year": "POST 2003",
+			"objective": "DESCIFRAR LA POSICIÓN DEL SOL",
+			"energy": 12,
+			"show_progress": false,
+			"intro": [
+				{"speaker": "CONTROLADORA", "text": "Esta es la placa de la Pioneer 10: un hombre, una mujer, el sistema solar y nuestra posición respecto a 14 púlsares."},
+				{"speaker": "CONTROLADORA", "text": "Las líneas de la placa miden la distancia del Sol a cada púlsar. Busca el punto donde todas esas distancias coinciden."}
+			],
+			"minimission": {
+				"title": "MINIJUEGO: LA POSICIÓN DEL SOL",
+				"instruction": "Haz clic (o mueve el cursor con las flechas y pulsa ENTER) para proponer dónde está el Sol",
+				"error_label": "ERROR",
+				"attempts_label": "INTENTOS",
+				"legend": "+ línea más larga · − línea más corta",
+				"lose": "Demasiados intentos. La señal se pierde.",
+				"unlock": "FRAGMENTO DESCIFRADO: %s",
+				"thresholds_pct": [28.0, 16.0, 9.0, 4.0],
+				"fragments": ["UN HOMBRE", "UNA MUJER", "EL SISTEMA SOLAR", "14 PÚLSARES"],
+				"base_attempts": 4,
+				"energy_per_attempt": 3.5,
+				"max_attempts": 12,
+				"hint_after": 3,
+				"hint": "Mira los signos junto a cada púlsar: «+» pide una línea más larga y «−» una más corta.",
+				"verificar": "Los 14 púlsares usan nombres y periodos de juego (no son los de la placa real): sustituir por los periodos reales de la documentación de la placa.",
+				"pulsars": [
+					{"id": "A", "period_s": 0.71, "angle": 10, "dist": 62},
+					{"id": "B", "period_s": 1.34, "angle": 35, "dist": 84},
+					{"id": "C", "period_s": 0.25, "angle": 62, "dist": 48},
+					{"id": "D", "period_s": 3.75, "angle": 88, "dist": 80},
+					{"id": "E", "period_s": 0.53, "angle": 115, "dist": 58},
+					{"id": "F", "period_s": 1.19, "angle": 140, "dist": 80},
+					{"id": "G", "period_s": 0.39, "angle": 165, "dist": 50},
+					{"id": "H", "period_s": 2.05, "angle": 190, "dist": 76},
+					{"id": "I", "period_s": 0.23, "angle": 212, "dist": 84},
+					{"id": "J", "period_s": 0.89, "angle": 238, "dist": 54},
+					{"id": "K", "period_s": 1.64, "angle": 262, "dist": 82},
+					{"id": "L", "period_s": 0.46, "angle": 288, "dist": 44},
+					{"id": "M", "period_s": 2.58, "angle": 312, "dist": 72},
+					{"id": "N", "period_s": 0.33, "angle": 338, "dist": 84}
+				]
+			},
+			"reward": "Placa completa · Lanzada el 2 de marzo de 1972.",
+			"outro": [
+				{"speaker": "CONTROLADORA", "text": "Lo logramos. Quien lea esta placa sabrá de dónde partió la nave."}
+			]
+		},
+		{
+			"id": "epilogo",
+			"title": "EPÍLOGO · 2 MILLONES DE AÑOS",
+			"year": "",
+			"objective": "",
+			"energy": 12,
+			"show_progress": false,
+			"lines": [
+				"Dirección: Aldebarán.",
+				"Tiempo estimado de encuentro: 2 000 000 de años."
+			],
+			"final_text": "Si alguien la encuentra, sabrá de dónde venimos.",
+			"outro": []
+		}
+	],
+	"mission_hud": {
+		"briefing": {
+			"header": "MISIÓN 3 · ESPACIO PROFUNDO",
+			"badge": "M3 · PIONEER 10",
+			"title": "PIONEER 10",
+			"year": "1972-2003",
+			"place": "Del cinturón de asteroides a Júpiter y más allá",
+			"equipment": "Sonda Pioneer 10, con su placa y su batería nuclear (RTG)",
+			"narrators": "Una controladora de vuelo imaginada, con hechos reales",
+			"objective": "Acompañar a la Pioneer 10 desde Goldstone en cada fase, mientras su energía se agota, hasta descifrar el mensaje de su placa.",
+			"scientist": "CONTROLADORA"
+		},
+		"general_controls": [
+			["ENTER / CLIC", "avanzar los mensajes"],
+			["ESC", "pausa (continuar o volver)"],
+			["C · O · I", "controles, objetivos e información de la misión"]
+		],
+		"phases": [
+			{"tip": "Fíjate en el año, el objetivo y la energía: los usarás en todas las fases.", "keys": [["ENTER / CLIC", "ui_accept", "AVANZAR"]]},
+			{"tip": "Sube y baja para pasar por los huecos. Cada impacto gasta un segmento del escudo.", "keys": [["W / ↑", "thrust", "SUBIR"], ["S / ↓", "move_down", "BAJAR"]]},
+			{"tip": "Dispara cuando la luna esté en el centro del visor. Las lunas pequeñas toleran menos error.", "keys": [["WASD / FLECHAS", "", "MOVER VISOR"], ["ENTER / CLIC", "ui_accept", "DISPARAR"]]},
+			{"tip": "Observa la secuencia. Luego sigue la historia.", "keys": [["ENTER / CLIC", "ui_accept", "CONTINUAR"]]},
+			{"tip": "Observa cómo baja la energía y se debilita la señal.", "keys": [["ENTER / CLIC", "ui_accept", "ADELANTAR"]]},
+			{"tip": "Compara las líneas: «+» pide una línea más larga y «−» una más corta.", "keys": [["CLIC", "", "PROPONER"], ["FLECHAS", "", "MOVER CURSOR"], ["ENTER", "ui_accept", "PROPONER"]]},
+			{"tip": "Este es el final del viaje.", "keys": [["ENTER / CLIC", "ui_accept", "VOLVER"]]}
+		]
+	}
+}
